@@ -57,7 +57,11 @@
 # how unreliable it is on your Python version).
 ##
 
-import xmllib, string
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore",category=DeprecationWarning)
+    import xmllib, string
 
 import ElementTree
 
