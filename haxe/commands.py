@@ -80,16 +80,7 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 		newContent = view.substr(sublime.Region(0, view.size()))
 		fd.write(newContent)
 
-
-		
-		
-
 		view.run_command("undo")
-		
-		
-
-		
-
 		#print sel
 
 
