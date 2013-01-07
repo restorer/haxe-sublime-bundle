@@ -56,11 +56,6 @@ for mod in mods_load_order:
 
 
 
-  
-
-
-
-
 hook_match = re.search("<class '(\w+).ExcepthookChain'>", str(sys.excepthook))
 
 if not hook_match:
@@ -97,42 +92,17 @@ else:
         ['ExcepthookChain'], -1)
     ExcepthookChain = _temp.ExcepthookChain
 
+# thx to wbond for this piece from sftp sublime plugin
+
 
 # Override default uncaught exception handler
-def sftp_uncaught_except(type, value, tb):
-    message = ''.join(traceback.format_exception(type, value, tb))
-
-    if message.find('/sftp/') != -1 or message.find('\\sftp\\') != -1:
-        def append_log():
-            log_file_path = os.path.join(sublime.packages_path(), 'User',
-                'SFTP.errors.log')
-            send_log_path = log_file_path
-            
-            sublime.error_message(('%s: An unexpected error occurred, ' +
-                'please send the file %s to support@wbond.net') % ('SFTP',
-                send_log_path))
-        if reloading['happening']:
-            if not reloading['shown']:
-                sublime.error_message('SFTP: Sublime SFTP was just upgraded' +
-                    ', please restart Sublime to finish the upgrade')
-                reloading['shown'] = True
-        else:
-            sublime.set_timeout(append_log, 10)
-
-if reload_mods and old_callbacks:
-    for name in old_callbacks:
-        ExcepthookChain.add(name, old_callbacks[name])
 
 ExcepthookChain.add('sys.excepthook', sys.__excepthook__)
-ExcepthookChain.add('sftp_uncaught_except', sftp_uncaught_except)
+
 
 if sys.excepthook != ExcepthookChain.hook:
     sys.excepthook = ExcepthookChain.hook
 
-
-def unload_handler(): 
-    
-    ExcepthookChain.remove('sftp_uncaught_except')
 
  
 

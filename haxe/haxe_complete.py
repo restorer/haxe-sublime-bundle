@@ -1138,7 +1138,63 @@ class HaxeBuildHelper ():
 		return self.currentBuild	
 
 
+class PanelHelper ():
 
+	def __init__ (self):
+		self.panel = None
+
+
+	def clear_output_panel(self, view) :
+		win = view.window()
+
+		self.panel = win.get_output_panel("haxe")
+
+	def panel_output( self , view , text , scope = None ) :
+		win = view.window()
+		if self.panel is None :
+			self.panel = win.get_output_panel("haxe")
+
+		panel = self.panel
+
+		text = datetime.now().strftime("%H:%M:%S") + " " + text;
+		
+		edit = panel.begin_edit()
+		region = sublime.Region(panel.size(),panel.size() + len(text))
+		panel.insert(edit, panel.size(), text + "\n")
+		panel.end_edit( edit )
+
+		if scope is not None :
+			icon = "dot"
+			key = "haxe-" + scope
+			regions = panel.get_regions( key );
+			regions.append(region)
+			panel.add_regions( key , regions , scope , icon )
+		#print( err )
+		win.run_command("show_panel",{"panel":"output.haxe"})
+
+		return self.panel
+
+
+def hx_query_completion(view, offset, build, cache, run_haxe):
+	id = view.id() 
+	now = time.time()
+	macroComp = False
+	if id in haxe.commands.HaxeDisplayMacroCompletion.completions:
+		oldTime = haxe.commands.HaxeDisplayMacroCompletion.completions[id]
+		del haxe.commands.HaxeDisplayMacroCompletion.completions[id]
+
+		if (now - oldTime) < 500:
+			print "do macro completion"
+			macroComp = True
+
+	
+	comps = get_haxe_completions( build, cache, run_haxe, view , offset, macroComp )
+	return comps
+
+def hxsl_query_completion(view, offset):
+	return get_hxsl_completions( view , offset )
+def hxml_query_completion(view, offset):
+	return get_hxml_completions( view , offset )
 
 class HaxeComplete( sublime_plugin.EventListener ):
 
@@ -1181,13 +1237,13 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 			HaxeComplete.initialized = True
 
-		print "currentCompl: " + str(HaxeComplete.int.currentCompletion)
+		print "currentCompl: " + str(HaxeComplete.inst.currentCompletion)
 		return HaxeComplete.inst
 
 	def __init__(self):
 		
 		self.server = CompletionServer(6000, False)
-
+		self.panel_helper = PanelHelper()
 		self.build_helper = HaxeBuildHelper()
 		HaxeComplete.inst = self
 		
@@ -1197,11 +1253,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 	def __del__(self) :
 		self.server.stop_server()	
 		
-
-	
-
-
-	
 
 	def on_load( self, view ) :
 
@@ -1273,9 +1324,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		#	view.run_command("haxe_insert_completion")
 
 
-	
-
-
 
 	def run_build( self , view ) :
 		print "run build"
@@ -1284,35 +1332,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		panel().status( "haxe-status" , status )
 		
 
-	def clear_output_panel(self, view) :
-		win = view.window()
-
-		self.panel = win.get_output_panel("haxe")
-
-	def panel_output( self , view , text , scope = None ) :
-		win = view.window()
-		if self.panel is None :
-			self.panel = win.get_output_panel("haxe")
-
-		panel = self.panel
-
-		text = datetime.now().strftime("%H:%M:%S") + " " + text;
-		
-		edit = panel.begin_edit()
-		region = sublime.Region(panel.size(),panel.size() + len(text))
-		panel.insert(edit, panel.size(), text + "\n")
-		panel.end_edit( edit )
-
-		if scope is not None :
-			icon = "dot"
-			key = "haxe-" + scope
-			regions = panel.get_regions( key );
-			regions.append(region)
-			panel.add_regions( key , regions , scope , icon )
-		#print( err )
-		win.run_command("show_panel",{"panel":"output.haxe"})
-
-		return self.panel
+	
 
 	
 
@@ -1397,7 +1417,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		print(err)
 		
 		if not autocomplete :
-			self.panel_output( view , " ".join(cmd) )
+			self.panel_helper.panel_output( view , " ".join(cmd) )
 
 		#print( res.encode("utf-8") )
 		status = ""
@@ -1451,40 +1471,31 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		print "on_query_completion"
 
 
-		#print("complete")
 		pos = locations[0]
 		scopes = view.scope_name(pos).split()
 		offset = pos - len(prefix)
 		comps = []
+
 		if offset == 0 : 
 			return comps 
-			
+		
+		# is in string or comment ?
 		for s in scopes : 
 			if s.split(".")[0] in ["string","comment"] : 
 				return comps
 
+
 		if 'source.hxml' in scopes:
-			comps = get_hxml_completions( view , offset )
+			comps = hxml_query_completion( view , offset )
 		
 		if 'source.haxe.2' in scopes :
 			if view.file_name().endswith(".hxsl") :
-				comps = get_hxsl_completions( view , offset )
+				comps = hxsl_query_completion( view , offset )
 			else : 
-				id = view.id() 
-				now = time.time()
-				macroComp = False
-				if id in haxe.commands.HaxeDisplayMacroCompletion.completions:
-					oldTime = haxe.commands.HaxeDisplayMacroCompletion.completions[id]
-					del haxe.commands.HaxeDisplayMacroCompletion.completions[id]
-					#print ("now: " + str(now))
-					#print ("old: " + str(oldTime))
-					if (now - oldTime) < 500:
-						print "do macro completion"
-						macroComp = True
-
+				# get build and maybe use cache
 				build = self.build_helper.get_build( view )
 				cache = self.currentCompletion
-				comps = get_haxe_completions( build, cache, self.run_haxe, view , offset, macroComp )
+				comps = hx_query_completion(view, offset, build, cache, self.run_haxe)
 				#print str(comps)
 			
 		return comps
