@@ -958,135 +958,15 @@ def make_cmd (serverMode, view, build, autocomplete, macroCompletion, settings, 
 
 	return cmd
 
-class HaxeComplete( sublime_plugin.EventListener ):
 
-	#folder = ""
-	#buildArgs = []
-	currentBuild = None
-	selectingBuild = False
-	builds = []
-	errors = []
- 
-	currentCompletion = {
-		"inp" : None,
-		"outp" : None
-	}
-
-	stdPaths = []
-	stdPackages = []
-	#stdClasses = ["Void","Float","Int","UInt","Null","Bool","Dynamic","Iterator","Iterable","ArrayAccess"]
-	stdClasses = []
-	stdCompletes = []
-
-	panel = None
-	initialized = False
-	inst = None
-	
-	@staticmethod
-	def instance (): 
-		if not HaxeComplete.initialized:
-
-			classes, packs, ver, stdPaths = collect_compiler_info()
-
-			HaxeComplete.stdPaths = stdPaths
-			HaxeComplete.stdClasses.extend( classes )
-			HaxeComplete.stdPackages.extend( packs )
-
-			
-
-			if ver is not None :
-				HaxeComplete.inst.server.serverMode = int(ver.group(1)) >= 209
-
-			#print "init HaxeComplete finished"
-
-			HaxeComplete.initialized = True
-		return HaxeComplete.inst
-
-	def __init__(self):
-		
-		self.server = CompletionServer(6000, False)
-
-		HaxeComplete.inst = self
-		
-		
-		#self.start_server()
-		
-	def __del__(self) :
-		self.server.stop_server()	
-		
-
-	
+class HaxeBuildHelper ():
 
 
-	
+	def __init__ (self):
 
-	def on_load( self, view ) :
-
-		if view.score_selector(0,'source.haxe.2') > 0 :
-			print "haxe file loaded"
-			HaxeCreateType().on_activated( view )
-		elif view.score_selector(0,'source.hxml,source.erazor,source.nmml') == 0:
-			return
-
-
-
-		self.generate_build( view )
-		highlight_errors( self.errors, view )
-
-
-	def on_post_save( self , view ) :
-		if view.score_selector(0,'source.hxml') > 0:
-			self.clear_build(view)
-
-	def on_activated( self , view ) :
-		if view.score_selector(0,'source.haxe.2') > 0 :
-			HaxeCreateType().on_activated( view )
-		elif view.score_selector(0,'source.hxml,source.erazor,source.nmml') == 0:
-			return
-		
-		self.get_build(view)
-		self.extract_build_args( view )
-		
-		self.generate_build(view)
-		highlight_errors( self.errors, view )
-
-	def on_pre_save( self , view ) :
-		if view.score_selector(0,'source.haxe.2') > 0 :
-			return []
-
-		fn = view.file_name()
-		path = os.path.dirname( fn )
-		if not os.path.isdir( path ) :
-			os.makedirs( path )
-
-	def __on_modified( self , view ):
-		win = sublime.active_window()
-		if win is None :
-			return None
-
-		isOk = ( win.active_view().buffer_id() == view.buffer_id() )
-		if not isOk :
-			return None
-		
-		sel = view.sel()
-		caret = 0
-		for s in sel :
-			caret = s.a
-		
-		if caret == 0 :
-			return None
-
-		if view.score_selector(caret,"source.haxe") == 0 or view.score_selector(caret,"string") > 0 or view.score_selector(caret,"comment") :
-			return None
-
-		src = view.substr(sublime.Region(0, view.size()))
-		ch = src[caret-1]
-		#print(ch)
-		if ch not in ".(:, " :
-			#print("here")
-			view.run_command("haxe_display_completion")
-		#else :
-		#	view.run_command("haxe_insert_completion")
+		self.currentBuild = None
+		self.selectingBuild = False
+		self.builds = []
 
 
 	def generate_build(self, view) :
@@ -1107,12 +987,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			view.run_command("save")
 
 		self.extract_build_args( view , True )
-
-
-
-
-	
-
 
 
 	def extract_build_args( self , view , forcePanel = False ) :
@@ -1207,55 +1081,8 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 				view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.currentBuild, i, view))
 
-
-
-
-
-	def run_build( self , view ) :
-		print "run build"
-		err, comps, status = self.run_haxe( view )
-		view.set_status( "haxe-status" , status )
-		panel().status( "haxe-status" , status )
-		
-
-	def clear_output_panel(self, view) :
-		win = view.window()
-
-		self.panel = win.get_output_panel("haxe")
-
-	def panel_output( self , view , text , scope = None ) :
-		win = view.window()
-		if self.panel is None :
-			self.panel = win.get_output_panel("haxe")
-
-		panel = self.panel
-
-		text = datetime.now().strftime("%H:%M:%S") + " " + text;
-		
-		edit = panel.begin_edit()
-		region = sublime.Region(panel.size(),panel.size() + len(text))
-		panel.insert(edit, panel.size(), text + "\n")
-		panel.end_edit( edit )
-
-		if scope is not None :
-			icon = "dot"
-			key = "haxe-" + scope
-			regions = panel.get_regions( key );
-			regions.append(region)
-			panel.add_regions( key , regions , scope , icon )
-		#print( err )
-		win.run_command("show_panel",{"panel":"output.haxe"})
-
-		return self.panel
-
-	
-
-	def clear_build( self , view ) :
+	def clear_build( self  ) :
 		self.currentBuild = None
-		self.currentCompletion = {
-			"inp" : None,
-			"outp" : None
-		}
 
 	def get_build( self , view ) :
 		
@@ -1311,12 +1138,191 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		return self.currentBuild	
 
 
-	
 
+
+class HaxeComplete( sublime_plugin.EventListener ):
+
+	#folder = ""
+	#buildArgs = []
 	
+	errors = []
+ 
+	currentCompletion = {
+		"inp" : None,
+		"outp" : None
+	}
+
+	stdPaths = []
+	stdPackages = []
+	stdClasses = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
+	#stdClasses = []
+	stdCompletes = []
+
+	panel = None
+	initialized = False
+	inst = None
+	
+	@staticmethod
+	def instance (): 
+		if not HaxeComplete.initialized:
+
+			classes, packs, ver, stdPaths = collect_compiler_info()
+
+			HaxeComplete.stdPaths = stdPaths
+			HaxeComplete.stdClasses.extend( classes )
+			HaxeComplete.stdPackages.extend( packs )
+
 			
+
+			if ver is not None :
+				HaxeComplete.inst.server.serverMode = int(ver.group(1)) >= 209
+
+			#print "init HaxeComplete finished"
+
+			HaxeComplete.initialized = True
+
+		print "currentCompl: " + str(HaxeComplete.int.currentCompletion)
+		return HaxeComplete.inst
+
+	def __init__(self):
+		
+		self.server = CompletionServer(6000, False)
+
+		self.build_helper = HaxeBuildHelper()
+		HaxeComplete.inst = self
+		
+		
+		#self.start_server()
+		
+	def __del__(self) :
+		self.server.stop_server()	
+		
+
 	
 
+
+	
+
+	def on_load( self, view ) :
+
+		if view.score_selector(0,'source.haxe.2') > 0 :
+			print "haxe file loaded"
+			HaxeCreateType().on_activated( view )
+		elif view.score_selector(0,'source.hxml,source.erazor,source.nmml') == 0:
+			return
+
+
+
+		self.build_helper.generate_build( view )
+		highlight_errors( self.errors, view )
+
+
+	def on_post_save( self , view ) :
+		if view.score_selector(0,'source.hxml') > 0:
+			self.build_helper.clear_build()
+			self.clear_completion()
+
+	def on_activated( self , view ) :
+		if view.score_selector(0,'source.haxe.2') > 0 :
+			HaxeCreateType().on_activated( view )
+		elif view.score_selector(0,'source.hxml,source.erazor,source.nmml') == 0:
+			return
+		
+		self.build_helper.get_build(view)
+		self.build_helper.extract_build_args( view )
+		
+		self.build_helper.generate_build(view)
+		highlight_errors( self.errors, view )
+
+	def on_pre_save( self , view ) :
+		if view.score_selector(0,'source.haxe.2') > 0 :
+			return []
+
+		fn = view.file_name()
+		path = os.path.dirname( fn )
+		if not os.path.isdir( path ) :
+			os.makedirs( path )
+
+	def __on_modified( self , view ):
+		win = sublime.active_window()
+		if win is None :
+			return None
+
+		isOk = ( win.active_view().buffer_id() == view.buffer_id() )
+		if not isOk :
+			return None
+		
+		sel = view.sel()
+		caret = 0
+		for s in sel :
+			caret = s.a
+		
+		if caret == 0 :
+			return None
+
+		if view.score_selector(caret,"source.haxe") == 0 or view.score_selector(caret,"string") > 0 or view.score_selector(caret,"comment") :
+			return None
+
+		src = view.substr(sublime.Region(0, view.size()))
+		ch = src[caret-1]
+		#print(ch)
+		if ch not in ".(:, " :
+			#print("here")
+			view.run_command("haxe_display_completion")
+		#else :
+		#	view.run_command("haxe_insert_completion")
+
+
+	
+
+
+
+	def run_build( self , view ) :
+		print "run build"
+		err, comps, status = self.run_haxe( view )
+		view.set_status( "haxe-status" , status )
+		panel().status( "haxe-status" , status )
+		
+
+	def clear_output_panel(self, view) :
+		win = view.window()
+
+		self.panel = win.get_output_panel("haxe")
+
+	def panel_output( self , view , text , scope = None ) :
+		win = view.window()
+		if self.panel is None :
+			self.panel = win.get_output_panel("haxe")
+
+		panel = self.panel
+
+		text = datetime.now().strftime("%H:%M:%S") + " " + text;
+		
+		edit = panel.begin_edit()
+		region = sublime.Region(panel.size(),panel.size() + len(text))
+		panel.insert(edit, panel.size(), text + "\n")
+		panel.end_edit( edit )
+
+		if scope is not None :
+			icon = "dot"
+			key = "haxe-" + scope
+			regions = panel.get_regions( key );
+			regions.append(region)
+			panel.add_regions( key , regions , scope , icon )
+		#print( err )
+		win.run_command("show_panel",{"panel":"output.haxe"})
+
+		return self.panel
+
+	
+
+	
+	
+	def clear_completion (self):
+		self.currentCompletion = {
+				"inp" : None,
+				"outp" : None
+		}
 
 	
 
@@ -1325,7 +1331,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 		self.server.start_server( view )
 			
-		build = self.get_build( view )
+		build = self.build_helper.get_build( view )
 		settings = view.settings()
 
 		autocomplete = display is not None
@@ -1398,7 +1404,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 		if (not autocomplete) and (build.hxml is None) :
 			#status = "Please create an hxml file"
-			self.extract_build_args( view , True )
+			self.build_helper.extract_build_args( view , True )
 		elif not autocomplete :
 			# default message = build success
 			status = "Build success"
@@ -1476,7 +1482,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 						print "do macro completion"
 						macroComp = True
 
-				build = self.get_build( view )
+				build = self.build_helper.get_build( view )
 				cache = self.currentCompletion
 				comps = get_haxe_completions( build, cache, self.run_haxe, view , offset, macroComp )
 				#print str(comps)
