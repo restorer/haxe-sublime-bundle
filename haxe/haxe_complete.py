@@ -1256,10 +1256,12 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	def on_load( self, view ) :
 
-		if view.score_selector(0,'source.haxe.2') > 0 :
+		vt = ViewTools
+
+		if vt.is_haxe(view):
 			print "haxe file loaded"
 			HaxeCreateType().on_activated( view )
-		elif view.score_selector(0,'source.hxml,source.erazor,source.nmml') == 0:
+		elif vt.is_hxml(view) or vt.is_erazor(view) or vt.is_nmml(view):
 			return
 
 
@@ -1286,7 +1288,8 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		highlight_errors( self.errors, view )
 
 	def on_pre_save( self , view ) :
-		if view.score_selector(0,'source.haxe.2') > 0 :
+
+		if ViewTools.is_haxe(view) :
 			return []
 
 		fn = view.file_name()
@@ -1308,10 +1311,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		for s in sel :
 			caret = s.a
 		
-		if caret == 0 :
-			return None
-
-		if view.score_selector(caret,"source.haxe") == 0 or view.score_selector(caret,"string") > 0 or view.score_selector(caret,"comment") :
+		if caret == 0 or not CaretTools.in_haxe_code(view, caret):
 			return None
 
 		src = view.substr(sublime.Region(0, view.size()))
@@ -1331,12 +1331,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		view.set_status( "haxe-status" , status )
 		panel().status( "haxe-status" , status )
 		
-
-	
-
-	
-
-	
 	
 	def clear_completion (self):
 		self.currentCompletion = {
@@ -1472,24 +1466,27 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 
 		pos = locations[0]
-		scopes = view.scope_name(pos).split()
+		
 		offset = pos - len(prefix)
 		comps = []
 
 		if offset == 0 : 
 			return comps 
 		
-		# is in string or comment ?
-		for s in scopes : 
-			if s.split(".")[0] in ["string","comment"] : 
-				return comps
 
 
-		if 'source.hxml' in scopes:
+		scopes = ViewTools.get_scopes_at(view, pos)
+
+		if (ScopeTools.contains_string_or_comment(scopes)):
+			return comps
+		
+
+
+		if Constants.SOURCE_HXML in scopes:
 			comps = hxml_query_completion( view , offset )
 		
-		if 'source.haxe.2' in scopes :
-			if view.file_name().endswith(".hxsl") :
+		if Constants.SOURCE_HAXE in scopes :
+			if ViewTools.is_hxsl(view) :
 				comps = hxsl_query_completion( view , offset )
 			else : 
 				# get build and maybe use cache
@@ -1501,11 +1498,78 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		return comps
 	
 
-	
+class Constants:
+	SOURCE_HAXE = 'source.haxe.2'
+	SOURCE_HXML = 'source.hxml'
+	SOURCE_NMML = 'source.nmml'
+	SOURCE_ERAZOR = 'source.erazor'
+	HXSL_SUFFIX = '.hxsl'
+
+Const = Constants
+
+class ViewTools ():
+
+	@staticmethod
+	def get_content (view):
+		return view.substr(sublime.Region(0, view.size()))
+
+	@staticmethod
+	def is_hxsl (view):
+		return view.file_name().endswith(Const.HXSL_SUFFIX)
+
+	@staticmethod
+	def is_supported (view):
+		return view.score_selector(0,Const.SOURCE_HAXE+','+Const.SOURCE_HXML+','+Const.SOURCE_ERAZOR+','+Const.SOURCE_NMML) > 0
+
+	@staticmethod
+	def get_scopes_at (view, pos):
+		return view.scope_name(pos).split()
+
+	@staticmethod
+	def is_haxe(view):
+		return view.score_selector(0,Const.SOURCE_HAXE) > 0
+
+
+	@staticmethod
+	def is_hxml(view):
+		return view.score_selector(0,Const.SOURCE_HXML) > 0
+
+	@staticmethod
+	def is_erazor(view):
+		return view.score_selector(0,Const.SOURCE_ERAZOR) > 0
+
+	@staticmethod
+	def is_nmml(view):
+		return view.score_selector(0,Const.SOURCE_NMML) > 0
+
+
+class ScopeTools:
+	@staticmethod
+	def contains_any (scopes, scopes_test):
+		
+		for s in scopes : 
+			if s.split(".")[0] in scopes_test : 
+				return True
+
+		return False
+
+	@staticmethod
+	def contains_string_or_comment (scopes):
+		return ScopeTools.contains_any(scopes, ["string", "comments"])
 
 	
+class CaretTools:
+	@staticmethod
+	def in_haxe_code (view, caret):
+		return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"string") == 0 and view.score_selector(caret,"comment") == 0
 
-	
+	@staticmethod
+	def in_haxe_string (view, caret):
+		return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"string") > 0
+
+	@staticmethod
+	def in_haxe_comments (view, caret):
+		return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"comment") > 0		
 
 	
 
