@@ -272,6 +272,72 @@ def prepare_build_args_for_completion (serverMode, buildArgs, buildMain, autocom
 	return args
 
 
+
+def get_haxe_completions( build, cache , run_haxe, view , offset, macroCompletion = False ):
+
+	print "haxe completion"
+	src = view.substr(sublime.Region(0, view.size()))
+	fn = view.file_name()
+	src_dir = os.path.dirname(fn)
+	tdir = os.path.dirname(fn)
+	temp = os.path.join( tdir , os.path.basename( fn ) + ".tmp" )
+
+	#find actual autocompletable char.
+	
+	prev = src[offset-1]
+	
+	comps = []
+	#print("prev : "+prev)
+	commas, completeOffset, toplevelComplete = get_completion_info(view, offset, src, prev)
+	
+	completeChar = src[completeOffset-1]
+	inControlStruct = controlStruct.search( src[0:completeOffset] ) is not None
+
+	toplevelComplete = toplevelComplete or completeChar in ":(," or inControlStruct
+
+	if toplevelComplete :
+		#print("toplevel")
+		comps = get_toplevel_completion( src , src_dir , build )
+		#print(comps)
+	
+	offset = completeOffset
+	
+	if prev == "." and src[offset-2] in ".1234567890" :
+		#comps.append(("... [iterator]",".."))
+		comps.append((".","."))
+
+	if toplevelComplete and (inControlStruct or completeChar not in "(,") :
+		return comps
+
+	if not os.path.exists( tdir ):
+		os.mkdir( tdir )
+		
+	if os.path.exists( fn ):
+		# copy saved file to temp for future restoring
+		shutil.copy2( fn , temp )
+	
+	# write current source to file
+	f = codecs.open( fn , "wb" , "utf-8" , "ignore" )
+	f.write( src )
+	f.close()
+
+
+	ret, comps1, status = get_haxe_actual_completion_data(cache, completeChar, view, macroCompletion, fn, offset, commas, src, run_haxe)
+	
+	comps.extend(comps1)
+	
+	panel().status( "haxe-status" , status )
+
+	#os.remove(temp)
+	if os.path.exists( temp ) :
+		shutil.copy2( temp , fn )
+		os.remove( temp )
+	else:
+		# fn didn't exist in the first place, so we remove it
+		os.remove( fn )
+	
+	return comps
+
 class CompletionServer ():
 	def __init__ (self, port, serverMode):
 		self.serverProc = None
@@ -530,6 +596,368 @@ def savetotemp( path, src ):
 	f.write( src )
 	return f
 
+def collect_compiler_info ():
+	out, err = runcmd( [HaxeSettings().haxeExec(), "-main", "Nothing", "-v", "--no-output"] )
+			
+	m = classpathLine.match(out)
+	
+	classes = []
+	packs = []
+	stdPaths = []
+
+	if m is not None :
+		stdPaths = set(m.group(1).split(";")) - set([".","./"])
+	
+	for p in stdPaths : 
+		#print("std path : "+p)
+		if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
+			classes, packs = extract_types( p )
+			
+
+	ver = re.search( haxeVersion , out )
+
+	return (classes, packs, ver, stdPaths)
+
+def find_hxml( folder ) :
+	builds = []
+	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
+	for build in hxmls:
+
+		currentBuild = hxbuild.HaxeBuild()
+		currentBuild.hxml = build
+		buildPath = os.path.dirname(build);
+
+		# print("build file exists")
+		f = codecs.open( build , "r+" , "utf-8" , "ignore" )
+		while 1:
+			l = f.readline() 
+			if not l : 
+				break;
+			if l.startswith("--next") :
+				builds.append( currentBuild )
+				currentBuild = hxbuild.HaxeBuild()
+				currentBuild.hxml = build
+				
+			l = l.strip()
+			
+			if l.startswith("-main") :
+				spl = l.split(" ")
+				if len( spl ) == 2 :
+					currentBuild.main = spl[1]
+				else :
+					sublime.status_message( "Invalid build.hxml : no Main class" )
+			
+			if l.startswith("-lib") :
+				spl = l.split(" ")
+				if len( spl ) == 2 :
+					lib = HaxeLib().get( spl[1] )
+					currentBuild.libs.append( lib )
+				else :
+					sublime.status_message( "Invalid build.hxml : lib not found" )
+
+			if l.startswith("-cmd") :
+				spl = l.split(" ")
+				currentBuild.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
+
+			#if l.startswith("--connect") and HaxeComplete.instance().serverMode :
+			#	currentBuild.args.append( ( "--connect" , str(self.serverPort) ))
+			
+			for flag in [ "lib" , "D" , "swf-version" , "swf-header", "debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , "-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , "-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , "-remap" , "-php-front" , "-php-lib", "-dce" , "-js-modern" ] :
+				if l.startswith( "-"+flag ) :
+					currentBuild.args.append( tuple(l.split(" ") ) )
+					
+					break
+			
+			for flag in [ "resource" , "xml" , "x" , "swf-lib" ] :
+				if l.startswith( "-"+flag ) :
+					spl = l.split(" ")
+					outp = os.path.join( folder , " ".join(spl[1:]) )
+					currentBuild.args.append( ("-"+flag, outp) )
+					
+					break
+
+			for flag in hxbuild.HaxeBuild.targets :
+				if l.startswith( "-" + flag + " " ) :
+					spl = l.split(" ")
+					#outp = os.path.join( folder , " ".join(spl[1:]) ) 
+					outp = " ".join(spl[1:]) 
+					currentBuild.args.append( ("-"+flag, outp) )
+					
+					currentBuild.target = flag
+					currentBuild.output = outp
+					break
+
+			if l.startswith("-cp "):
+				cp = l.split(" ")
+				#view.set_status( "haxe-status" , "Building..." )
+				cp.pop(0)
+				classpath = " ".join( cp )
+				absClasspath = classpath#os.path.join( buildPath , classpath )
+				currentBuild.classpaths.append( absClasspath )
+				currentBuild.args.append( ("-cp" , absClasspath ) )
+		
+		if len(currentBuild.classpaths) == 0:
+			currentBuild.classpaths.append( buildPath )
+			currentBuild.args.append( ("-cp" , buildPath ) )
+		
+		if currentBuild.main is not None :
+			builds.append( currentBuild )
+	return builds
+
+def find_nmml( folder ) :
+	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
+
+	builds = []
+
+	for build in nmmls:
+		currentBuild = HaxeBuild()
+		currentBuild.hxml = build
+		currentBuild.nmml = build
+		buildPath = os.path.dirname(build)
+
+		# TODO delegate compiler options extractions to NME 3.2:
+		# runcmd("nme diplay project.nmml nme_target")
+
+		outp = "NME"
+		f = codecs.open( build , "r+", "utf-8" , "ignore" )
+		while 1:
+			l = f.readline() 
+			if not l : 
+				break;
+			m = extractTag.search(l)
+			if not m is None:
+				#print(m.groups())
+				tag = m.group(1)
+				name = m.group(3)
+				if (tag == "app"):
+					currentBuild.main = name
+					mFile = re.search("\\b(file|title)=\"([a-z0-9_-]+)\"", l, re.I)
+					if not mFile is None:
+						outp = mFile.group(2)
+				elif (tag == "haxelib"):
+					currentBuild.libs.append( HaxeLib().get( name ) )
+					currentBuild.args.append( ("-lib" , name) )
+				elif (tag == "classpath"):
+					currentBuild.classpaths.append( os.path.join( buildPath , name ) )
+					currentBuild.args.append( ("-cp" , os.path.join( buildPath , name ) ) )
+			else: # NME 3.2
+				mPath = re.search("\\bpath=\"([a-z0-9_-]+)\"", l, re.I)
+				if not mPath is None:
+					#print(mPath.groups())
+					path = mPath.group(1)
+					currentBuild.classpaths.append( os.path.join( buildPath , path ) )
+					currentBuild.args.append( ("-cp" , os.path.join( buildPath , path ) ) )
+		
+		outp = os.path.join( folder , outp )
+		currentBuild.target = "cpp"
+		currentBuild.args.append( ("--remap", "flash:nme") )
+		currentBuild.args.append( ("-cpp", outp) )
+		currentBuild.output = outp
+
+		if currentBuild.main is not None :
+			builds.append( currentBuild )
+	return builds
+
+
+
+def select_nme_target( build, i, view ):
+	target = hxbuild.HaxeBuild.nme_targets[i]
+	if build.nmml is not None:
+		hxbuild.HaxeBuild.nme_target = target
+		view.set_status( "haxe-build" , build.to_string() )
+		panel().status( "haxe-build" , build.to_string() )
+
+def highlight_errors( errors , view ) :
+	fn = view.file_name()
+	regions = []
+	
+	for e in errors :
+		if fn.endswith(e["file"]) :
+			l = e["line"]
+			left = e["from"]
+			right = e["to"]
+			a = view.text_point(l,left)
+			b = view.text_point(l,right)
+
+			regions.append( sublime.Region(a,b))
+
+			view.set_status("haxe-status" , "Error: " + e["message"] )
+			panel().status( "haxe-status" , "Error: " + e["message"] )
+			
+	view.add_regions("haxe-error" , regions , "invalid" , "dot" )
+
+def handle_completion_error(err, temp, fn, status):
+	err = err.replace( temp , fn )
+	err = re.sub( u"\(display(.*)\)" ,"",err)
+	
+	lines = err.split("\n")
+	l = lines[0].strip()
+	
+	if len(l) > 0 :
+		if l == "<list>" :
+			status = "No autocompletion available"
+		elif not re.match( haxeFileRegex , l ):
+			status = l
+		else :
+			status = ""
+
+	#regions = []
+	
+	# for infos in compilerOutput.findall(err) :
+	# 	infos = list(infos)
+	# 	f = infos.pop(0)
+	# 	l = int( infos.pop(0) )-1
+	# 	left = int( infos.pop(0) )
+	# 	right = infos.pop(0)
+	# 	if right != "" :
+	# 		right = int( right )
+	# 	else :
+	# 		right = left+1
+	# 	m = infos.pop(0)
+
+	# 	self.errors.append({
+	# 		"file" : f,
+	# 		"line" : l,
+	# 		"from" : left,
+	# 		"to" : right,
+	# 		"message" : m
+	# 	})
+		
+	# 	if( f == fn ):
+	# 		status = m
+		
+	# 	if not autocomplete :
+	# 		w = view.window()
+	# 		if not w is None :
+	# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
+	# 	#if not autocomplete
+
+	errors = HaxeOutputConverter.extract_errors( err )
+
+	return (status,errors)
+	#self.highlight_errors( view )
+
+
+def count_commas_and_complete_offset (src, prevComa, completeOffset):
+	commas = 0;
+	closedPars = 0
+	closedBrackets = 0
+
+	for i in range( prevComa , 0 , -1 ) :
+		c = src[i]
+		if c == ")" :
+			closedPars += 1
+		elif c == "(" :
+			if closedPars < 1 :
+				completeOffset = i+1
+				break
+			else :
+				closedPars -= 1
+		elif c == "," :
+			if closedPars == 0 :
+				commas += 1
+		elif c == "{" : # TODO : check for { ... , ... , ... } to have the right comma count
+			commas = 0
+			closedBrackets -= 1
+		elif c == "}" :
+			closedBrackets += 1
+
+	return (commas, completeOffset)
+
+def get_completion_info (view, offset, src, prev):
+	commas = 0
+	toplevelComplete = False
+	completeOffset = offset
+	if prev not in "(." :
+		fragment = view.substr(sublime.Region(0,offset))
+		prevDot = fragment.rfind(".")
+		prevPar = fragment.rfind("(")
+		prevComa = fragment.rfind(",")
+		prevColon = fragment.rfind(":")
+		prevBrace = fragment.rfind("{")
+		prevSymbol = max(prevDot,prevPar,prevComa,prevBrace,prevColon)
+		
+		if prevSymbol == prevComa:
+			commas, completeOffset = count_commas_and_complete_offset(src, prevComa, completeOffset)
+			#print("closedBrackets : " + str(closedBrackets))
+			
+		else :
+
+			completeOffset = max( prevDot + 1, prevPar + 1 , prevColon + 1 )
+			skipped = src[completeOffset:offset]
+			toplevelComplete = skippable.search( skipped ) is None and inAnonymous.search( skipped ) is None
+
+	return (commas, completeOffset, toplevelComplete)
+
+
+def run_nme( view, build ) :
+
+	cmd = [ HaxeSettings().haxeLibExec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
+	target = hxbuild.HaxeBuild.nme_target[1].split(" ")
+	cmd.extend(target)
+	cmd.append("-debug")
+
+	view.window().run_command("exec", {
+		"cmd": cmd,
+		"working_dir": os.path.dirname(build.nmml),
+		"file_regex": "^([^:]*):([0-9]+): characters [0-9]+-([0-9]+) :.*$"
+	})
+	return ("" , [], "" )
+
+def get_haxe_actual_completion_data (completionCache, completeChar, view, macroCompletion, fn, offset, commas, src, run_haxe):
+		inp = (fn,offset,commas,src[0:offset-1])
+		
+
+		
+		lastInp = completionCache["inp"]
+
+		useCache = lastInp is not None and inp == lastInp[0] and macroCompletion == lastInp[1]
+
+		if useCache :
+			ret, comps, status = completionCache["outp"]
+
+		else :
+			ret , haxeComps , status = run_haxe( view , fn + "@" + str(offset) , commas, macroCompletion )
+			
+
+			if completeChar not in "(," : 
+				comps = haxeComps
+			else:
+				comps = []
+
+			completionCache["outp"] = (ret,comps,status)
+
+		completionCache["inp"] = (inp, macroCompletion)
+
+		return (ret, comps, status)
+
+def make_cmd (serverMode, view, build, autocomplete, macroCompletion, settings, cwd, display):
+		
+	buildServerMode = settings.get('haxe_build_server_mode', True)
+	args = prepare_build_args_for_completion(serverMode, build.args, build.main, 
+			autocomplete, macroCompletion, cwd, 
+			HaxeSettings().showCompletionTimes(view), buildServerMode, display)
+	
+		
+	
+	
+		
+
+	haxepath = settings.get( 'haxe_path' , HaxeSettings().haxeExec(view) )
+
+	cmd = [haxepath]
+	for a in args :
+		cmd.extend( list(a) )
+	
+	
+	#print( cmd )
+	#
+	# TODO: replace runcmd with run_command('exec') when possible (haxelib, maybe build)
+	#
+	
+
+	return cmd
+
 class HaxeComplete( sublime_plugin.EventListener ):
 
 	#folder = ""
@@ -557,24 +985,15 @@ class HaxeComplete( sublime_plugin.EventListener ):
 	@staticmethod
 	def instance (): 
 		if not HaxeComplete.initialized:
-			
-			
-			
-			out, err = runcmd( [HaxeSettings().haxeExec(), "-main", "Nothing", "-v", "--no-output"] )
-			
-			m = classpathLine.match(out)
-			if m is not None :
-				HaxeComplete.stdPaths = set(m.group(1).split(";")) - set([".","./"])
-			
-			for p in HaxeComplete.stdPaths : 
-				#print("std path : "+p)
-				if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
-					classes, packs = extract_types( p )
-					HaxeComplete.stdClasses.extend( classes )
-					HaxeComplete.stdPackages.extend( packs )
 
-			ver = re.search( haxeVersion , out )
+			classes, packs, ver, stdPaths = collect_compiler_info()
+
+			HaxeComplete.stdPaths = stdPaths
+			HaxeComplete.stdClasses.extend( classes )
+			HaxeComplete.stdPackages.extend( packs )
+
 			
+
 			if ver is not None :
 				HaxeComplete.inst.server.serverMode = int(ver.group(1)) >= 209
 
@@ -585,7 +1004,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	def __init__(self):
 		
-		self.server = CompletionServer(6000, True)
+		self.server = CompletionServer(6000, False)
 
 		HaxeComplete.inst = self
 		
@@ -599,24 +1018,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 	
 
 
-	def highlight_errors( self , view ) :
-		fn = view.file_name()
-		regions = []
-		
-		for e in self.errors :
-			if fn.endswith(e["file"]) :
-				l = e["line"]
-				left = e["from"]
-				right = e["to"]
-				a = view.text_point(l,left)
-				b = view.text_point(l,right)
-
-				regions.append( sublime.Region(a,b))
-
-				view.set_status("haxe-status" , "Error: " + e["message"] )
-				panel().status( "haxe-status" , "Error: " + e["message"] )
-				
-		view.add_regions("haxe-error" , regions , "invalid" , "dot" )
+	
 
 	def on_load( self, view ) :
 
@@ -629,7 +1031,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 
 		self.generate_build( view )
-		self.highlight_errors( view )
+		highlight_errors( self.errors, view )
 
 
 	def on_post_save( self , view ) :
@@ -646,7 +1048,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		self.extract_build_args( view )
 		
 		self.generate_build(view)
-		self.highlight_errors( view )
+		highlight_errors( self.errors, view )
 
 	def on_pre_save( self , view ) :
 		if view.score_selector(0,'source.haxe.2') > 0 :
@@ -707,140 +1109,9 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		self.extract_build_args( view , True )
 
 
-	def find_nmml( self, folder ) :
-		nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
 
-		for build in nmmls:
-			currentBuild = HaxeBuild()
-			currentBuild.hxml = build
-			currentBuild.nmml = build
-			buildPath = os.path.dirname(build)
 
-			# TODO delegate compiler options extractions to NME 3.2:
-			# runcmd("nme diplay project.nmml nme_target")
-
-			outp = "NME"
-			f = codecs.open( build , "r+", "utf-8" , "ignore" )
-			while 1:
-				l = f.readline() 
-				if not l : 
-					break;
-				m = extractTag.search(l)
-				if not m is None:
-					#print(m.groups())
-					tag = m.group(1)
-					name = m.group(3)
-					if (tag == "app"):
-						currentBuild.main = name
-						mFile = re.search("\\b(file|title)=\"([a-z0-9_-]+)\"", l, re.I)
-						if not mFile is None:
-							outp = mFile.group(2)
-					elif (tag == "haxelib"):
-						currentBuild.libs.append( HaxeLib().get( name ) )
-						currentBuild.args.append( ("-lib" , name) )
-					elif (tag == "classpath"):
-						currentBuild.classpaths.append( os.path.join( buildPath , name ) )
-						currentBuild.args.append( ("-cp" , os.path.join( buildPath , name ) ) )
-				else: # NME 3.2
-					mPath = re.search("\\bpath=\"([a-z0-9_-]+)\"", l, re.I)
-					if not mPath is None:
-						#print(mPath.groups())
-						path = mPath.group(1)
-						currentBuild.classpaths.append( os.path.join( buildPath , path ) )
-						currentBuild.args.append( ("-cp" , os.path.join( buildPath , path ) ) )
-			
-			outp = os.path.join( folder , outp )
-			currentBuild.target = "cpp"
-			currentBuild.args.append( ("--remap", "flash:nme") )
-			currentBuild.args.append( ("-cpp", outp) )
-			currentBuild.output = outp
-
-			if currentBuild.main is not None :
-				self.builds.append( currentBuild )
-
-	def find_hxml( self, folder ) :
-		hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
-		for build in hxmls:
-
-			currentBuild = hxbuild.HaxeBuild()
-			currentBuild.hxml = build
-			buildPath = os.path.dirname(build);
-
-			# print("build file exists")
-			f = codecs.open( build , "r+" , "utf-8" , "ignore" )
-			while 1:
-				l = f.readline() 
-				if not l : 
-					break;
-				if l.startswith("--next") :
-					self.builds.append( currentBuild )
-					currentBuild = hxbuild.HaxeBuild()
-					currentBuild.hxml = build
-					
-				l = l.strip()
-				
-				if l.startswith("-main") :
-					spl = l.split(" ")
-					if len( spl ) == 2 :
-						currentBuild.main = spl[1]
-					else :
-						sublime.status_message( "Invalid build.hxml : no Main class" )
-				
-				if l.startswith("-lib") :
-					spl = l.split(" ")
-					if len( spl ) == 2 :
-						lib = HaxeLib().get( spl[1] )
-						currentBuild.libs.append( lib )
-					else :
-						sublime.status_message( "Invalid build.hxml : lib not found" )
-
-				if l.startswith("-cmd") :
-					spl = l.split(" ")
-					currentBuild.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
-
-				#if l.startswith("--connect") and HaxeComplete.instance().serverMode :
-				#	currentBuild.args.append( ( "--connect" , str(self.serverPort) ))
-				
-				for flag in [ "lib" , "D" , "swf-version" , "swf-header", "debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , "-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , "-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , "-remap" , "-php-front" , "-php-lib", "-dce" , "-js-modern" ] :
-					if l.startswith( "-"+flag ) :
-						currentBuild.args.append( tuple(l.split(" ") ) )
-						
-						break
-				
-				for flag in [ "resource" , "xml" , "x" , "swf-lib" ] :
-					if l.startswith( "-"+flag ) :
-						spl = l.split(" ")
-						outp = os.path.join( folder , " ".join(spl[1:]) )
-						currentBuild.args.append( ("-"+flag, outp) )
-						
-						break
-
-				for flag in hxbuild.HaxeBuild.targets :
-					if l.startswith( "-" + flag + " " ) :
-						spl = l.split(" ")
-						#outp = os.path.join( folder , " ".join(spl[1:]) ) 
-						outp = " ".join(spl[1:]) 
-						currentBuild.args.append( ("-"+flag, outp) )
-						
-						currentBuild.target = flag
-						currentBuild.output = outp
-						break
-
-				if l.startswith("-cp "):
-					cp = l.split(" ")
-					#view.set_status( "haxe-status" , "Building..." )
-					cp.pop(0)
-					classpath = " ".join( cp )
-					absClasspath = classpath#os.path.join( buildPath , classpath )
-					currentBuild.classpaths.append( absClasspath )
-					currentBuild.args.append( ("-cp" , absClasspath ) )
-			
-			if len(currentBuild.classpaths) == 0:
-				currentBuild.classpaths.append( buildPath )
-				currentBuild.args.append( ("-cp" , buildPath ) )
-			
-			if currentBuild.main is not None :
-				self.builds.append( currentBuild )
+	
 
 
 
@@ -862,8 +1133,8 @@ class HaxeComplete( sublime_plugin.EventListener ):
 				folder = f
 
 		# settings.set("haxe-complete-folder", folder)
-		self.find_hxml(folder)
-		self.find_nmml(folder)
+		self.builds.extend(find_hxml(folder))
+		self.builds.extend(find_nmml(folder))
 
 		if len(self.builds) == 1:
 			if forcePanel : 
@@ -934,15 +1205,10 @@ class HaxeComplete( sublime_plugin.EventListener ):
 				for t in hxbuild.HaxeBuild.nme_targets :
 					nme_targets.append( t[0] )
 
-				view.window().show_quick_panel(nme_targets, lambda i : self.select_nme_target(i, view))
+				view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.currentBuild, i, view))
 
 
-	def select_nme_target( self, i, view ):
-		target = hxbuild.HaxeBuild.nme_targets[i]
-		if self.currentBuild.nmml is not None:
-			hxbuild.HaxeBuild.nme_target = target
-			view.set_status( "haxe-build" , self.currentBuild.to_string() )
-			panel().status( "haxe-build" , self.currentBuild.to_string() )
+
 
 
 	def run_build( self , view ) :
@@ -997,11 +1263,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 			fn = view.file_name()
 
-			
-
 			src_dir = os.path.dirname( fn )
-
-			
 
 			src = view.substr(sublime.Region(0, view.size()))
 		
@@ -1049,51 +1311,14 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		return self.currentBuild	
 
 
-	def run_nme( self, view, build ) :
-
-		cmd = [ HaxeSettings().haxeLibExec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
-		target = hxbuild.HaxeBuild.nme_target[1].split(" ")
-		cmd.extend(target)
-		cmd.append("-debug")
- 
-		view.window().run_command("exec", {
-			"cmd": cmd,
-			"working_dir": os.path.dirname(build.nmml),
-			"file_regex": "^([^:]*):([0-9]+): characters [0-9]+-([0-9]+) :.*$"
-		})
-		return ("" , [], "" )
+	
 
 	
 			
 	
 
 
-	def make_cmd (self, view, build, autocomplete, macroCompletion, settings, cwd, display):
-		
-		buildServerMode = settings.get('haxe_build_server_mode', True)
-		args = prepare_build_args_for_completion(self.server.serverMode, build.args, build.main, 
-				autocomplete, macroCompletion, cwd, 
-				HaxeSettings().showCompletionTimes(view), buildServerMode, display)
-		
-  		
-		
-		
-			
-
-		haxepath = settings.get( 'haxe_path' , HaxeSettings().haxeExec(view) )
-
-		cmd = [haxepath]
-		for a in args :
-			cmd.extend( list(a) )
-		
-		
-		#print( cmd )
-		#
-		# TODO: replace runcmd with run_command('exec') when possible (haxelib, maybe build)
-		#
-		
-
-		return cmd
+	
 
 
 	def run_haxe_simple( self, view , display = None , commas = 0, macroCompletion = False ) :
@@ -1106,7 +1331,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		autocomplete = display is not None
 
 		if not autocomplete and build.nmml is not None:
-			return self.run_nme(view, build)
+			return run_nme(view, build)
 		
 		fn = view.file_name()
 		#src = view.substr(sublime.Region(0, view.size()))
@@ -1125,8 +1350,8 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		#buildArgs = view.window().settings
 		
 		# TODO if we are in a macro block, remove the current target and set neko as target
- 		cmd = self.make_cmd(view, build, autocomplete, macroCompletion, settings, cwd, display)
-
+ 		cmd = make_cmd(self.server.serverMode, view, build, autocomplete, macroCompletion, settings, cwd, display)
+ 		
  		if not autocomplete :
 			encoded_cmd = []
 			for c in cmd :
@@ -1208,65 +1433,13 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			comps.extend(fields)
 
 		if len(hints) == 0 and len(comps) == 0:
-			status = self.handle_completion_error(err, temp, fn, status)
+			status, errors = handle_completion_error(err, temp, fn, status)
+			self.errors = errors
 
 			
 
 		#print(status)
 		return ( err, comps, status )
-
-	def handle_completion_error(self, err, temp, fn, status):
-		err = err.replace( temp , fn )
-		err = re.sub( u"\(display(.*)\)" ,"",err)
-		
-		lines = err.split("\n")
-		l = lines[0].strip()
-		
-		if len(l) > 0 :
-			if l == "<list>" :
-				status = "No autocompletion available"
-			elif not re.match( haxeFileRegex , l ):
-				status = l
-			else :
-				status = ""
-
-		#regions = []
-		
-		# for infos in compilerOutput.findall(err) :
-		# 	infos = list(infos)
-		# 	f = infos.pop(0)
-		# 	l = int( infos.pop(0) )-1
-		# 	left = int( infos.pop(0) )
-		# 	right = infos.pop(0)
-		# 	if right != "" :
-		# 		right = int( right )
-		# 	else :
-		# 		right = left+1
-		# 	m = infos.pop(0)
-
-		# 	self.errors.append({
-		# 		"file" : f,
-		# 		"line" : l,
-		# 		"from" : left,
-		# 		"to" : right,
-		# 		"message" : m
-		# 	})
-			
-		# 	if( f == fn ):
-		# 		status = m
-			
-		# 	if not autocomplete :
-		# 		w = view.window()
-		# 		if not w is None :
-		# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
-		# 	#if not autocomplete
-
-		self.errors = HaxeOutputConverter.extract_errors( err )
-
-		return status
-		#self.highlight_errors( view )
-	
-
 
 	def on_query_completions(self, view, prefix, locations):
 		print "on_query_completion"
@@ -1299,158 +1472,23 @@ class HaxeComplete( sublime_plugin.EventListener ):
 					del haxe.commands.HaxeDisplayMacroCompletion.completions[id]
 					#print ("now: " + str(now))
 					#print ("old: " + str(oldTime))
-					if (now - oldTime) < 1000:
+					if (now - oldTime) < 500:
 						print "do macro completion"
 						macroComp = True
 
-				comps = self.get_haxe_completions( view , offset, macroComp )
+				build = self.get_build( view )
+				cache = self.currentCompletion
+				comps = get_haxe_completions( build, cache, self.run_haxe, view , offset, macroComp )
 				#print str(comps)
 			
 		return comps
 	
 
-	def count_commas_and_complete_offset (self, src, prevComa, completeOffset):
-		commas = 0;
-		closedPars = 0
-		closedBrackets = 0
+	
 
-		for i in range( prevComa , 0 , -1 ) :
-			c = src[i]
-			if c == ")" :
-				closedPars += 1
-			elif c == "(" :
-				if closedPars < 1 :
-					completeOffset = i+1
-					break
-				else :
-					closedPars -= 1
-			elif c == "," :
-				if closedPars == 0 :
-					commas += 1
-			elif c == "{" : # TODO : check for { ... , ... , ... } to have the right comma count
-				commas = 0
-				closedBrackets -= 1
-			elif c == "}" :
-				closedBrackets += 1
+	
 
-		return (commas, completeOffset)
-
-	def get_completion_info (self, view, offset, src, prev):
-		commas = 0
-		toplevelComplete = False
-		completeOffset = offset
-		if prev not in "(." :
-			fragment = view.substr(sublime.Region(0,offset))
-			prevDot = fragment.rfind(".")
-			prevPar = fragment.rfind("(")
-			prevComa = fragment.rfind(",")
-			prevColon = fragment.rfind(":")
-			prevBrace = fragment.rfind("{")
-			prevSymbol = max(prevDot,prevPar,prevComa,prevBrace,prevColon)
-			
-			if prevSymbol == prevComa:
-				commas, completeOffset = self.count_commas_and_complete_offset(src, prevComa, completeOffset)
-
-				#print("closedBrackets : " + str(closedBrackets))
-				
-			else :
-
-				completeOffset = max( prevDot + 1, prevPar + 1 , prevColon + 1 )
-				skipped = src[completeOffset:offset]
-				toplevelComplete = skippable.search( skipped ) is None and inAnonymous.search( skipped ) is None
-
-		return (commas, completeOffset, toplevelComplete)
-
-	def get_haxe_completions( self , view , offset, macroCompletion = False ):
-
-		print "haxe completion"
-		src = view.substr(sublime.Region(0, view.size()))
-		fn = view.file_name()
-		src_dir = os.path.dirname(fn)
-		tdir = os.path.dirname(fn)
-		temp = os.path.join( tdir , os.path.basename( fn ) + ".tmp" )
-
-		#find actual autocompletable char.
-		
-		prev = src[offset-1]
-		
-		comps = []
-		#print("prev : "+prev)
-		commas, completeOffset, toplevelComplete = self.get_completion_info(view, offset, src, prev)
-		
-		completeChar = src[completeOffset-1]
-		inControlStruct = controlStruct.search( src[0:completeOffset] ) is not None
-
-		toplevelComplete = toplevelComplete or completeChar in ":(," or inControlStruct
-
-		if toplevelComplete :
-			#print("toplevel")
-			comps = get_toplevel_completion( src , src_dir , self.get_build( view ) )
-			#print(comps)
-		
-		offset = completeOffset
-		
-		if prev == "." and src[offset-2] in ".1234567890" :
-			#comps.append(("... [iterator]",".."))
-			comps.append((".","."))
-
-		if toplevelComplete and (inControlStruct or completeChar not in "(,") :
-			return comps
-
-		if not os.path.exists( tdir ):
-			os.mkdir( tdir )
-			
-		if os.path.exists( fn ):
-			# copy saved file to temp for future restoring
-			shutil.copy2( fn , temp )
-		
-		# write current source to file
-		f = codecs.open( fn , "wb" , "utf-8" , "ignore" )
-		f.write( src )
-		f.close()
-
-
-		ret, comps, status = self.get_haxe_actual_completion_data(completeChar, view, macroCompletion, fn, offset, commas, src)
-		
-		
-		
-		panel().status( "haxe-status" , status )
-
-		#os.remove(temp)
-		if os.path.exists( temp ) :
-			shutil.copy2( temp , fn )
-			os.remove( temp )
-		else:
-			# fn didn't exist in the first place, so we remove it
-			os.remove( fn )
-		
-		return comps
-
-	def get_haxe_actual_completion_data (self, completeChar, view, macroCompletion, fn, offset, commas, src):
-		inp = (fn,offset,commas,src[0:offset-1])
-		
-
-		lastInp = self.currentCompletion["inp"]
-
-		useCache = lastInp is not None and inp == lastInp[0] and macroCompletion == lastInp[1]
-
-		if useCache :
-			ret, comps, status = self.currentCompletion["outp"]
-
-		else :
-			ret , haxeComps , status = self.run_haxe( view , fn + "@" + str(offset) , commas, macroCompletion )
-			
-
-			if completeChar not in "(," : 
-				comps = haxeComps
-			else:
-				comps = []
-
-			self.currentCompletion["outp"] = (ret,comps,status)
-
-		self.currentCompletion["inp"] = (inp, macroCompletion)
-
-		return (ret, comps, status)
+	
 
 	
 
