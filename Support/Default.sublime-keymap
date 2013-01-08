@@ -223,22 +223,22 @@
         ]
     },
     {
-        "keys": ["ctrl+shift+h","ctrl+shift+c"],
+        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+c"],
         "command": "haxe_create_type",
         "args" : {"t" : "class"}
     },
     {
-        "keys": ["ctrl+shift+h","ctrl+shift+i"],
+        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+i"],
         "command": "haxe_create_type",
         "args" : {"t" : "interface"}
     },
     {
-        "keys": ["ctrl+shift+h","ctrl+shift+t"],
+        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+t"],
         "command": "haxe_create_type",
         "args" : {"t" : "typedef"}
     },
     {
-        "keys": ["ctrl+shift+h","ctrl+shift+e"],
+        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+e"],
         "command": "haxe_create_type",
         "args" : {"t" : "enum"}
     }

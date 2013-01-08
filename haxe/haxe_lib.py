@@ -82,7 +82,10 @@ class HaxeLib :
 
 class HaxeInstallLib( sublime_plugin.WindowCommand ):
 	def run(self):
+		print "try install lib"
 		out,err = runcmd([haxe_settings().haxeLibExec() , "search" , " "]);
+		print "search complete"
+		print out
 		libs = out.splitlines()
 		self.libs = libs[0:-1]
 

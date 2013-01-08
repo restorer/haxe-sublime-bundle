@@ -2,19 +2,26 @@ import sys
 #sys.path.append("/usr/lib/python2.6/")
 #sys.path.append("/usr/lib/python2.6/lib-dynload")
 
-import sublime, sublime_plugin
-import subprocess, time
-import tempfile
-import os, signal
+
+
+#sys.path.append("/usr/lib/python2.6/")
+#sys.path.append("/usr/lib/python2.6/lib-dynload")
+
+import sublime
+
+import os
+
+
 #import xml.parsers.expat
-import re
-import codecs 
-import glob 
-import hashlib
-import shutil 
 
-import sublime, sublime_plugin
+import haxe.haxe_complete 
 
+import haxe.haxe_lib
+
+import haxe.haxe_panel
+
+haxe_lib = sys.modules["haxe.haxe_lib"]
+haxe_panel = sys.modules["haxe.haxe_panel"]
 
 
 from startup import STARTUP_INFO
@@ -36,10 +43,10 @@ def runcmd( args, input=None ):
 	try: 
 		libPath = settings.haxeLibraryPath();
 		
-		env = os.environ.copy
+		env = os.environ.copy()
 		if libPath != None :
 			#print "std lib: set: " + libPath
-			env = {}
+			#env = {}
 			print "export HAXE_LIBRARY_PATH="+libPath
 			env["HAXE_LIBRARY_PATH"] = libPath 
 		args = filter(lambda s: s != "", args)
@@ -69,7 +76,7 @@ class HaxeExecCommand(stexec.ExecCommand):
 	def finish(self, *args, **kwargs):
 		super(HaxeExecCommand, self).finish(*args, **kwargs)  
 		outp = self.output_view.substr(sublime.Region(0, self.output_view.size()))
-		hc = HaxeComplete.instance()
+		hc = haxe.haxe_complete.HaxeComplete.instance()
 		hc.errors = hc.extract_errors( outp )
 		hc.highlight_errors( self.window.active_view() )
 
@@ -108,7 +115,7 @@ class HaxeExecCommand(stexec.ExecCommand):
 		self.proc = None
 		if not self.quiet:
 			print "Running " + " ".join(cmd).encode('utf-8')
-			HaxePanel.writeln("Building")
+			haxe_panel.HaxePanel.writeln("Building")
 			sublime.status_message("Building")
 
 		show_panel_on_build = sublime.load_settings("Preferences.sublime-settings").get("show_panel_on_build", True)
@@ -145,15 +152,13 @@ class HaxeExecCommand(stexec.ExecCommand):
 				self.append_data(None, "[Finished]")
 
 
-	def is_visible():
-		return false
+
 
 
 class HaxelibExecCommand(stexec.ExecCommand):
 	def finish(self, *args, **kwargs):
 		super(HaxelibExecCommand, self).finish(*args, **kwargs)  
-		HaxeLib.scan()
+		haxe_lib.HaxeLib.scan()
 
-	def is_visible():
-		return false
+
 

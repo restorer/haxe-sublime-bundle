@@ -156,10 +156,10 @@ class HaxeRunBuild( sublime_plugin.TextCommand ):
 class HaxeSelectBuild( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		print "do select build"
-		complete = haxe.haxe_complete.HaxeComplete.instance()
+		build_helper = haxe.haxe_complete.HaxeComplete.instance().build_helper
 		view = self.view
 		
-		complete.select_build( view )
+		build_helper.select_build( view )
 
 
 class HaxeHint( sublime_plugin.TextCommand ):

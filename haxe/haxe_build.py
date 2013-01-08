@@ -7,6 +7,31 @@ import sys
 
 haxe_complete = sys.modules["haxe.haxe_complete"]
 
+def find_types (classpaths, libs, projectPath):
+	classes = []
+	packs = []
+
+	cp = []
+	cp.extend( classpaths )
+
+	for lib in libs :
+		if lib is not None :
+			cp.append( lib.path )
+
+	#print("extract types :")
+	#print(cp)
+	for path in cp :
+		c, p = haxe_complete.extract_types( os.path.join( projectPath, path ) )
+		classes.extend( c )
+		packs.extend( p )
+
+	classes.sort()
+	packs.sort()
+
+	return classes,packs
+
+
+
 class HaxeBuild :
 
 	#auto = None
@@ -27,6 +52,22 @@ class HaxeBuild :
 		self.classes = None
 		self.packages = None
  
+	def copy (self):
+		hb = HaxeBuild()
+		hb.args = self.args
+		hb.main = self.main
+		hb.target = self.target
+		hb.output = self.output
+		hb.hxml = self.hxml
+		hb.nmml = self.nmml
+		hb.classpaths = self.classpaths
+		hb.libs = self.libs
+		hb.classes = self.classes
+		hb.packages = self.packages
+		return hb
+
+
+
 	def to_string(self) :
 		out = os.path.basename(self.output)
 		if self.nmml is not None:
@@ -56,30 +97,18 @@ class HaxeBuild :
 		#print( outp )
 		return outp.strip()
 
+
+	def update_types(self):
+		classes, packs = find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ) )
+
+		self.classes = classes;
+		self.packs = packs;
+
 	def get_types( self ) :
 		if self.classes is None or self.packs is None :
-			classes = []
-			packs = []
-
-			cp = []
-			cp.extend( self.classpaths )
-
-			for lib in self.libs :
-				if lib is not None :
-					cp.append( lib.path )
-
-			#print("extract types :")
-			#print(cp)
-			for path in cp :
-				c, p = haxe_complete.extract_types( os.path.join( os.path.dirname( self.hxml ), path ) )
-				classes.extend( c )
-				packs.extend( p )
-
-			classes.sort()
-			packs.sort()
-
-			self.classes = classes;
-			self.packs = packs;
+			self.update_types()
 
 		return self.classes, self.packs
+
+	
 

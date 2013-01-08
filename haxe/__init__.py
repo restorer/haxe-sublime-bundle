@@ -14,6 +14,7 @@ import sys
 
 
 
+
 haxe_settings = sys.modules["haxe.haxe_settings"]
 haxe_generate = sys.modules["haxe.haxe_generate"]
 haxe_lib = sys.modules["haxe.haxe_lib"]
@@ -27,6 +28,7 @@ config = sys.modules["haxe.config"]
  
 
 __all__ = [
+    "haxe"
     # public symbols
     "haxe_settings",
     "haxe_generate",

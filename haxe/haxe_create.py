@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import os
-import sys
+
 
 
 
@@ -20,9 +20,10 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 	currentType = None
 
 	def run( self , paths = [] , t = "class" ) :
+		print "createtype"
 		hc = haxe.haxe_complete.HaxeComplete.instance();
 
-		builds = hc.builds
+		builds = hc.build_helper.builds
 		HaxeCreateType.currentType = t
 		view = sublime.active_window().active_view()
 		scopes = view.scope_name(view.sel()[0].end()).split()
@@ -30,12 +31,13 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 		pack = [];
 
 		if len(builds) == 0 :
-			hc.extract_build_args(view)
+			hc.build_helper.extract_build_args(view)
 
 		if len(paths) == 0 :
 			fn = view.file_name()
 			paths.append(fn)
 
+		print paths
 		for path in paths :
 
 			if os.path.isfile( path ) :
@@ -76,7 +78,7 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 			p = parts.pop(0)
 			
 			fn = os.path.join( fn , p )
-			if isType.match( p ) : 
+			if haxe.haxe_complete.isType.match( p ) : 
 				cl = p
 				break;
 			else :

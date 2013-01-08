@@ -1002,6 +1002,7 @@ class HaxeBuildHelper ():
 		
 
 		folders = view.window().folders()
+		print folders
 		for f in folders:
 			if f + "/" in fn :
 				folder = f
@@ -1256,30 +1257,29 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	def on_load( self, view ) :
 
-		vt = ViewTools
-
-		if vt.is_haxe(view):
-			print "haxe file loaded"
-			HaxeCreateType().on_activated( view )
-		elif vt.is_hxml(view) or vt.is_erazor(view) or vt.is_nmml(view):
+		if ViewTools.is_unsupported(view):
 			return
 
-
+		if ViewTools.is_haxe(view):
+			HaxeCreateType().on_activated( view )
+		
 
 		self.build_helper.generate_build( view )
 		highlight_errors( self.errors, view )
 
 
 	def on_post_save( self , view ) :
-		if view.score_selector(0,'source.hxml') > 0:
+		if ViewTools.is_hxml(view):
 			self.build_helper.clear_build()
 			self.clear_completion()
 
 	def on_activated( self , view ) :
-		if view.score_selector(0,'source.haxe.2') > 0 :
-			HaxeCreateType().on_activated( view )
-		elif view.score_selector(0,'source.hxml,source.erazor,source.nmml') == 0:
+
+		if (ViewTools.is_unsupported(view)):
 			return
+		
+		if ViewTools.is_haxe(view) :
+			HaxeCreateType().on_activated( view )
 		
 		self.build_helper.get_build(view)
 		self.build_helper.extract_build_args( view )
@@ -1289,39 +1289,40 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	def on_pre_save( self , view ) :
 
-		if ViewTools.is_haxe(view) :
+		if not ViewTools.is_haxe(view) :
 			return []
 
-		fn = view.file_name()
-		path = os.path.dirname( fn )
-		if not os.path.isdir( path ) :
-			os.makedirs( path )
-
-	def __on_modified( self , view ):
-		win = sublime.active_window()
-		if win is None :
-			return None
-
-		isOk = ( win.active_view().buffer_id() == view.buffer_id() )
-		if not isOk :
-			return None
 		
-		sel = view.sel()
-		caret = 0
-		for s in sel :
-			caret = s.a
+		ViewTools.create_missing_folders(view)
 		
-		if caret == 0 or not CaretTools.in_haxe_code(view, caret):
-			return None
 
-		src = view.substr(sublime.Region(0, view.size()))
-		ch = src[caret-1]
-		#print(ch)
-		if ch not in ".(:, " :
-			#print("here")
-			view.run_command("haxe_display_completion")
-		#else :
-		#	view.run_command("haxe_insert_completion")
+	# def on_modified( self , view ):
+	# 	print "on_modified"
+	# 	win = sublime.active_window()
+	# 	if win is None :
+	# 		return None
+
+	# 	isOk = ( win.active_view().buffer_id() == view.buffer_id() )
+	# 	if not isOk :
+	# 		return None
+		
+	# 	sel = view.sel()
+	# 	caret = 0
+	# 	for s in sel :
+	# 		caret = s.a
+		
+	# 	if caret == 0 or not CaretTools.in_haxe_code(view, caret):
+	# 		return None
+
+	# 	src = view.substr(sublime.Region(0, view.size()))
+	# 	ch = src[caret-1]
+	# 	#print(ch)
+	# 	if ch not in ".(:, " :
+	# 		#print("here")
+	# 		print "on modified run completion"
+	# 		view.run_command("haxe_display_completion")
+	# 	#else :
+	# 	#	view.run_command("haxe_insert_completion")
 
 
 
@@ -1411,6 +1412,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		print(err)
 		
 		if not autocomplete :
+			print "use panel"
 			self.panel_helper.panel_output( view , " ".join(cmd) )
 
 		#print( res.encode("utf-8") )
@@ -1479,8 +1481,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 		if (ScopeTools.contains_string_or_comment(scopes)):
 			return comps
-		
-
 
 		if Constants.SOURCE_HXML in scopes:
 			comps = hxml_query_completion( view , offset )
@@ -1510,6 +1510,14 @@ Const = Constants
 class ViewTools ():
 
 	@staticmethod
+	def create_missing_folders(view):
+		fn = view.file_name()
+		path = os.path.dirname( fn )
+		if not os.path.isdir( path ) :
+			os.makedirs( path )
+
+
+	@staticmethod
 	def get_content (view):
 		return view.substr(sublime.Region(0, view.size()))
 
@@ -1520,6 +1528,10 @@ class ViewTools ():
 	@staticmethod
 	def is_supported (view):
 		return view.score_selector(0,Const.SOURCE_HAXE+','+Const.SOURCE_HXML+','+Const.SOURCE_ERAZOR+','+Const.SOURCE_NMML) > 0
+
+	@staticmethod
+	def is_unsupported (view):
+		return not ViewTools.is_supported(view)
 
 	@staticmethod
 	def get_scopes_at (view, pos):
