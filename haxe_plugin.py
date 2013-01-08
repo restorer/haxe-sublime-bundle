@@ -5,7 +5,7 @@ import traceback
 import os
 
 
-
+import haxe
 
 reloading = {
     'happening': False,
@@ -15,6 +15,7 @@ reloading = {
 
 reload_mods = []
 
+hook_match = re.search("<class '(\w+).ExcepthookChain1'>", str(sys.excepthook))
 
 for mod in sys.modules:
     if (mod[0:5] == 'haxe.' or mod == 'haxe') and sys.modules[mod] != None:
@@ -25,17 +26,17 @@ for mod in sys.modules:
 # Prevent popups during reload, saving the callbacks for re-adding later
 if reload_mods:
     old_callbacks = {}
-    hook_match = re.search("<class '(\w+).ExcepthookChain'>", str(sys.excepthook))
+    hook_match = re.search("<class '(\w+).ExcepthookChain1'>", str(sys.excepthook))
     if hook_match: 
         _temp = __import__(hook_match.group(1), globals(), locals(),
-            ['ExcepthookChain'], -1)
-        ExcepthookChain = _temp.ExcepthookChain
-        old_callbacks = ExcepthookChain.names
+            ['ExcepthookChain1'], -1)
+        ExcepthookChain1 = _temp.ExcepthookChain1
+        old_callbacks = ExcepthookChain1.names
     sys.excepthook = sys.__excepthook__
  
 mods_load_order = [
-    'haxe',  
-    'haxe.config',
+    'haxe',
+    'haxe.config'
     'haxe.commands', 
     'haxe.haxe_build',
     'haxe.haxe_complete',
@@ -45,10 +46,12 @@ mods_load_order = [
     'haxe.haxe_lib', 
     'haxe.haxe_panel',
     'haxe.haxe_settings',
-    'haxe.startup' 
+    'haxe.startup',
+    
     
 ]  
  
+print reload_mods
 
 for mod in mods_load_order:
     if mod in reload_mods:
@@ -56,10 +59,10 @@ for mod in mods_load_order:
 
 
 
-hook_match = re.search("<class '(\w+).ExcepthookChain'>", str(sys.excepthook))
+
 
 if not hook_match:
-    class ExcepthookChain(object):
+    class ExcepthookChain1(object):
         callbacks = []
         names = {}
 
@@ -89,20 +92,52 @@ if not hook_match:
             cls.callbacks.remove(callback)
 else:
     _temp = __import__(hook_match.group(1), globals(), locals(),
-        ['ExcepthookChain'], -1)
-    ExcepthookChain = _temp.ExcepthookChain
+        ['ExcepthookChain1'], -1)
+    ExcepthookChain1 = _temp.ExcepthookChain1
 
 # thx to wbond for this piece from sftp sublime plugin
 
 
 # Override default uncaught exception handler
 
-ExcepthookChain.add('sys.excepthook', sys.__excepthook__)
+ExcepthookChain1.add('sys.excepthook', sys.__excepthook__)
 
 
-if sys.excepthook != ExcepthookChain.hook:
-    sys.excepthook = ExcepthookChain.hook
+# Override default uncaught exception handler
+def haxe_uncaught_except(type, value, tb):
+    message = ''.join(traceback.format_exception(type, value, tb))
 
+    if message.find('/haxe/') != -1 or message.find('\\haxe\\') != -1:
+        def append_log():
+            log_file_path = os.path.join(sublime.packages_path(), 'User',
+                'Haxe.errors.log')
+            send_log_path = log_file_path
+            
+            sublime.error_message(('%s: An unexpected error occurred, ' +
+                'please send the file %s to support@frabbit.de') % ('Haxe',
+                send_log_path))
+        if reloading['happening']:
+            if not reloading['shown']:
+                sublime.error_message('Haxe: Sublime Haxe was just upgraded' +
+                    ', please restart Sublime to finish the upgrade')
+                reloading['shown'] = True
+        else:
+            sublime.set_timeout(append_log, 10)
+
+if reload_mods and old_callbacks:
+    for name in old_callbacks:
+        ExcepthookChain1.add(name, old_callbacks[name])
+
+ExcepthookChain1.add('sys.excepthook', sys.__excepthook__)
+ExcepthookChain1.add('haxe_uncaught_except', haxe_uncaught_except)
+
+if sys.excepthook != ExcepthookChain1.hook:
+    sys.excepthook = ExcepthookChain1.hook
+
+
+def unload_handler(): 
+    
+    ExcepthookChain1.remove('haxe_uncaught_except')
 
  
 
@@ -115,5 +150,8 @@ import haxe.haxe_generate
 import haxe.haxe_settings
 from haxe.haxe_complete import HaxeComplete
 from haxe.commands import *
+
 from haxe.haxe_generate import (HaxeGenerateUsingCommand, HaxeGenerateImportCommand)
- 
+from haxe.haxe_create import HaxeCreateType
+from haxe.commands import HaxeSelectBuild
+from haxe.haxe_lib import HaxeInstallLib
