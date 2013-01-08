@@ -47,6 +47,7 @@ mods_load_order = [
     'haxe.haxe_panel',
     'haxe.haxe_settings',
     'haxe.startup',
+    'haxe.project'
     
     
 ]  
@@ -151,7 +152,10 @@ import haxe.haxe_settings
 from haxe.haxe_complete import HaxeComplete
 from haxe.commands import *
 
+
+from haxe.haxe_exec import HaxelibExecCommand
 from haxe.haxe_generate import (HaxeGenerateUsingCommand, HaxeGenerateImportCommand)
 from haxe.haxe_create import HaxeCreateType
 from haxe.commands import HaxeSelectBuild
 from haxe.haxe_lib import HaxeInstallLib
+from haxe.project import Project

@@ -156,8 +156,15 @@ class HaxeExecCommand(stexec.ExecCommand):
 
 
 class HaxelibExecCommand(stexec.ExecCommand):
+
+	def run(self, *args, **kwargs):
+
+		print "hello running"
+		super(HaxelibExecCommand, self).run(*args, **kwargs)
+
 	def finish(self, *args, **kwargs):
 		super(HaxelibExecCommand, self).finish(*args, **kwargs)  
+		print "haxelibExec"
 		haxe_lib.HaxeLib.scan()
 
 

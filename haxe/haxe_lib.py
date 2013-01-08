@@ -3,6 +3,8 @@ import haxe.haxe_settings
 from haxe.haxe_exec import runcmd
 import haxe.haxe_complete
 
+import functools
+
 print str(haxe) 
 
 def haxe_settings () :
@@ -12,6 +14,7 @@ def haxe_exec () :
  
 import os
 import sublime, sublime_plugin
+
 
 
 
@@ -81,40 +84,48 @@ class HaxeLib :
 
 
 class HaxeInstallLib( sublime_plugin.WindowCommand ):
-	def run(self):
-		print "try install lib"
-		out,err = runcmd([haxe_settings().haxeLibExec() , "search" , " "]);
-		print "search complete"
-		print out
-		libs = out.splitlines()
-		self.libs = libs[0:-1]
 
+	def collect_libraries(self, out):
+		return out.splitlines()[0:-1]
+
+	def prepare_menu (self, libs):
 		menu = []
-		for l in self.libs :
+		for l in libs :
 			if l in HaxeLib.available :
 				menu.append( [ l + " [" + HaxeLib.available[l].version + "]" , "Remove" ] )
 			else :
 				menu.append( [ l , 'Install' ] )
 
 		menu.append( ["Upgrade libraries"] )
+		
+		return menu
 
-		self.window.show_quick_panel(menu,self.install)
+	def run(self):
+		print "try install lib"
+		out,err = runcmd([haxe_settings().haxeLibExec() , "search" , " "]);
+		
+		libs = self.collect_libraries(out)
 
-	def install( self, i ):
+		
+
+		menu = self.prepare_menu(libs)
+
+		cb = functools.partial(self.install, libs)
+
+		self.window.show_quick_panel(menu,cb)
+
+	def install( self, libs, i ):
 		if i < 0 :
 			return
 
-		if i == len(self.libs) :
+		if i == len(libs) :
 			cmd = [haxe_settings().haxeLibExec() , "upgrade" ]
 		else :
-			lib = self.libs[i]
+			lib = libs[i]
+			print "lib to install: " + lib
 			if lib in HaxeLib.available :
 				cmd = [haxe_settings().haxeLibExec() , "remove" , lib ]	
 			else :
 				cmd = [haxe_settings().haxeLibExec(), "install" , lib ]	
 
-		
-		self.window.run_command("haxelib_exec", {
-			"cmd": cmd,
-			#"working_dir": os.path.dirname()
-		})
+		runcmd(cmd)

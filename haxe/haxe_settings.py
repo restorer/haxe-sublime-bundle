@@ -1,4 +1,4 @@
-import sublime, sublime_plugin
+import sublime
 
 
 class HaxeSettings:
@@ -21,8 +21,6 @@ class HaxeSettings:
 					v = s[id]
 					res = v
 
-
-		#print "haxe exe: " + exe
 		return res;
 
 	@staticmethod 
