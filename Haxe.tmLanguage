@@ -15,7 +15,7 @@
   <key>keyEquivalent</key>
   <string>^~H</string>
   <key>name</key>
-  <string>HaXe2</string>
+  <string>Haxe2</string>
   <key>patterns</key>
   <array>
     <dict>
@@ -86,7 +86,7 @@
           </dict>
           <key>match</key>
           <string>(?x)
-                                (\b(class|enum|interface)|\b(implements|extends))
+                                (\b(class|enum|interface|abstract)|\b(implements|extends))
                                 \s+(([a-z]+.)*[A-Z]\w*)</string>
         </dict>
       </array>
@@ -251,7 +251,7 @@
             </dict>
           </dict>
           <key>match</key>
-          <string>\b(function)\s+([_A-Za-z]\w*)[&lt;\w&gt;,]*\s*\(</string>
+          <string>[(]|\b(function)\s+([_A-Za-z]\w*)?[&lt;\w&gt;,]*\s*[(]</string>
         </dict>
       </array>
     </dict>
@@ -515,6 +515,6 @@
   <key>scopeName</key>
   <string>source.haxe.2</string>
   <key>uuid</key>
-  <string>6ED422A4-9B8C-451E-A585-6869F16122A2</string>
+  <string>39fa4dc1-f798-4329-b340-c3717f30d9b8</string>
 </dict>
 </plist>

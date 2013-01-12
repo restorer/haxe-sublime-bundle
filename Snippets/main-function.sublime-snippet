@@ -1,0 +1,9 @@
+<snippet>
+    <content><![CDATA[static public function main()
+{
+		
+}]]></content>
+    <tabTrigger>mainfun</tabTrigger>
+    <scope>source.haxe.2</scope>
+    <description>Main class</description>
+</snippet>
