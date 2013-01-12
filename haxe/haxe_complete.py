@@ -13,39 +13,35 @@ import glob
 
 import shutil
 
-import haxe.haxe_settings
+import haxe.settings
+import haxe.completion_server
 
-import haxe.haxe_create
-import haxe.haxe_build
+import haxe.typegen
+import haxe.build
 import haxe.config
-import haxe.haxe_lib
+from haxe.config import Config
+import haxe.lib
 import haxe.commands
-import haxe.haxe_panel
+import haxe.output_panel
+
+import haxe.project
+
+from haxe.tools import ViewTools, ScopeTools, PathTools
+
+project = sys.modules["haxe.project"]
 
 def panel () : 
-	return haxe.haxe_panel.HaxePanel
+	return haxe.output_panel.HaxePanel
 
-def HaxeBuild ():
-	return haxe.haxe_build.HaxeBuild
-
-def HaxeSettings ():
-	return haxe.haxe_settings.HaxeSettings
-
-
-def HaxeLib ():
-	return haxe.haxe_lib.HaxeLib
 
 def HaxeCreateType (): 
-	return haxe.haxe_create.HaxeCreateType
-
-def Config () :
-	return haxe.config.Config
+	return haxe.typegen.HaxeCreateType
 
 
-hxsettings = sys.modules["haxe.haxe_settings"]
-hxbuild = sys.modules["haxe.haxe_build"]
-
- 
+hxbuild = sys.modules["haxe.build"]
+hxsettings =  sys.modules["haxe.settings"]
+hxconfig =  sys.modules["haxe.config"]
+hxlib =  sys.modules["haxe.lib"]
 
     
 from xml.etree import ElementTree
@@ -55,11 +51,9 @@ from elementtree import SimpleXMLTreeBuilder # part of your codebase
 
 ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
-from subprocess import Popen
-from datetime import datetime
- 
 
-from startup import STARTUP_INFO
+from datetime import datetime
+
 
 from haxe.haxe_exec import runcmd
 
@@ -99,14 +93,66 @@ bundleDir = os.path.dirname(bundlePath)
 
 
 
+class TempClasspath:
+
+	id = 0
+
+	@staticmethod
+	def create_temp_path(build):
+
+
+
+		id = TempClasspath.id
+		path = build.get_build_folder()
+
+		if path is None:
+			print "path of build is None"
+			return None
+
+
+		temp_path = os.path.join(path, "tmp" + str(id))
+
+		while os.path.exists(temp_path):
+			id += 1
+			temp_path = os.path.join(path, "tmp" + str(id))
+		print "tempPath: " + temp_path
+		PathTools.removeDir(temp_path)
+		os.makedirs(temp_path)
+		return temp_path
+
+	@staticmethod
+	def create_file(temp_path, build, orig_file, content):
+		relative = build.get_relative_path(orig_file)
+		print "relative:" + str(relative)
+		print "temp_path:" + str(temp_path)
+		if relative is None:
+			return None
+		new_file = os.path.join(temp_path, relative)
+		new_file_dir = os.path.dirname(new_file)
+		if not os.path.exists(new_file_dir):
+			os.makedirs(new_file_dir)
+		print "new_file:" + new_file
+		f = codecs.open( new_file , "wb" , "utf-8" , "ignore" )
+		f.write( content )
+		f.close()
+		return new_file
+
+	@staticmethod
+	def create_temp_path_and_file(build, orig_file, content):
+		temp_path = TempClasspath.create_temp_path(build)
+		if temp_path is None:
+			return None
+		print "temp_path:" + str(temp_path)
+		temp_file = TempClasspath.create_file(temp_path, build, orig_file, content)
+		return temp_path, temp_file
+
+	@staticmethod
+	def remove_path (temp_path):
+		PathTools.removeDir(temp_path)
 
 
 
 
-__all__ = [
-	"HaxeComplete"
-
-]
 
 
 class HaxeOutputConverter ():
@@ -227,60 +273,42 @@ class HaxeOutputConverter ():
 
 
 
-def prepare_build_args_for_completion (serverMode, buildArgs, buildMain, autocomplete, macroCompletion, cwd, showTimes, buildServerMode, display):
-	args = []
-		
-	def filterTargets (x):
-		return x[0] != "-cs" and x[0] != "-js" and x[0] != "-php" and x[0] != "-cpp" and x[0] != "-swf" and x[0] != "-java"
-
-	if macroCompletion:
-		buildArgs1 = filter(filterTargets, buildArgs )	
-	else:
-		buildArgs1 = buildArgs
-
-		
+def prepare_build_args_for_completion (serverMode, build, macroCompletion, cwd, showTimes, display):
 	
-	args.extend( buildArgs1 )
+	build = build.copy()
 
-	if autocomplete:
-		args.append(("--cwd" , cwd ))
-		if showTimes:
-			args.append(("--times", ""))
-			
-			args.append(("-D", "macro-times"))
-			args.append(("-D", "macro_times"))
+	build.set_auto_completion(display, macroCompletion)
 
-	if serverMode and (autocomplete or buildServerMode) : #and autocomplete:
-		args.append(("--connect" , str(HaxeComplete.instance().server.serverPort)))
-		
-		
+	print "use server mode:" + str(serverMode)
 
-		if (macroCompletion) :
-			args.append(("-neko", "__temp.n"))
+	if serverMode:
+		build.set_server_mode(HaxeComplete.instance().server.serverPort)
+	
+	build.set_cwd(cwd)
 
-		
-	#args.append( ("--times" , "-v" ) )
-	if not autocomplete :
-		args.append( ("-main" , buildMain ) )
-		#args.append( ("--times" , "-v" ) )
-	else:
-		args.append( ("--display", display ) )
-		args.append( ("--no-output" , "") )
-		#args.append( ("-cp" , bundleDir ) )
-		#args.append( ("--macro" , "SourceTools.complete()") )
+	if showTimes:
+		build.set_times()
 
-	return args
-
-
+	return build.args
 
 def get_haxe_completions( build, cache , run_haxe, view , offset, macroCompletion = False ):
 
 	print "haxe completion"
-	src = view.substr(sublime.Region(0, view.size()))
+	src = ViewTools.get_content(view)
 	fn = view.file_name()
 	src_dir = os.path.dirname(fn)
-	tdir = os.path.dirname(fn)
-	temp = os.path.join( tdir , os.path.basename( fn ) + ".tmp" )
+	
+
+	#packageMatch = re.match(packageLine, src)
+
+	temp_path, temp_file = TempClasspath.create_temp_path_and_file(build, fn, src)
+
+	build.add_classpath(temp_path)
+
+
+
+	print "classpaths:" + str(build.classpaths)
+	
 
 	#find actual autocompletable char.
 	
@@ -302,94 +330,33 @@ def get_haxe_completions( build, cache , run_haxe, view , offset, macroCompletio
 	
 	offset = completeOffset
 	
-	if prev == "." and src[offset-2] in ".1234567890" :
+	#if prev == "." and src[offset-2] in ".1234567890" :
 		#comps.append(("... [iterator]",".."))
-		comps.append((".","."))
+		#comps.append((".","."))
 
 	if toplevelComplete and (inControlStruct or completeChar not in "(,") :
 		return comps
 
-	if not os.path.exists( tdir ):
-		os.mkdir( tdir )
-		
-	if os.path.exists( fn ):
-		# copy saved file to temp for future restoring
-		shutil.copy2( fn , temp )
-	
-	# write current source to file
-	f = codecs.open( fn , "wb" , "utf-8" , "ignore" )
-	f.write( src )
-	f.close()
 
 
-	ret, comps1, status = get_haxe_actual_completion_data(cache, completeChar, view, macroCompletion, fn, offset, commas, src, run_haxe)
+	print "classpaths:" + str(build.classpaths)
+
+
+
+	ret, comps1, status = get_haxe_actual_completion_data(cache, build, completeChar, view, macroCompletion, temp_file, offset, commas, src, run_haxe)
 	
+	TempClasspath.remove_path(temp_path)
+
 	comps.extend(comps1)
 	
 	panel().status( "haxe-status" , status )
 
-	#os.remove(temp)
-	if os.path.exists( temp ) :
-		shutil.copy2( temp , fn )
-		os.remove( temp )
-	else:
-		# fn didn't exist in the first place, so we remove it
-		os.remove( fn )
+
+
 	
 	return comps
 
-class CompletionServer ():
-	def __init__ (self, port, serverMode):
-		self.serverProc = None
-		self.serverPort = port
-		self.serverMode = serverMode
 
-
-	def start_server( self , view = None ) : 
-		#self.stop_server()	
-		if self.serverMode and self.serverProc is None :
-			try:
-
-				haxepath = HaxeSettings().haxeExec(view)
-				 
-				env = os.environ.copy()
-
-				merged_env = env.copy()
-				
-				if view is not None :
-					user_env = view.settings().get('build_env')
-					if user_env:
-						merged_env.update(user_env)
-
-
-				if view is not None :
-					
-					libPath = HaxeSettings().haxeLibraryPath()
-					if libPath != None :
-						merged_env["HAXE_LIBRARY_PATH"] = libPath
-
-					#haxepath = settings.get("haxe_path" , haxepath)
-		
-				self.serverPort+=1 
-				cmd = [haxepath , "--wait" , str(self.serverPort) ]
-				#self.serverProc = Popen(cmd, env=env , startupinfo=STARTUP_INFO)
-				self.serverProc = Popen(cmd, env = merged_env, startupinfo=STARTUP_INFO)
-				self.serverProc.poll()
-			except(OSError, ValueError) as e:
-				err = u'Error starting server %s: %s' % (" ".join(cmd), e)
-				sublime.error_message(err)
-	
-	def stop_server( self ) :
-		
-		proc = self.serverProc
-
-		if proc is not None :
-			proc.terminate()
-			proc.kill()
-			proc.wait()
-		
-		self.serverProc = None
-		del self.serverProc
 
 def extract_types( path , depth = 0 ) :
 
@@ -566,7 +533,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 			cm = ( display , clname )
 		else :
 			cm = ( display , ".".join(spl) )
-		if cm not in comps and tarPkg is None or (top not in Config().targetPackages) or (top == tarPkg) : #( build.target is None or (top not in HaxeBuild.targets) or (top == build.target) ) :
+		if cm not in comps and tarPkg is None or (top not in hxconfig.Config.targetPackages) or (top == tarPkg) : #( build.target is None or (top not in HaxeBuild.targets) or (top == build.target) ) :
 			comps.append( cm )
 	
 	for p in packs :
@@ -587,7 +554,7 @@ def get_hxml_completions( view , offset ) :
 	currentLine = src[src.rfind("\n")+1:offset]
 	m = libFlag.match( currentLine )
 	if m is not None :
-		return HaxeLib().get_completions()
+		return hxlib.HaxeLib.get_completions()
 	else :
 		return []
 
@@ -597,7 +564,7 @@ def savetotemp( path, src ):
 	return f
 
 def collect_compiler_info ():
-	out, err = runcmd( [HaxeSettings().haxeExec(), "-main", "Nothing", "-v", "--no-output"] )
+	out, err = runcmd( [hxsettings.HaxeSettings.haxeExec(), "-main", "Nothing", "-v", "--no-output"] )
 			
 	m = classpathLine.match(out)
 	
@@ -650,7 +617,7 @@ def find_hxml( folder ) :
 			if l.startswith("-lib") :
 				spl = l.split(" ")
 				if len( spl ) == 2 :
-					lib = HaxeLib().get( spl[1] )
+					lib = hxlib.HaxeLib.get( spl[1] )
 					currentBuild.libs.append( lib )
 				else :
 					sublime.status_message( "Invalid build.hxml : lib not found" )
@@ -692,11 +659,13 @@ def find_hxml( folder ) :
 				#view.set_status( "haxe-status" , "Building..." )
 				cp.pop(0)
 				classpath = " ".join( cp )
-				absClasspath = classpath#os.path.join( buildPath , classpath )
+				main_folder = project.Project.main_folder()
+				absClasspath = os.path.join( main_folder , classpath )
 				currentBuild.classpaths.append( absClasspath )
 				currentBuild.args.append( ("-cp" , absClasspath ) )
 		
 		if len(currentBuild.classpaths) == 0:
+			print "no classpaths"
 			currentBuild.classpaths.append( buildPath )
 			currentBuild.args.append( ("-cp" , buildPath ) )
 		
@@ -710,7 +679,7 @@ def find_nmml( folder ) :
 	builds = []
 
 	for build in nmmls:
-		currentBuild = HaxeBuild()
+		currentBuild = hxbuild.HaxeBuild()
 		currentBuild.hxml = build
 		currentBuild.nmml = build
 		buildPath = os.path.dirname(build)
@@ -735,7 +704,7 @@ def find_nmml( folder ) :
 					if not mFile is None:
 						outp = mFile.group(2)
 				elif (tag == "haxelib"):
-					currentBuild.libs.append( HaxeLib().get( name ) )
+					currentBuild.libs.append( hxlib.HaxeLib.get( name ) )
 					currentBuild.args.append( ("-lib" , name) )
 				elif (tag == "classpath"):
 					currentBuild.classpaths.append( os.path.join( buildPath , name ) )
@@ -768,9 +737,12 @@ def select_nme_target( build, i, view ):
 		panel().status( "haxe-build" , build.to_string() )
 
 def highlight_errors( errors , view ) :
+	print "highlight_errors" + str(len(errors))
 	fn = view.file_name()
 	regions = []
 	
+
+
 	for e in errors :
 		if fn.endswith(e["file"]) :
 			l = e["line"]
@@ -835,7 +807,7 @@ def handle_completion_error(err, temp, fn, status):
 	errors = HaxeOutputConverter.extract_errors( err )
 
 	return (status,errors)
-	#self.highlight_errors( view )
+	#
 
 
 def count_commas_and_complete_offset (src, prevComa, completeOffset):
@@ -892,7 +864,7 @@ def get_completion_info (view, offset, src, prev):
 
 def run_nme( view, build ) :
 
-	cmd = [ HaxeSettings().haxeLibExec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
+	cmd = [ hxsettings.HaxeSettings.haxeLibExec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
 	target = hxbuild.HaxeBuild.nme_target[1].split(" ")
 	cmd.extend(target)
 	cmd.append("-debug")
@@ -904,7 +876,7 @@ def run_nme( view, build ) :
 	})
 	return ("" , [], "" )
 
-def get_haxe_actual_completion_data (completionCache, completeChar, view, macroCompletion, fn, offset, commas, src, run_haxe):
+def get_haxe_actual_completion_data (completionCache, build, completeChar, view, macroCompletion, fn, offset, commas, src, run_haxe):
 		inp = (fn,offset,commas,src[0:offset-1])
 		
 
@@ -917,7 +889,7 @@ def get_haxe_actual_completion_data (completionCache, completeChar, view, macroC
 			ret, comps, status = completionCache["outp"]
 
 		else :
-			ret , haxeComps , status = run_haxe( view , fn + "@" + str(offset) , commas, macroCompletion )
+			ret , haxeComps , status = run_haxe( view , build, fn + "@" + str(offset) , macroCompletion )
 			
 
 			if completeChar not in "(," : 
@@ -931,19 +903,19 @@ def get_haxe_actual_completion_data (completionCache, completeChar, view, macroC
 
 		return (ret, comps, status)
 
-def make_cmd (serverMode, view, build, autocomplete, macroCompletion, settings, cwd, display):
+def make_cmd (serverMode, view, build, macroCompletion, settings, cwd, display):
 		
-	buildServerMode = settings.get('haxe_build_server_mode', True)
-	args = prepare_build_args_for_completion(serverMode, build.args, build.main, 
-			autocomplete, macroCompletion, cwd, 
-			HaxeSettings().showCompletionTimes(view), buildServerMode, display)
+	
+	args = prepare_build_args_for_completion(serverMode, build, 
+			macroCompletion, cwd, 
+			hxsettings.HaxeSettings.showCompletionTimes(view), display)
 	
 		
 	
 	
 		
 
-	haxepath = settings.get( 'haxe_path' , HaxeSettings().haxeExec(view) )
+	haxepath = hxsettings.HaxeSettings.haxeExec(view)
 
 	cmd = [haxepath]
 	for a in args :
@@ -989,6 +961,8 @@ class HaxeBuildHelper ():
 		self.extract_build_args( view , True )
 
 
+	# called everytime a view is activated
+	# changes the build
 	def extract_build_args( self , view , forcePanel = False ) :
 		
 		self.builds = []
@@ -998,18 +972,23 @@ class HaxeBuildHelper ():
 
 		settings = view.settings()
 
+		print "filename: " + fn
+
 		folder = os.path.dirname(fn)
 		
 
 		folders = view.window().folders()
 		print folders
 		for f in folders:
-			if f + "/" in fn :
-				folder = f
+			self.builds.extend(find_hxml(f))
+			self.builds.extend(find_nmml(f))
+				
+
+		
+		print "num builds:" + str(len(self.builds))
 
 		# settings.set("haxe-complete-folder", folder)
-		self.builds.extend(find_hxml(folder))
-		self.builds.extend(find_nmml(folder))
+		
 
 		if len(self.builds) == 1:
 			if forcePanel : 
@@ -1057,6 +1036,7 @@ class HaxeBuildHelper ():
 
 	def set_current_build( self , view , id , forcePanel ) :
 		
+		print "set_current_build"
 		if id < 0 or id >= len(self.builds) :
 			id = 0
 		
@@ -1064,11 +1044,9 @@ class HaxeBuildHelper ():
 
 		if len(self.builds) > 0 :
 			self.currentBuild = self.builds[id]
-			view.set_status( "haxe-build" , self.currentBuild.to_string() )
+			print "set_current_build - 2"
 			panel().status( "haxe-build" , self.currentBuild.to_string() )
 		else:
-			#self.currentBuild = None
-			view.set_status( "haxe-build" , "No build" )
 			panel().status( "haxe-build" , "No build" )
 			
 		self.selectingBuild = False
@@ -1124,6 +1102,8 @@ class HaxeBuildHelper ():
 			build.main = ".".join( main )
 
 			build.output = os.path.join(folder,build.main.lower() + ".js")
+
+			print "add cp: " + src_dir
 
 			build.args.append( ("-cp" , src_dir) )
 			#build.args.append( ("-main" , build.main ) )
@@ -1189,6 +1169,7 @@ def hx_query_completion(view, offset, build, cache, run_haxe):
 			macroComp = True
 
 	
+
 	comps = get_haxe_completions( build, cache, run_haxe, view , offset, macroComp )
 	return comps
 
@@ -1243,7 +1224,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	def __init__(self):
 		
-		self.server = CompletionServer(6000, False)
+		self.server = haxe.completion_server.CompletionServer(6000, True)
 		self.panel_helper = PanelHelper()
 		self.build_helper = HaxeBuildHelper()
 		HaxeComplete.inst = self
@@ -1257,13 +1238,25 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	def on_load( self, view ) :
 
+		
+		if view == None: 
+			return
+
+		fn = view.file_name()
+		
+		if (fn == None): 
+			print "on_load haxe_complete file_name is None"
+			return		
+		else:
+			print "onload haxe_complete file_name is " + str(view.file_name())
+
 		if ViewTools.is_unsupported(view):
 			return
 
 		if ViewTools.is_haxe(view):
 			HaxeCreateType().on_activated( view )
 		
-
+		
 		self.build_helper.generate_build( view )
 		highlight_errors( self.errors, view )
 
@@ -1273,7 +1266,20 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			self.build_helper.clear_build()
 			self.clear_completion()
 
+	# view is None when it's a preview
+
 	def on_activated( self , view ) :
+		
+		if (view == None): 
+			return
+
+		fn = view.file_name()
+		
+		if (fn == None): 
+			print "on_activated haxe_complete file_name is None"
+			return		
+		else:
+			print "on_activated haxe_complete file_name is " + str(view.file_name())
 
 		if (ViewTools.is_unsupported(view)):
 			return
@@ -1331,6 +1337,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		err, comps, status = self.run_haxe( view )
 		view.set_status( "haxe-status" , status )
 		panel().status( "haxe-status" , status )
+		print status
 		
 	
 	def clear_completion (self):
@@ -1342,18 +1349,11 @@ class HaxeComplete( sublime_plugin.EventListener ):
 	
 
 
-	def run_haxe_simple( self, view , display = None , commas = 0, macroCompletion = False ) :
+	def run_haxe_simple( self, build, view , display, macroCompletion = False ) :
 
 		self.server.start_server( view )
 			
-		build = self.build_helper.get_build( view )
-		settings = view.settings()
-
-		autocomplete = display is not None
-
-		if not autocomplete and build.nmml is not None:
-			return run_nme(view, build)
-		
+				
 		fn = view.file_name()
 		#src = view.substr(sublime.Region(0, view.size()))
 		#src_dir = os.path.dirname(fn)
@@ -1364,48 +1364,30 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 		self.errors = [] 
 
-		
+		settings = view.settings()
  
 		cwd = os.path.dirname( build.hxml ) 
 		 
 		#buildArgs = view.window().settings
 		
+		
+
 		# TODO if we are in a macro block, remove the current target and set neko as target
- 		cmd = make_cmd(self.server.serverMode, view, build, autocomplete, macroCompletion, settings, cwd, display)
- 		
- 		if not autocomplete :
-			encoded_cmd = []
-			for c in cmd :
-				#if isinstance( c , unicode) :
-				#	encoded_cmd.append( c.encode('utf-8') )
-				#else :
-					encoded_cmd.append( c )
+		serverMode = haxe.settings.HaxeSettings.getBool('haxe-use-server-mode', True) and self.server.serverMode
+ 		cmd = make_cmd(serverMode, view, build, macroCompletion, settings, cwd, display)
+			
 
-			#print(encoded_cmd)
 
-			env = {}
-			if settings.has("haxe-library-path") :
-				env["HAXE_LIBRARY_PATH"] = settings.get("haxe-library-path",".")
+		res, err = runcmd( cmd, "" )
+		return (view, fn, temp, comps, view, cmd, build, res, err)
 
-			view.window().run_command("haxe_exec", {
-				"cmd": encoded_cmd,
-				"working_dir": cwd,
-				"file_regex": haxeFileRegex,
-				"env" : env
-			})
-			return ("" , [], "" )
-
-		else: 
-			res, err = runcmd( cmd, "" )
-			return (view, fn, temp, comps, view, cmd, autocomplete, build, res, err)
-
-	def run_haxe( self, view , display = None , commas = 0, macroCompletion = False ) :
+	def run_haxe( self, build, view , display , macroCompletion = False ) :
 
 		(view, fn, temp, comps, view, cmd, 
-			autocomplete, build, res, err) = self.run_haxe_simple(view, display, commas, macroCompletion)
+			build, res, err) = self.run_haxe_simple(view, build, display, macroCompletion)
 
 		
-		return self.handle_normal_completion_output(fn, temp, comps, view, cmd, autocomplete, build, res, err)		
+		return self.handle_normal_completion_output(fn, temp, comps, view, cmd, True, build, res, err)		
 	
 
 	def handle_normal_completion_output(self, fn, temp, comps, view, cmd, autocomplete, build, res, err):
@@ -1457,6 +1439,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		if len(hints) == 0 and len(comps) == 0:
 			status, errors = handle_completion_error(err, temp, fn, status)
 			self.errors = errors
+			highlight_errors( errors, view )
 
 			
 
@@ -1482,15 +1465,15 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		if (ScopeTools.contains_string_or_comment(scopes)):
 			return comps
 
-		if Constants.SOURCE_HXML in scopes:
+		if Config.SOURCE_HXML in scopes:
 			comps = hxml_query_completion( view , offset )
 		
-		if Constants.SOURCE_HAXE in scopes :
+		if Config.SOURCE_HAXE in scopes :
 			if ViewTools.is_hxsl(view) :
 				comps = hxsl_query_completion( view , offset )
 			else : 
 				# get build and maybe use cache
-				build = self.build_helper.get_build( view )
+				build = self.build_helper.get_build( view ).copy()
 				cache = self.currentCompletion
 				comps = hx_query_completion(view, offset, build, cache, self.run_haxe)
 				#print str(comps)
@@ -1498,92 +1481,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		return comps
 	
 
-class Constants:
-	SOURCE_HAXE = 'source.haxe.2'
-	SOURCE_HXML = 'source.hxml'
-	SOURCE_NMML = 'source.nmml'
-	SOURCE_ERAZOR = 'source.erazor'
-	HXSL_SUFFIX = '.hxsl'
-
-Const = Constants
-
-class ViewTools ():
-
-	@staticmethod
-	def create_missing_folders(view):
-		fn = view.file_name()
-		path = os.path.dirname( fn )
-		if not os.path.isdir( path ) :
-			os.makedirs( path )
-
-
-	@staticmethod
-	def get_content (view):
-		return view.substr(sublime.Region(0, view.size()))
-
-	@staticmethod
-	def is_hxsl (view):
-		return view.file_name().endswith(Const.HXSL_SUFFIX)
-
-	@staticmethod
-	def is_supported (view):
-		return view.score_selector(0,Const.SOURCE_HAXE+','+Const.SOURCE_HXML+','+Const.SOURCE_ERAZOR+','+Const.SOURCE_NMML) > 0
-
-	@staticmethod
-	def is_unsupported (view):
-		return not ViewTools.is_supported(view)
-
-	@staticmethod
-	def get_scopes_at (view, pos):
-		return view.scope_name(pos).split()
-
-	@staticmethod
-	def is_haxe(view):
-		return view.score_selector(0,Const.SOURCE_HAXE) > 0
-
-
-	@staticmethod
-	def is_hxml(view):
-		return view.score_selector(0,Const.SOURCE_HXML) > 0
-
-	@staticmethod
-	def is_erazor(view):
-		return view.score_selector(0,Const.SOURCE_ERAZOR) > 0
-
-	@staticmethod
-	def is_nmml(view):
-		return view.score_selector(0,Const.SOURCE_NMML) > 0
-
-
-class ScopeTools:
-	@staticmethod
-	def contains_any (scopes, scopes_test):
-		
-		for s in scopes : 
-			if s.split(".")[0] in scopes_test : 
-				return True
-
-		return False
-
-	@staticmethod
-	def contains_string_or_comment (scopes):
-		return ScopeTools.contains_any(scopes, ["string", "comments"])
-
-	
-class CaretTools:
-	@staticmethod
-	def in_haxe_code (view, caret):
-		return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"string") == 0 and view.score_selector(caret,"comment") == 0
-
-	@staticmethod
-	def in_haxe_string (view, caret):
-		return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"string") > 0
-
-	@staticmethod
-	def in_haxe_comments (view, caret):
-		return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"comment") > 0		
-
-	
 
 
 #sublime.set_timeout(HaxeLib.scan, 200)

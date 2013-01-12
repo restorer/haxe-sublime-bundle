@@ -1,45 +1,34 @@
 import sys
-#sys.path.append("/usr/lib/python2.6/")
-#sys.path.append("/usr/lib/python2.6/lib-dynload")
-
-
-
-#sys.path.append("/usr/lib/python2.6/")
-#sys.path.append("/usr/lib/python2.6/lib-dynload")
-
 import sublime
-
 import os
-
-
-#import xml.parsers.expat
-
 import haxe.haxe_complete 
+import haxe.lib
+import haxe.output_panel
+import haxe.project
 
-import haxe.haxe_lib
 
-import haxe.haxe_panel
-
-haxe_lib = sys.modules["haxe.haxe_lib"]
-haxe_panel = sys.modules["haxe.haxe_panel"]
+hxlib = sys.modules["haxe.lib"]
+haxe_panel = sys.modules["haxe.output_panel"]
+project = sys.modules["haxe.project"]
 
 
 from startup import STARTUP_INFO
-
 from subprocess import Popen, PIPE
-
-import haxe.haxe_settings
+import haxe.settings
 
 stexec = __import__("exec") 
 
 
-
-
 def runcmd( args, input=None ):
-	#print(args)
+	
+	settings = haxe.settings.HaxeSettings
+	
+	project_main_folder = project.Project.main_folder()
 
-	settings = haxe.haxe_settings.HaxeSettings
-	cwd = "."
+	if project_main_folder == None:
+		project_main_folder = "."
+
+	cwd = project_main_folder;
 	try: 
 		libPath = settings.haxeLibraryPath();
 		
@@ -47,10 +36,13 @@ def runcmd( args, input=None ):
 		if libPath != None :
 			#print "std lib: set: " + libPath
 			#env = {}
-			print "export HAXE_LIBRARY_PATH="+libPath
-			env["HAXE_LIBRARY_PATH"] = libPath 
+			absLibPath = project_main_folder + "/" + libPath
+			print "runcmd: export HAXE_LIBRARY_PATH="+absLibPath
+			env["HAXE_LIBRARY_PATH"] = absLibPath
+			print "library in env:" + env["HAXE_LIBRARY_PATH"]
 		args = filter(lambda s: s != "", args)
 		
+
 		
 		#print sys.getfilesystemencoding()
 		#p = Popen(,  stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO, env=env)
@@ -64,7 +56,7 @@ def runcmd( args, input=None ):
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
-		print "output: " + out.decode('utf-8')
+		print "runcmd: output:\n" + out.decode('utf-8')
 		
 		#print "error: " + err
 		return (out.decode('utf-8') if out else '', err.decode('utf-8') if err else '')
@@ -165,7 +157,7 @@ class HaxelibExecCommand(stexec.ExecCommand):
 	def finish(self, *args, **kwargs):
 		super(HaxelibExecCommand, self).finish(*args, **kwargs)  
 		print "haxelibExec"
-		haxe_lib.HaxeLib.scan()
+		hxlib.HaxeLib.scan()
 
 
 

@@ -16,19 +16,14 @@ import haxe
 
 import os
 
-import re
-
-import shutil
 
 
 
+import haxe.codegen
 
-packageLine = re.compile("package\s*([a-z0-9.]*);", re.I)
+from haxe.tools import PathTools
 
 
-def removeDir(path):
-    if os.path.isdir(path):
-        shutil.rmtree(path)
 
 class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 	def run( self , edit ) :
@@ -51,7 +46,7 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 		targetFile = folders[0] + "/tmp/" + fileName
 
 		if os.path.exists(tmpFolder):
-			removeDir(tmpFolder)			
+			PathTools.removeDir(tmpFolder)			
 		
 
 		os.makedirs(tmpFolder)
@@ -85,8 +80,6 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 
 class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
-	
-	
 
 	def run( self , edit ) :
 
@@ -149,7 +142,7 @@ class HaxeRunBuild( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		complete = haxe.haxe_complete.HaxeComplete.instance()
 		view = self.view
-		
+		print "do run build"
 		complete.run_build( view )
 
 
@@ -161,22 +154,16 @@ class HaxeSelectBuild( sublime_plugin.TextCommand ):
 		
 		build_helper.select_build( view )
 
-
+# called 
 class HaxeHint( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		#print("haxe hint")
 		
-		complete = haxe.haxe_complete.HaxeComplete.instance()
+		
 		view = self.view
 		
-		sel = view.sel()
-		for r in sel :
-			comps = complete.get_haxe_completions( self.view , r.end() )
-			#print(status);
-			#view.set_status("haxe-status", status)
-			#sublime.status_message(status)
-			#if( len(comps) > 0 ) :
-			#	view.run_command('auto_complete', {'disable_auto_insert': True})
+		view.run_command('auto_complete', {'disable_auto_insert': True})
+		
 
 
 class HaxeRestartServer( sublime_plugin.WindowCommand ):
@@ -186,3 +173,18 @@ class HaxeRestartServer( sublime_plugin.WindowCommand ):
 		haxe.haxe_complete.HaxeComplete.instance().stop_server()
 		haxe.haxe_complete.HaxeComplete.instance().start_server( view )
 
+
+
+class HaxeGenerateUsingCommand( sublime_plugin.TextCommand ):
+	def run( self , edit ) :
+		print "generate using"
+		runner = haxe.codegen.HaxeGenerateImportOrUsing(haxe.haxe_panel.HaxePanel, self.view)
+		runner.generate_using(edit)
+
+
+class HaxeGenerateImportCommand( sublime_plugin.TextCommand ):
+
+	def run( self, edit ) :
+		print "generate import"
+		runner = haxe.codegen.HaxeGenerateImportOrUsing(haxe.haxe_panel.HaxePanel, self.view);
+		runner.generate_import(edit)
