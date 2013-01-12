@@ -298,17 +298,9 @@ def hx_query_completion(view, offset, build, cache, run_haxe, macroCompletion ):
 	fn = view.file_name()
 	src_dir = os.path.dirname(fn)
 	
-
-	#packageMatch = re.match(packageLine, src)
-
 	temp_path, temp_file = TempClasspath.create_temp_path_and_file(build, fn, src)
 
 	build.add_classpath(temp_path)
-
-
-
-	print "classpaths:" + str(build.classpaths)
-	
 
 	#find actual autocompletable char.
 	
@@ -876,6 +868,8 @@ def run_nme( view, build ) :
 	})
 	return ("" , [], "" )
 
+
+
 def get_haxe_actual_completion_data (completionCache, build, completeChar, view, macroCompletion, fn, offset, commas, src, run_haxe):
 		inp = (fn,offset,commas,src[0:offset-1])
 		
@@ -889,12 +883,15 @@ def get_haxe_actual_completion_data (completionCache, build, completeChar, view,
 			ret, comps, status = completionCache["outp"]
 
 		else :
-			ret , haxeComps , status = run_haxe( view , build, fn + "@" + str(offset) , macroCompletion )
+			
 			
 
 			if completeChar not in "(," : 
+				ret , haxeComps , status = run_haxe( view , build, fn + "@" + str(offset) , macroCompletion )
 				comps = haxeComps
 			else:
+				ret = ""
+				status = ""
 				comps = []
 
 			completionCache["outp"] = (ret,comps,status)
