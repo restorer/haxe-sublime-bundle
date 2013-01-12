@@ -60,9 +60,6 @@ for mod in mods_load_order:
         reload(sys.modules[mod])
 
 
-
-
-
 if not hook_match:
     class ExcepthookChain1(object):
         callbacks = []
@@ -151,9 +148,11 @@ import haxe.haxe_exec
 import haxe.codegen 
 import haxe.config 
 import haxe.tools
+import haxe.build
 import haxe.settings
 
 from haxe.settings import HaxeSettings
+from haxe.build import HaxeBuild
 
 from haxe.haxe_complete import HaxeComplete,HaxeOutputConverter
 from haxe.commands import *

@@ -59,8 +59,12 @@ class HaxeSettings:
 				return None
 			
 				
-
 	
+	
+	@staticmethod
+	def only_delayed_completions (view = None):
+		return HaxeSettings.getBool("only-delayed-completions", False, view)
+
 	@staticmethod
 	def is_delayed_completion (view = None):
 		return HaxeSettings.getBool("delayed-completion", False, view)

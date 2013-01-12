@@ -25,6 +25,8 @@ def find_types (classpaths, libs, projectPath):
 		classes.extend( c )
 		packs.extend( p )
 
+	
+	
 	classes.sort()
 	packs.sort()
 
@@ -52,6 +54,20 @@ class HaxeBuild :
 		self.classes = None
 		self.packages = None
  
+
+	def equals (self, other):
+		
+		return (self.args == other.args 
+			and self.main == other.main
+			and self.target == other.target
+			and self.output == other.output
+			and self.hxml == other.hxml
+			and self.nmml == other.nmml
+			and self.classpaths == other.classpaths
+			and self.libs == other.libs)
+		   
+		
+
 	def copy (self):
 		hb = HaxeBuild()
 		hb.args = list(self.args)
@@ -133,10 +149,14 @@ class HaxeBuild :
 
 		haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
 
-		classes, packs = find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ) )
+
+
+		classes, packages = find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ) )
+
+
 
 		self.classes = classes;
-		self.packs = packs;
+		self.packages = packages;
 
 	def set_cwd (self, cwd):
 		self.args.append(("--cwd" , cwd ))
@@ -157,10 +177,7 @@ class HaxeBuild :
 
 	def set_auto_completion (self, display, macro_completion = False):
 		
-		
-
 		args = self.args
-
 
 		def filterTargets (x):
 			return x[0] != "-cs" and x[0] != "-x" and x[0] != "-js" and x[0] != "-php" and x[0] != "-cpp" and x[0] != "-swf" and x[0] != "-java"
@@ -170,13 +187,7 @@ class HaxeBuild :
 		else:
 			args = map(lambda x : ("-neko", x[1]) if x[0] == "-x" else x, args)
 
-			
-		
 		args = args
-
-		
-			
-			
 
 		if (macro_completion) :
 			args.append(("-neko", "__temp.n"))
@@ -189,10 +200,10 @@ class HaxeBuild :
 
 
 	def get_types( self ) :
-		if self.classes is None or self.packs is None :
+		if self.classes is None or self.packages is None :
 			self.update_types()
 
-		return self.classes, self.packs
+		return self.classes, self.packages
 
 	
 

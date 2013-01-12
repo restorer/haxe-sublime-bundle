@@ -37,7 +37,7 @@ def runcmd( args, input=None ):
 			#print "std lib: set: " + libPath
 			#env = {}
 			absLibPath = project_main_folder + "/" + libPath
-			#print "runcmd: export HAXE_LIBRARY_PATH="+absLibPath
+			print "runcmd: export HAXE_LIBRARY_PATH="+absLibPath
 			env["HAXE_LIBRARY_PATH"] = absLibPath
 			#print "library in env:" + env["HAXE_LIBRARY_PATH"]
 		args = filter(lambda s: s != "", args)

@@ -69,7 +69,7 @@ usingLine = re.compile("^([ \t]*)using\s+([a-z0-9._]+);", re.I | re.M)
 packageLine = re.compile("package\s*([a-z0-9.]*);", re.I)
 libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
 classpathLine = re.compile("Classpath : (.*)")
-typeDecl = re.compile("(class|typedef|enum|typedef)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
+typeDecl = re.compile("(class|typedef|enum|typedef|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
 libFlag = re.compile("-lib\s+(.*?)")
 skippable = re.compile("^[a-zA-Z0-9_\s]*$")
 inAnonymous = re.compile("[{,]\s*([a-zA-Z0-9_\"\']+)\s*:\s*$" , re.M | re.U )
@@ -92,6 +92,9 @@ bundleFile = __file__
 bundlePath = os.path.abspath(bundleFile)
 bundleDir = os.path.dirname(bundlePath)
 
+hxml_cache = {}
+
+
 
 
 
@@ -100,7 +103,7 @@ class TempClasspath:
 	id = 0
 
 	@staticmethod
-	def create_temp_path(build):
+	def get_temp_path(build):
 
 
 
@@ -112,12 +115,19 @@ class TempClasspath:
 			return None
 
 
-		temp_path = os.path.join(path, "tmp" + str(id))
+		temp_path = os.path.join(path, ".hxsublime_tmp/tmp" + str(id))
 
 		while os.path.exists(temp_path):
 			id += 1
-			temp_path = os.path.join(path, "tmp" + str(id))
-		print "tempPath: " + temp_path
+			temp_path = os.path.join(path, ".hxsublime_tmp/tmp" + str(id))
+		
+		
+		return temp_path
+
+	@staticmethod
+	def create_temp_path(build):
+
+		temp_path = TempClasspath.get_temp_path(build)
 		PathTools.removeDir(temp_path)
 		os.makedirs(temp_path)
 		return temp_path
@@ -165,7 +175,7 @@ class HaxeOutputConverter ():
 		for i in types :
 			hint = i.text.strip()
 			
-			print(hint)
+			#print(hint)
 
 			# show complete signature, unless better splitter (-> is not enough) is implemented
 
@@ -228,9 +238,9 @@ class HaxeOutputConverter ():
 					else :
 						hint = name + "\tpackage"
 
-				if doc is not None :
+				#if doc is not None :
 				#	hint += "\t" + doc
-					print(doc)
+					#print(doc)
 				
 				if len(hint) > 40: # compact return type
 					m = compactProp.search(hint)
@@ -276,15 +286,15 @@ class HaxeOutputConverter ():
 
 
 
-def hx_query_completion(view, offset, build, cache, get_compiler_completion, handle_completion_output, macroCompletion ):
+def hx_query_completion(completion_id, view, offset, build, cache, get_compiler_completion, handle_completion_output, macroCompletion ):
 
-	print "haxe completion"
 	src = ViewTools.get_content(view)
 	orig_file = view.file_name()
 	src_dir = os.path.dirname(orig_file)
 	
 	temp_path, temp_file = TempClasspath.create_temp_path_and_file(build, orig_file, src)
 
+	top_level_build = build.copy()
 	build.add_classpath(temp_path)
 
 	#find actual autocompletable char.
@@ -298,47 +308,65 @@ def hx_query_completion(view, offset, build, cache, get_compiler_completion, han
 
 	toplevelComplete = toplevelComplete or completeChar in ":(," or inControlStruct
 
+	comps = []
+
+	offsetChar = src[offset]
+	print "offsetChar: " + offsetChar + " - prev: " + prev + " prevprev: " + src[offset-2]
+	if (offsetChar == "\n" and prev == "." and src[offset-2] == "." and src[offset-3] != "."):
+		print "int iterator"
+		return [(".\tint iterator", "..")]
+
+
 	if toplevelComplete :
-		comps = get_toplevel_completion( src , src_dir , build )
+
+		ncomps = get_toplevel_completion( src , src_dir , top_level_build )
+		
+		print("number of top level completions all:" + str(len(ncomps)))
+		print("prev:" + offsetChar)
+		comps = []
+
+		isLower = offsetChar in "abcdefghijklmnopqrstuvwxyz"
+		isUpper = offsetChar in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+		isDigit = offsetChar in "0123456789"
+		isSpecial = offsetChar in "$_"
+		offsetUpper = offsetChar.upper()
+		offsetLower = offsetChar.lower()
+		if isLower or isUpper or isDigit or isSpecial:
+			print "its in"
+			
+			for c in ncomps:
+				id = c[1]
+
+				if (offsetChar in id
+					or (isUpper and offsetLower in id)
+					or (isLower and offsetUpper in id)):
+					comps.append(c)
+			
+		else:
+			comps = ncomps
+
+
+		print "number of top level completions filtered" + str(len(comps))
 	else:
+		print "comps_from_not_top_level"
 		comps = []
 	
-	offset = completeOffset
+	
 
-	if toplevelComplete and (inControlStruct or completeChar not in "(,") :
+	if toplevelComplete and (inControlStruct or completeChar not in "(,")  :
+		print "comps_from_not_top_level_and_control_struct"
 		return comps
 
 
-
-	#print "classpaths:" + str(build.classpaths)
-	
 	delayed = hxsettings.HaxeSettings.is_delayed_completion()
 
 	display = temp_file + "@" + str(offset)
-
-	
-
 	
 	comps1 = []
 	status = ""
 
+	offset = completeOffset
 
-
-#	def callback (ret1, comps2, status1):
-#		if delayed:
-#			def f():
-#
-#				now = time.time()
-#				HaxeComplete.delayedCompletion = (comps1.extend(comps2), now)
-#				print "thread complete"
-#				#view.run_command('hide_auto_complete')
-#				#view.run_command('auto_complete', {'disable_auto_insert': True})
-#			sublime.set_timeout(f, 1)
-#
-#		else:	
-#			comps1.extend(comps2)
-#			status[0] = status1
-		
 	current_input = create_completion_input_key(orig_file, offset, commas, src, macroCompletion, completeChar)
 
 	def run_compiler_completion ():
@@ -353,68 +381,95 @@ def hx_query_completion(view, offset, build, cache, get_compiler_completion, han
 	use_cache = use_completion_cache(last_input, current_input)
 
 	if use_cache :
-		print "inCache"
+		print "comps_from_cache"
 		ret, comps1, status = cache["output"]
 	else :
 
 		if supported_compiler_completion_char(completeChar): 
 
 			if delayed:
-
-				delays = hxsettings.HaxeSettings.get_completion_delays()
-
-				compsx = list(comps)
-
-				def inMain (ret_, err_):
-					print "inMain"
-					comps_, status_ = handle_completion_output(temp_file, orig_file, view, err_)
-					TempClasspath.remove_path(temp_path)
-					
-					compsx.extend(comps_)
-
-					compsy = list(compsx)
-
-					cache["output"] = (ret_,compsy,status_)
-					cache["input"] = current_input
-					now = time.time()
-					
-					HaxeComplete.delayed_completions[view.id()] = (compsy, now)
-
-					print "do hide"
-					
-
-					
-					view.run_command('auto_complete', {'disable_auto_insert': True})
-					
-					print "thread complete"
-				def inThread():
-					ret_, err_ = run_compiler_completion()
-					
-					sublime.set_timeout(lambda : view.run_command('hide_auto_complete'),delays[0])
-					sublime.set_timeout(lambda : inMain(ret_, err_),delays[1])
-				thread.start_new_thread(inThread, ())		
-				comps1 = []
-				ret = ""
-				status = ""
+				background_completion(completion_id, list(comps), temp_file, orig_file,temp_path,
+					view, handle_completion_output, run_compiler_completion, cache,
+					current_input)
+				
+				ret, comps1, status = "", [], ""
 			else:
 				ret, err = run_compiler_completion()
 				comps1, status = handle_completion_output(temp_file, orig_file, view, err)
 		else:
 			ret, comps1, status = "",[], ""
 
-		
+	if not use_cache:
+		comps.extend(comps1)
+	else:
+		comps = comps1
 	
 	if use_cache or not delayed:
 		TempClasspath.remove_path(temp_path)
-		comps.extend(comps1)
+		
 		cache["output"] = (ret,comps1,status)
 		cache["input"] = current_input
 	
 	panel().status( "haxe-status" , status )
 
-	
-	return comps
+	# TODO this doesn't work, how to disable fuzzy 
+	if not use_cache and delayed and hxsettings.HaxeSettings.only_delayed_completions():
+		print "empty completion"
+		#return [("... ...", " ")]
+		return [("  ...  ", "")]
 
+
+	return list(comps)
+
+def background_completion(completion_id, basic_comps, temp_file, orig_file, temp_path, 
+		view, handle_completion_output, run_compiler_completion,
+		cache, current_input):
+	hide_delay, show_delay = hxsettings.HaxeSettings.get_completion_delays()
+
+	
+	view_id = view.id()
+	
+
+	def in_main (ret_, err_):
+		
+		
+
+		comps = list(basic_comps) # make copy
+
+		comps_, status_ = handle_completion_output(temp_file, orig_file, view, err_)
+		
+		print "do remove temp_path"
+		TempClasspath.remove_path(temp_path)
+		comps.extend(comps_)
+
+		
+		comps_new = list(comps)
+		
+		
+		
+		if completion_id == HaxeComplete.current_completion_id:
+			cache["output"] = (ret_,comps_new,status_)
+			cache["input"] = current_input
+		else:
+			print "ignored completion"
+		
+		# do we still need this completion, or is it old
+		has_new_comps = len(comps_new) > len(basic_comps)
+		if completion_id == HaxeComplete.current_completion_id and (has_new_comps or hxsettings.HaxeSettings.only_delayed_completions()):
+			now = time.time()
+			HaxeComplete.delayed_completions[view_id] = (comps_new, now)
+			view.run_command('hide_auto_complete')
+			sublime.set_timeout(lambda : view.run_command('auto_complete', {'disable_auto_insert': True}), show_delay)
+		
+	def in_thread():
+		ret_, err_ = run_compiler_completion()
+
+		# replace current completion workaround
+		# delays are customizable with project settings
+		
+		sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay)
+
+	thread.start_new_thread(in_thread, ())	
 
 def create_completion_input_key (fn, offset, commas, src, macro_completion, complete_char):
 	return (fn,offset,commas,src[0:offset-1], macro_completion, complete_char)
@@ -427,76 +482,105 @@ def supported_compiler_completion_char (char):
 	return char in "(.,"
 
 
+type_cache = {}
 
 
 def extract_types( path , depth = 0 ) :
 
-		classes = []
-		packs = []
-		hasClasses = False
-		
-		for fullpath in glob.glob( os.path.join(path,"*.hx") ) : 
-			f = os.path.basename(fullpath)
+	now = time.time()
 
-			cl, ext = os.path.splitext( f )
-								
-			if cl not in HaxeComplete.stdClasses:
-				s = codecs.open( os.path.join( path , f ) , "r" , "utf-8" , "ignore" )
-				src = comments.sub( "" , s.read() )
-				
-				clPack = "";
-				for ps in packageLine.findall( src ) :
-					clPack = ps
-				
-				if clPack == "" :
-					packDepth = 0
-				else:
-					packDepth = len(clPack.split("."))
+	if path in type_cache:
+		old_time = type_cache[path][1]
+		print str(now) + "/" + str(old_time)
+		if (now - old_time) < 30000:
+			return type_cache[path][0]
+		else:
+			del type_cache[path]
 
-				for decl in typeDecl.findall( src ):
-					t = decl[1]
+	classes = []
+	packs = []
+	hasClasses = False
+	
+	for fullpath in glob.glob( os.path.join(path,"*.hx") ) : 
+		f = os.path.basename(fullpath)
 
-					if( packDepth == depth ) : # and t == cl or cl == "StdTypes"
-						if t == cl or cl == "StdTypes":
-							classes.append( t )
-						else: 
-							classes.append( cl + "." + t )
-
-						hasClasses = True
-		
-
-		if hasClasses or depth == 0 : 
+		cl, ext = os.path.splitext( f )
+							
+		if cl not in HaxeComplete.stdClasses:
+			s = codecs.open( os.path.join( path , f ) , "r" , "utf-8" , "ignore" )
+			src = comments.sub( "" , s.read() )
 			
-			for f in os.listdir( path ) :
+			clPack = "";
+			for ps in packageLine.findall( src ) :
+				clPack = ps
+			
+			if clPack == "" :
+				packDepth = 0
+			else:
+				packDepth = len(clPack.split("."))
+
+			for decl in typeDecl.findall( src ):
+				t = decl[1]
+
+				if( packDepth == depth ) : # and t == cl or cl == "StdTypes"
+					if t == cl or cl == "StdTypes":
+						classes.append( t )
+					else: 
+						classes.append( cl + "." + t )
+
+					hasClasses = True
+	
+
+	if hasClasses or depth == 0 : 
+		
+		for f in os.listdir( path ) :
+			
+			cl, ext = os.path.splitext( f )
+											
+			if os.path.isdir( os.path.join( path , f ) ) and f not in HaxeComplete.stdPackages :
+				packs.append( f )
+				subclasses,subpacks = extract_types( os.path.join( path , f ) , depth + 1 )
+				for cl in subclasses :
+					classes.append( f + "." + cl )
 				
-				cl, ext = os.path.splitext( f )
-												
-				if os.path.isdir( os.path.join( path , f ) ) and f not in HaxeComplete.stdPackages :
-					packs.append( f )
-					subclasses,subpacks = extract_types( os.path.join( path , f ) , depth + 1 )
-					for cl in subclasses :
-						classes.append( f + "." + cl )
-					
-					
-		classes.sort()
-		packs.sort()
-		return classes, packs
+				
+	classes.sort()
+	packs.sort()
+
+	type_cache[path] = ((list(classes), list(packs)), now)
+
+	return classes, packs
+
+
+
 
 
 def get_toplevel_completion( src , src_dir , build ) :
 	cl = []
-	comps = [("trace","trace"),("this","this"),("super","super"),("else","else")]
+	packs = []
+	stdPackages = []
+
+	comps = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super"),("else\ttoplevel","else")]
 
 	src = comments.sub("",src)
 	
+
+
+	
+
+
+
 	localTypes = typeDecl.findall( src )
 	for t in localTypes :
 		if t[1] not in cl:
+			print "local" + str(t[1])
 			cl.append( t[1] )
+
 
 	packageClasses, subPacks = extract_types( src_dir )
 	for c in packageClasses :
 		if c not in cl:
+			print "package" + str(c)
 			cl.append( c )
 
 	imports = importLine.findall( src )
@@ -510,7 +594,22 @@ def get_toplevel_completion( src , src_dir , build ) :
 		#print( i )
 
 	#print cl
+
+	print str(build.classpaths)
+
 	buildClasses , buildPacks = build.get_types()
+
+
+
+	# filter duplicates
+	def filter_build (x):
+		for c in cl:
+			if x == c:
+				return False
+		return True
+
+	buildClasses = filter(filter_build, buildClasses)
+	
 
 	tarPkg = None
 	
@@ -530,12 +629,16 @@ def get_toplevel_completion( src , src_dir , build ) :
 	#	if tarPkg is None or (p not in targetPackages) or (p == tarPkg) :
 	#		cl.append(c)
 
+	
+
 	cl.extend( HaxeComplete.stdClasses )
+	
 	cl.extend( buildClasses )
+	
 	cl.sort();
 
-	packs = []
-	stdPackages = []
+
+	
 	#print("target : "+build.target)
 	for p in HaxeComplete.stdPackages :
 		#print(p)
@@ -545,8 +648,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 		stdPackages.append(p)
 
 	packs.extend( stdPackages )
-	packs.extend( buildPacks )
-	packs.sort()
+	
 
 	for v in variables.findall(src) :
 		comps.append(( v + "\tvar" , v ))
@@ -612,6 +714,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 		if cm not in comps :
 			comps.append(cm)
 
+	
 	return comps
 
 def get_hxsl_completions( view , offset ) :
@@ -657,9 +760,20 @@ def collect_compiler_info ():
 	return (classes, packs, ver, stdPaths)
 
 def find_hxml( folder ) :
+	print "find_hxml"
 	builds = []
 	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
 	for build in hxmls:
+		new_build = hxbuild.HaxeBuild()
+		if build in hxml_cache:
+			cached = hxml_cache[build]
+			if cached.equals(new_build):
+				print "builds equal"
+				currentBuild = cached
+				print "builds differ"
+			else:
+				hxml_cache[build] = new_build
+				currentBuild = new_build
 
 		currentBuild = hxbuild.HaxeBuild()
 		currentBuild.hxml = build
@@ -1182,9 +1296,11 @@ def is_delayed_completion(view):
 	if id in HaxeComplete.delayed_completions:
 		oldTime = HaxeComplete.delayed_completions[id][1]
 		
-
-		if (now - oldTime) < 200:
+		print "check times"
+		if (now - oldTime) < 1000:
 			delayed = True
+
+	print "is delayed:" + str(delayed)
 	return delayed
 
 
@@ -1197,7 +1313,7 @@ def is_macro_completion (view):
 		del haxe.commands.HaxeDisplayMacroCompletion.completions[id]
 
 		if (now - oldTime) < 500:
-			print "do macro completion"
+			#print "do macro completion"
 			macroComp = True
 	return macroComp
 
@@ -1213,7 +1329,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	#folder = ""
 	#buildArgs = []
-	
+	current_completion_id = None	
 	errors = []
  	delayed_completions = {}
 	currentCompletion = {
@@ -1433,6 +1549,11 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		return ( comps, status )
 
 	def on_query_completions(self, view, prefix, locations):
+
+		completion_id = time.time()
+		HaxeComplete.current_completion_id = completion_id
+
+		print "-------------------------------------------"
 		print "on_query_completion"
 
 
@@ -1458,21 +1579,23 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			if ViewTools.is_hxsl(view) :
 				comps = hxsl_query_completion( view , offset )
 			else : 
+
 				if is_delayed_completion(view):
 					c = HaxeComplete.delayed_completions[view.id()][0]
 					del HaxeComplete.delayed_completions[view.id()]
+					print "comps_from_delayed"
+					comps = c
 
-					return c
+				else:
+					# get build and maybe use cache
+					build = self.build_helper.get_build( view ).copy()
+					cache = self.currentCompletion
+					
 
-				# get build and maybe use cache
-				build = self.build_helper.get_build( view ).copy()
-				cache = self.currentCompletion
+					macro_completion = is_macro_completion(view)
+					print "comps_from_normal"
+					comps = hx_query_completion(completion_id, view, offset, build, cache, self.get_compiler_completion, self.handle_completion_output, macro_completion)
 				
-
-				macro_completion = is_macro_completion(view)
-
-				comps = hx_query_completion(view, offset, build, cache, self.get_compiler_completion, self.handle_completion_output, macro_completion)
-				#print str(comps)
 			
 		return comps
 	
