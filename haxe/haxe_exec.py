@@ -37,9 +37,9 @@ def runcmd( args, input=None ):
 			#print "std lib: set: " + libPath
 			#env = {}
 			absLibPath = project_main_folder + "/" + libPath
-			print "runcmd: export HAXE_LIBRARY_PATH="+absLibPath
+			#print "runcmd: export HAXE_LIBRARY_PATH="+absLibPath
 			env["HAXE_LIBRARY_PATH"] = absLibPath
-			print "library in env:" + env["HAXE_LIBRARY_PATH"]
+			#print "library in env:" + env["HAXE_LIBRARY_PATH"]
 		args = filter(lambda s: s != "", args)
 		
 
@@ -48,7 +48,7 @@ def runcmd( args, input=None ):
 		#p = Popen(,  stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO, env=env)
 
 		encodedArgs = [a.encode(sys.getfilesystemencoding()) for a in args]
-		print " ".join(encodedArgs)
+		#print " ".join(encodedArgs)
 		p = Popen(encodedArgs, cwd=cwd, stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO, env=env)
 		
 
@@ -56,7 +56,7 @@ def runcmd( args, input=None ):
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
-		print "runcmd: output:\n" + out.decode('utf-8')
+		#print "runcmd: output:\n" + out.decode('utf-8')
 		
 		#print "error: " + err
 		return (out.decode('utf-8') if out else '', err.decode('utf-8') if err else '')

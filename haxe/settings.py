@@ -49,6 +49,11 @@ class HaxeSettings:
 			
 				
 
+	
+	@staticmethod
+	def is_delayed_completion (view = None):
+		return HaxeSettings.getBool("delayed-completion", False, view)
+
 	@staticmethod
 	def showCompletionTimes (view = None):
 		return HaxeSettings.getBool("show-completion-times", False, view)
@@ -61,7 +66,6 @@ class HaxeSettings:
 	@staticmethod
 	def haxeLibraryPath (view = None):
 		res = HaxeSettings.getString("haxe-library-path", None, view)
-		print "Standard Library in Settings: " + str(res)
 		return res
 		
 

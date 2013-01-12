@@ -24,6 +24,8 @@ import haxe.lib
 import haxe.commands
 import haxe.output_panel
 
+import thread
+
 import haxe.project
 
 from haxe.tools import ViewTools, ScopeTools, PathTools
@@ -273,32 +275,15 @@ class HaxeOutputConverter ():
 
 
 
-def prepare_build_args_for_completion (serverMode, build, macroCompletion, cwd, showTimes, display):
-	
-	build = build.copy()
 
-	build.set_auto_completion(display, macroCompletion)
-
-	print "use server mode:" + str(serverMode)
-
-	if serverMode:
-		build.set_server_mode(HaxeComplete.instance().server.serverPort)
-	
-	build.set_cwd(cwd)
-
-	if showTimes:
-		build.set_times()
-
-	return build.args
-
-def hx_query_completion(view, offset, build, cache, run_haxe, macroCompletion ):
+def hx_query_completion(view, offset, build, cache, get_compiler_completion, handle_completion_output, macroCompletion ):
 
 	print "haxe completion"
 	src = ViewTools.get_content(view)
-	fn = view.file_name()
-	src_dir = os.path.dirname(fn)
+	orig_file = view.file_name()
+	src_dir = os.path.dirname(orig_file)
 	
-	temp_path, temp_file = TempClasspath.create_temp_path_and_file(build, fn, src)
+	temp_path, temp_file = TempClasspath.create_temp_path_and_file(build, orig_file, src)
 
 	build.add_classpath(temp_path)
 
@@ -306,8 +291,6 @@ def hx_query_completion(view, offset, build, cache, run_haxe, macroCompletion ):
 	
 	prev = src[offset-1]
 	
-	comps = []
-	#print("prev : "+prev)
 	commas, completeOffset, toplevelComplete = get_completion_info(view, offset, src, prev)
 	
 	completeChar = src[completeOffset-1]
@@ -316,37 +299,130 @@ def hx_query_completion(view, offset, build, cache, run_haxe, macroCompletion ):
 	toplevelComplete = toplevelComplete or completeChar in ":(," or inControlStruct
 
 	if toplevelComplete :
-		#print("toplevel")
 		comps = get_toplevel_completion( src , src_dir , build )
-		#print(comps)
+	else:
+		comps = []
 	
 	offset = completeOffset
-	
-	#if prev == "." and src[offset-2] in ".1234567890" :
-		#comps.append(("... [iterator]",".."))
-		#comps.append((".","."))
 
 	if toplevelComplete and (inControlStruct or completeChar not in "(,") :
 		return comps
 
 
 
-	print "classpaths:" + str(build.classpaths)
-
-
-
-	ret, comps1, status = get_haxe_actual_completion_data(cache, build, completeChar, view, macroCompletion, temp_file, offset, commas, src, run_haxe)
+	#print "classpaths:" + str(build.classpaths)
 	
-	TempClasspath.remove_path(temp_path)
+	delayed = hxsettings.HaxeSettings.is_delayed_completion()
 
-	comps.extend(comps1)
+	display = temp_file + "@" + str(offset)
+
+	
+
+	
+	comps1 = []
+	status = ""
+
+
+
+#	def callback (ret1, comps2, status1):
+#		if delayed:
+#			def f():
+#
+#				now = time.time()
+#				HaxeComplete.delayedCompletion = (comps1.extend(comps2), now)
+#				print "thread complete"
+#				#view.run_command('hide_auto_complete')
+#				#view.run_command('auto_complete', {'disable_auto_insert': True})
+#			sublime.set_timeout(f, 1)
+#
+#		else:	
+#			comps1.extend(comps2)
+#			status[0] = status1
+		
+	current_input = create_completion_input_key(orig_file, offset, commas, src, macroCompletion, completeChar)
+
+	def run_compiler_completion ():
+		return get_compiler_completion( build, view, display, temp_file, orig_file , macroCompletion )
+
+	last_input = cache["input"]
+
+
+
+	print "DELAYED COMPLETION: " + str(delayed)
+
+	use_cache = use_completion_cache(last_input, current_input)
+
+	if use_cache :
+		print "inCache"
+		ret, comps1, status = cache["output"]
+	else :
+
+		if supported_compiler_completion_char(completeChar): 
+
+			if delayed:
+
+				compsx = list(comps)
+
+				def inMain (ret_, err_):
+					print "inMain"
+					comps_, status_ = handle_completion_output(temp_file, orig_file, view, err_)
+					TempClasspath.remove_path(temp_path)
+					
+					compsx.extend(comps_)
+
+					compsy = list(compsx)
+
+					cache["output"] = (ret_,compsy,status_)
+					cache["input"] = current_input
+					now = time.time()
+					
+					HaxeComplete.delayed_completions[view.id()] = (compsy, now)
+
+					print "do hide"
+					view.run_command('hide_auto_complete')
+
+					def show():
+						print "do show"
+						view.run_command('auto_complete', {'disable_auto_insert': True})
+					sublime.set_timeout(show,40)
+					print "thread complete"
+				def inThread():
+					ret_, err_ = run_compiler_completion()
+					sublime.set_timeout(lambda : inMain(ret_, err_),40)
+				thread.start_new_thread(inThread, ())		
+				comps1 = []
+				ret = ""
+				status = ""
+			else:
+				ret, err = run_compiler_completion()
+				comps1, status = handle_completion_output(temp_file, orig_file, view, err)
+		else:
+			ret, comps1, status = "",[], ""
+
+		
+	
+	if use_cache or not delayed:
+		TempClasspath.remove_path(temp_path)
+		comps.extend(comps1)
+		cache["output"] = (ret,comps1,status)
+		cache["input"] = current_input
 	
 	panel().status( "haxe-status" , status )
 
-
-
 	
 	return comps
+
+
+def create_completion_input_key (fn, offset, commas, src, macro_completion, complete_char):
+	return (fn,offset,commas,src[0:offset-1], macro_completion, complete_char)
+
+
+def use_completion_cache (last_input, current_input):
+	return last_input is not None and current_input == last_input
+
+def supported_compiler_completion_char (char):
+	return char in "(.,"
+
 
 
 
@@ -653,8 +729,9 @@ def find_hxml( folder ) :
 				classpath = " ".join( cp )
 				main_folder = project.Project.main_folder()
 				absClasspath = os.path.join( main_folder , classpath )
-				currentBuild.classpaths.append( absClasspath )
-				currentBuild.args.append( ("-cp" , absClasspath ) )
+				normAbsClasspath = os.path.normpath(absClasspath)
+				currentBuild.classpaths.append( normAbsClasspath )
+				currentBuild.args.append( ("-cp" , normAbsClasspath ) )
 		
 		if len(currentBuild.classpaths) == 0:
 			print "no classpaths"
@@ -750,8 +827,8 @@ def highlight_errors( errors , view ) :
 			
 	view.add_regions("haxe-error" , regions , "invalid" , "dot" )
 
-def handle_completion_error(err, temp, fn, status):
-	err = err.replace( temp , fn )
+def handle_completion_error(err, temp_file, orig_file, status):
+	err = err.replace( temp_file , orig_file )
 	err = re.sub( u"\(display(.*)\)" ,"",err)
 	
 	lines = err.split("\n")
@@ -870,64 +947,6 @@ def run_nme( view, build ) :
 
 
 
-def get_haxe_actual_completion_data (completionCache, build, completeChar, view, macroCompletion, fn, offset, commas, src, run_haxe):
-		inp = (fn,offset,commas,src[0:offset-1])
-		
-
-		
-		lastInp = completionCache["inp"]
-
-		useCache = lastInp is not None and inp == lastInp[0] and macroCompletion == lastInp[1]
-
-		if useCache :
-			ret, comps, status = completionCache["outp"]
-
-		else :
-			
-			
-
-			if completeChar not in "(," : 
-				ret , haxeComps , status = run_haxe( view , build, fn + "@" + str(offset) , macroCompletion )
-				comps = haxeComps
-			else:
-				ret = ""
-				status = ""
-				comps = []
-
-			completionCache["outp"] = (ret,comps,status)
-
-		completionCache["inp"] = (inp, macroCompletion)
-
-		return (ret, comps, status)
-
-def make_cmd (serverMode, view, build, macroCompletion, settings, cwd, display):
-		
-	
-	args = prepare_build_args_for_completion(serverMode, build, 
-			macroCompletion, cwd, 
-			hxsettings.HaxeSettings.showCompletionTimes(view), display)
-	
-		
-	
-	
-		
-
-	haxepath = hxsettings.HaxeSettings.haxeExec(view)
-
-	cmd = [haxepath]
-	for a in args :
-		cmd.extend( list(a) )
-	
-	
-	#print( cmd )
-	#
-	# TODO: replace runcmd with run_command('exec') when possible (haxelib, maybe build)
-	#
-	
-
-	return cmd
-
-
 class HaxeBuildHelper ():
 
 
@@ -975,7 +994,7 @@ class HaxeBuildHelper ():
 		
 
 		folders = view.window().folders()
-		print folders
+		
 		for f in folders:
 			self.builds.extend(find_hxml(f))
 			self.builds.extend(find_nmml(f))
@@ -1152,6 +1171,20 @@ class PanelHelper ():
 
 		return self.panel
 
+def is_delayed_completion(view):
+	id = view.id() 
+	now = time.time()
+	delayed = False
+	
+	if id in HaxeComplete.delayed_completions:
+		oldTime = HaxeComplete.delayed_completions[id][1]
+		
+
+		if (now - oldTime) < 200:
+			delayed = True
+	return delayed
+
+
 def is_macro_completion (view):
 	id = view.id() 
 	now = time.time()
@@ -1179,10 +1212,10 @@ class HaxeComplete( sublime_plugin.EventListener ):
 	#buildArgs = []
 	
 	errors = []
- 
+ 	delayed_completions = {}
 	currentCompletion = {
-		"inp" : None,
-		"outp" : None
+		"input" : None,
+		"output" : None
 	}
 
 	stdPaths = []
@@ -1214,7 +1247,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 			HaxeComplete.initialized = True
 
-		print "currentCompl: " + str(HaxeComplete.inst.currentCompletion)
+		#print "currentCompl: " + str(HaxeComplete.inst.currentCompletion)
 		return HaxeComplete.inst
 
 	def __init__(self):
@@ -1240,10 +1273,8 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		fn = view.file_name()
 		
 		if (fn == None): 
-			print "on_load haxe_complete file_name is None"
 			return		
-		else:
-			print "onload haxe_complete file_name is " + str(view.file_name())
+
 
 		if ViewTools.is_unsupported(view):
 			return
@@ -1329,7 +1360,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	def run_build( self , view ) :
 		print "run build"
-		err, comps, status = self.run_haxe( view )
+		err, comps, status = self.get_compiler_completion( view )
 		view.set_status( "haxe-status" , status )
 		panel().status( "haxe-status" , status )
 		print status
@@ -1341,105 +1372,62 @@ class HaxeComplete( sublime_plugin.EventListener ):
 				"outp" : None
 		}
 
-	
 
-
-	def run_haxe_simple( self, build, view , display, macroCompletion = False ) :
-
-		self.server.start_server( view )
-			
-				
-		fn = view.file_name()
-		#src = view.substr(sublime.Region(0, view.size()))
-		#src_dir = os.path.dirname(fn)
-		tdir = os.path.dirname(fn)
-		temp = os.path.join( tdir , os.path.basename( fn ) + ".tmp" )
-
-		comps = [] 
+	def get_compiler_completion( self, build, view , display, temp_file, orig_file, macroCompletion = False ) :
+		
+		serverMode = haxe.settings.HaxeSettings.getBool('haxe-use-server-mode', True) and self.server.serverMode
+		if serverMode:
+			self.server.start_server( view )
+			build.set_server_mode(HaxeComplete.instance().server.serverPort)
 
 		self.errors = [] 
 
-		settings = view.settings()
- 
-		cwd = os.path.dirname( build.hxml ) 
-		 
-		#buildArgs = view.window().settings
-		
-		
+		build.set_auto_completion(display, macroCompletion)
+		build.set_build_cwd()
 
-		# TODO if we are in a macro block, remove the current target and set neko as target
-		serverMode = haxe.settings.HaxeSettings.getBool('haxe-use-server-mode', True) and self.server.serverMode
- 		cmd = make_cmd(serverMode, view, build, macroCompletion, settings, cwd, display)
-			
+		if hxsettings.HaxeSettings.showCompletionTimes(view):
+			build.set_times()
 
+		cmd = build.get_command_args(hxsettings.HaxeSettings.haxeExec(view))
 
 		res, err = runcmd( cmd, "" )
-		return (view, fn, temp, comps, view, cmd, build, res, err)
-
-	def run_haxe( self, build, view , display , macroCompletion = False ) :
-
-		(view, fn, temp, comps, view, cmd, 
-			build, res, err) = self.run_haxe_simple(view, build, display, macroCompletion)
-
 		
-		return self.handle_normal_completion_output(fn, temp, comps, view, cmd, True, build, res, err)		
+		#comps, status = self.handle_completion_output(temp_file, orig_file, view, err)
+		return res, err
+		#return (err, comps, status)
 	
 
-	def handle_normal_completion_output(self, fn, temp, comps, view, cmd, autocomplete, build, res, err):
-		print(err)
-		
-		if not autocomplete :
-			print "use panel"
-			self.panel_helper.panel_output( view , " ".join(cmd) )
+	def handle_completion_output(self, temp_file, orig_file, view, err):
 
-		#print( res.encode("utf-8") )
-		status = ""
-
-		if (not autocomplete) and (build.hxml is None) :
-			#status = "Please create an hxml file"
-			self.build_helper.extract_build_args( view , True )
-		elif not autocomplete :
-			# default message = build success
-			status = "Build success"
-
-		
-		#print(err)	
-		hints = []
-		tree = None
-		
 		try :
 			x = "<root>"+err.encode('utf-8')+"</root>";
 			tree = ElementTree.XML(x);
 			
-		except Exception, e:
-		#	print(e)
-			print("invalid xml")
-		
+		except Exception,e:
+			tree = None
+			print("invalid xml - error: " + str(e))
 
 
 		if tree is not None :
 
-			type_hints = HaxeOutputConverter.get_type_hint(tree.getiterator("type"))
-			hints.extend(type_hints)
-			
+			hints = HaxeOutputConverter.get_type_hint(tree.getiterator("type"))
+			comps = HaxeOutputConverter.collect_completion_fields(tree.find("list"))
+		else:
+			hints = []
+			comps = []
 
-			if len(hints) > 0 :
-				status = " | ".join(hints)
-				
-			li = tree.find("list")
-			
-			fields = HaxeOutputConverter.collect_completion_fields(li)
-			comps.extend(fields)
+		status = ""
+		
+		if len(hints) > 0 :
+			status = " | ".join(hints)
 
-		if len(hints) == 0 and len(comps) == 0:
-			status, errors = handle_completion_error(err, temp, fn, status)
+		elif len(hints) == 0 and len(comps) == 0:
+			status, errors = handle_completion_error(err, temp_file, orig_file, status)
 			self.errors = errors
 			highlight_errors( errors, view )
+		
 
-			
-
-		#print(status)
-		return ( err, comps, status )
+		return ( comps, status )
 
 	def on_query_completions(self, view, prefix, locations):
 		print "on_query_completion"
@@ -1467,11 +1455,20 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			if ViewTools.is_hxsl(view) :
 				comps = hxsl_query_completion( view , offset )
 			else : 
+				if is_delayed_completion(view):
+					c = HaxeComplete.delayed_completions[view.id()][0]
+					del HaxeComplete.delayed_completions[view.id()]
+
+					return c
+
 				# get build and maybe use cache
 				build = self.build_helper.get_build( view ).copy()
 				cache = self.currentCompletion
+				
+
 				macro_completion = is_macro_completion(view)
-				comps = hx_query_completion(view, offset, build, cache, self.run_haxe, macro_completion)
+
+				comps = hx_query_completion(view, offset, build, cache, self.get_compiler_completion, self.handle_completion_output, macro_completion)
 				#print str(comps)
 			
 		return comps

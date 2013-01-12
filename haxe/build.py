@@ -73,9 +73,11 @@ class HaxeBuild :
 		elif self.nmml is not None:
 			r = os.path.dirname(self.nmml)
 
-		print "build_folder:" + str(r)
 		return r
-		
+	
+
+	def set_build_cwd (self):
+		self.set_cwd(self.get_build_folder())
 	def add_classpath (self, cp):
 		self.classpaths.append(cp)
 		self.args.append(("-cp", cp))
@@ -147,13 +149,18 @@ class HaxeBuild :
 	def set_server_mode (self, server_port = 6000):
 		self.args.append(("--connect" , str(server_port)))
 
+	def get_command_args (self, haxe_path):
+		cmd = [haxe_path]
+		for a in self.args :
+			cmd.extend( list(a) )
+		return cmd
+
 	def set_auto_completion (self, display, macro_completion = False):
 		
 		
 
 		args = self.args
 
-		print "Args before: " + (str(args))
 
 		def filterTargets (x):
 			return x[0] != "-cs" and x[0] != "-x" and x[0] != "-js" and x[0] != "-php" and x[0] != "-cpp" and x[0] != "-swf" and x[0] != "-java"

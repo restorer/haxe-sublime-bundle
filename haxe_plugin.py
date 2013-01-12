@@ -38,14 +38,15 @@ mods_load_order = [
     'haxe',
     'haxe.config'
     'haxe.commands', 
-    'haxe.haxe_build',
+    'haxe.build',
     'haxe.haxe_complete',
-    'haxe.haxe_create', 
+    'haxe.typegen', 
     'haxe.haxe_exec',
-    'haxe.haxe_generate',
-    'haxe.haxe_lib', 
-    'haxe.haxe_panel',
-    'haxe.haxe_settings',
+    'haxe.codegen',
+    'haxe.lib', 
+    'haxe.tools', 
+    'haxe.output_panel',
+    'haxe.settings',
     'haxe.startup',
     'haxe.project'
     
@@ -140,22 +141,34 @@ def unload_handler():
     
     ExcepthookChain1.remove('haxe_uncaught_except')
 
- 
+
 
 import haxe.haxe_complete
-import haxe.haxe_lib
+import haxe.lib
 import haxe.commands
-import haxe.haxe_create
+import haxe.typegen
 import haxe.haxe_exec
-import haxe.haxe_generate 
-import haxe.haxe_settings
-from haxe.haxe_complete import HaxeComplete
+import haxe.codegen 
+import haxe.config 
+import haxe.tools
+import haxe.settings
+
+from haxe.settings import HaxeSettings
+
+from haxe.haxe_complete import HaxeComplete,HaxeOutputConverter
 from haxe.commands import *
 
 
 from haxe.haxe_exec import HaxelibExecCommand
-from haxe.haxe_generate import (HaxeGenerateUsingCommand, HaxeGenerateImportCommand)
-from haxe.haxe_create import HaxeCreateType
-from haxe.commands import HaxeSelectBuild
-from haxe.haxe_lib import HaxeInstallLib
+from haxe.config import Config
+from haxe.tools import PathTools, ViewTools, CaretTools, SublimeTools, ScopeTools
+
+from haxe.typegen import HaxeCreateType
+from haxe.commands import HaxeSelectBuild,HaxeHint,HaxeGenerateUsingCommand,HaxeGenerateImportCommand
+from haxe.lib import HaxeInstallLib
 from haxe.project import Project
+from haxe.output_panel import HaxePanel
+
+f = os.path.dirname(os.path.realpath(__file__))
+def plugin_dir():
+    return f
