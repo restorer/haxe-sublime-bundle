@@ -35,6 +35,17 @@ class HaxeSettings:
 				return None 
 
 	@staticmethod 
+	def get_int (id, default, view = None):
+		r = HaxeSettings.get(id, view)
+		if (r == None):
+			return default
+		else:
+			if isinstance(r, int):
+				return r
+			else :
+				return None 
+
+	@staticmethod 
 	def getString (id, default, view = None):
 		r = HaxeSettings.get(id, view)
 		if (r == None):
@@ -53,6 +64,14 @@ class HaxeSettings:
 	@staticmethod
 	def is_delayed_completion (view = None):
 		return HaxeSettings.getBool("delayed-completion", False, view)
+
+	@staticmethod
+	def get_completion_delays (view = None):
+		return (
+			HaxeSettings.get_int("delayed-completion-timing-hide", 50, view),
+			HaxeSettings.get_int("delayed-completion-timing-show", 170, view)
+		)
+
 
 	@staticmethod
 	def showCompletionTimes (view = None):

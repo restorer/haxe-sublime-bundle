@@ -361,6 +361,8 @@ def hx_query_completion(view, offset, build, cache, get_compiler_completion, han
 
 			if delayed:
 
+				delays = hxsettings.HaxeSettings.get_completion_delays()
+
 				compsx = list(comps)
 
 				def inMain (ret_, err_):
@@ -379,16 +381,17 @@ def hx_query_completion(view, offset, build, cache, get_compiler_completion, han
 					HaxeComplete.delayed_completions[view.id()] = (compsy, now)
 
 					print "do hide"
-					view.run_command('hide_auto_complete')
+					
 
-					def show():
-						print "do show"
-						view.run_command('auto_complete', {'disable_auto_insert': True})
-					sublime.set_timeout(show,40)
+					
+					view.run_command('auto_complete', {'disable_auto_insert': True})
+					
 					print "thread complete"
 				def inThread():
 					ret_, err_ = run_compiler_completion()
-					sublime.set_timeout(lambda : inMain(ret_, err_),40)
+					
+					sublime.set_timeout(lambda : view.run_command('hide_auto_complete'),delays[0])
+					sublime.set_timeout(lambda : inMain(ret_, err_),delays[1])
 				thread.start_new_thread(inThread, ())		
 				comps1 = []
 				ret = ""
