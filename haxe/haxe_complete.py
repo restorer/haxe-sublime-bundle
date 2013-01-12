@@ -291,7 +291,7 @@ def prepare_build_args_for_completion (serverMode, build, macroCompletion, cwd, 
 
 	return build.args
 
-def get_haxe_completions( build, cache , run_haxe, view , offset, macroCompletion = False ):
+def hx_query_completion(view, offset, build, cache, run_haxe, macroCompletion ):
 
 	print "haxe completion"
 	src = ViewTools.get_content(view)
@@ -1155,8 +1155,7 @@ class PanelHelper ():
 
 		return self.panel
 
-
-def hx_query_completion(view, offset, build, cache, run_haxe):
+def is_macro_completion (view):
 	id = view.id() 
 	now = time.time()
 	macroComp = False
@@ -1167,11 +1166,10 @@ def hx_query_completion(view, offset, build, cache, run_haxe):
 		if (now - oldTime) < 500:
 			print "do macro completion"
 			macroComp = True
+	return macroComp
+
 
 	
-
-	comps = get_haxe_completions( build, cache, run_haxe, view , offset, macroComp )
-	return comps
 
 def hxsl_query_completion(view, offset):
 	return get_hxsl_completions( view , offset )
@@ -1475,7 +1473,8 @@ class HaxeComplete( sublime_plugin.EventListener ):
 				# get build and maybe use cache
 				build = self.build_helper.get_build( view ).copy()
 				cache = self.currentCompletion
-				comps = hx_query_completion(view, offset, build, cache, self.run_haxe)
+				macro_completion = is_macro_completion(view)
+				comps = hx_query_completion(view, offset, build, cache, self.run_haxe, macro_completion)
 				#print str(comps)
 			
 		return comps
