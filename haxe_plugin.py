@@ -7,6 +7,8 @@ import os
 
 import haxe
 
+# thx to wbond for this dynamic loading technique
+
 reloading = {
     'happening': False,
     'shown': False
@@ -43,6 +45,7 @@ mods_load_order = [
     'haxe.typegen', 
     'haxe.haxe_exec',
     'haxe.codegen',
+    'haxe.compiler.server'
     'haxe.lib', 
     'haxe.tools', 
     'haxe.output_panel',
@@ -52,6 +55,7 @@ mods_load_order = [
     'haxe.temp',
     'haxe.types',
     'haxe.hxtools',
+    'haxe.compiler.outputparser'
     
     
 ]  
@@ -97,7 +101,7 @@ else:
         ['ExcepthookChain1'], -1)
     ExcepthookChain1 = _temp.ExcepthookChain1
 
-# thx to wbond for this piece from sftp sublime plugin
+
 
 
 # Override default uncaught exception handler
@@ -152,25 +156,30 @@ import haxe.codegen
 import haxe.config 
 import haxe.tools
 import haxe.build
+import haxe.compiler.outputparser
 import haxe.settings
 
+from haxe.compiler.server import Server
 from haxe.settings import HaxeSettings
 from haxe.build import HaxeBuild
 
-from haxe.haxe_complete import HaxeComplete,HaxeOutputConverter
+from haxe.haxe_complete import HaxeComplete
 from haxe.commands import *
+ 
+from haxe.compiler.server import Server
 
-
-from haxe.haxe_exec import HaxelibExecCommand
+#from haxe.haxe_exec import HaxelibExecCommand
 from haxe.config import Config
 from haxe.tools import PathTools, ViewTools, CaretTools, SublimeTools, ScopeTools
 
-from haxe.typegen import HaxeCreateType
-from haxe.commands import HaxeSelectBuild,HaxeHint,HaxeGenerateUsingCommand,HaxeGenerateImportCommand
+from haxe.typegen import HaxeCreateType, HaxeCreateTypeListener
+from haxe.commands import HaxeSelectBuildCommand,HaxeHintCommand,HaxeGenerateUsingCommand,HaxeGenerateImportCommand
 from haxe.lib import HaxeInstallLib
 from haxe.project import Project
 from haxe.output_panel import HaxePanel
-from haxe.temp import TempClasspath
+
+from haxe.types import *
+#from haxe.temp import TempClasspath
 
 f = os.path.dirname(os.path.realpath(__file__))
 def plugin_dir():

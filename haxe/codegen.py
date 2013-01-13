@@ -1,6 +1,6 @@
 
 import sublime
-from haxe.haxe_complete import wordChars, spaceChars, importLine, usingLine, packageLine
+from haxe.hxtools import wordChars, spaceChars, importLine, usingLine, packageLine
 
 import re
 

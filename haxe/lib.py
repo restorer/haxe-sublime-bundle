@@ -1,16 +1,20 @@
 
 import haxe.settings
-from haxe.haxe_exec import runcmd
-import haxe.haxe_complete
+
+import haxe.types as hxtypes
 
 import functools
 
+from haxe.haxe_exec import runcmd
 
-
+import re
  
 import os
 import sublime, sublime_plugin
 
+
+libFlag = re.compile("-lib\s+(.*?)")
+libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
 
 def haxe_settings () :
 	return haxe.settings.HaxeSettings
@@ -41,7 +45,7 @@ class HaxeLib :
 	def extract_types( self ):
 
 		if self.dev is True or ( self.classes is None and self.packages is None ):
-			self.classes, self.packages = haxe.haxe_complete.HaxeComplete.instance().extract_types( self.path )
+			self.classes, self.packages = hxtypes.extract_types( self.path )
 		
 		return self.classes, self.packages
 

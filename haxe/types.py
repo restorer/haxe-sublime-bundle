@@ -1,6 +1,6 @@
 import time,os, codecs, glob
 
-import haxe.haxe_complete as hc
+
 import haxe.hxtools as hxtools
 
 
@@ -13,7 +13,8 @@ def log (msg):
 
 
 
-def find_types (classpaths, libs, base_path):
+def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None):
+
 	classes = []
 	packs = []
 
@@ -26,7 +27,7 @@ def find_types (classpaths, libs, base_path):
 
 
 	for path in cp :
-		c, p = extract_types( os.path.join( base_path, path ) )
+		c, p = extract_types( os.path.join( base_path, path ), filtered_classes, filtered_packages )
 		classes.extend( c )
 		packs.extend( p )
 
@@ -38,8 +39,12 @@ def find_types (classpaths, libs, base_path):
 	return classes,packs
 
 
-def extract_types( path , depth = 0 ) :
+def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0 ) :
 
+	if filtered_classes is None: 
+		filtered_classes = []
+	if filtered_packages is None: 
+		filtered_packages = []
 	now = time.time()
 
 	if path in type_cache:
@@ -60,7 +65,7 @@ def extract_types( path , depth = 0 ) :
 
 		cl, ext = os.path.splitext( f )
 							
-		if cl not in hc.HaxeComplete.stdClasses:
+		if cl not in filtered_classes:
 			s = codecs.open( os.path.join( path , f ) , "r" , "utf-8" , "ignore" )
 			src = hxtools.comments.sub( "" , s.read() )
 			
@@ -91,9 +96,9 @@ def extract_types( path , depth = 0 ) :
 			
 			cl, ext = os.path.splitext( f )
 											
-			if os.path.isdir( os.path.join( path , f ) ) and f not in hc.HaxeComplete.stdPackages :
+			if os.path.isdir( os.path.join( path , f ) ) and f not in filtered_packages :
 				packs.append( f )
-				subclasses,subpacks = extract_types( os.path.join( path , f ) , depth + 1 )
+				subclasses,subpacks = extract_types( os.path.join( path , f ) , filtered_classes, filtered_packages, depth + 1 )
 				for cl in subclasses :
 					classes.append( f + "." + cl )
 				

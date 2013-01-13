@@ -7,23 +7,33 @@ import sublime, sublime_plugin
 import time
 
 
-
+import haxe.lib as hxlib
 
 
 from sublime import Region
 
-import haxe
-
 import os
 
 
+
+import haxe.project as hxproject
 
 
 import haxe.codegen
 
 from haxe.tools import PathTools
 
-
+#class HaxelibExecCommand(stexec.ExecCommand):
+#
+#	def run(self, *args, **kwargs):
+#
+#		print "hello running"
+#		super(HaxelibExecCommand, self).run(*args, **kwargs)
+#
+#	def finish(self, *args, **kwargs):
+#		super(HaxelibExecCommand, self).finish(*args, **kwargs)  
+#		print "haxelibExec"
+#		hxlib.HaxeLib.scan()
 
 class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 	def run( self , edit ) :
@@ -84,11 +94,8 @@ class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 
 		def f ():
-			view = self.view
-			s = view.settings();
-
-			print("run_command: auto_complete")
-			view.run_command( "auto_complete" , {
+			print("run HaxeDisplayCompletion")
+			self.view.run_command( "auto_complete" , {
 				"api_completions_only" : True,
 				"disable_auto_insert" : True,
 				"next_completion_if_showing" : False,
@@ -104,12 +111,9 @@ class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
 	completions = {}
 
 	def run( self , edit ) :
-		print("completing")
+		print("run HaxeDisplayMacroCompletion")
 		view = self.view
-		s = view.settings();
 		
-		print str(s)
-
 		HaxeDisplayMacroCompletion.completions[view.id()] = time.time()
 
 		view.run_command( "auto_complete" , {
@@ -120,10 +124,10 @@ class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
 
 		
 
-class HaxeInsertCompletion( sublime_plugin.TextCommand ):
+class HaxeInsertCompletionCommand( sublime_plugin.TextCommand ):
 	
 	def run( self , edit ) :
-		#print("insert completion")
+		print("run HaxeInsertCompletion")
 		view = self.view
 
 		view.run_command( "insert_best_completion" , {
@@ -131,34 +135,30 @@ class HaxeInsertCompletion( sublime_plugin.TextCommand ):
 			"exact" : True
 		} )
 
-class HaxeSaveAllAndBuild( sublime_plugin.TextCommand ):
+class HaxeSaveAllAndBuildCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
-		complete = haxe.haxe_complete.HaxeComplete.instance()
 		view = self.view
 		view.window().run_command("save_all")
-		complete.run_build( view )
+		hxproject.run_build( view )
 
-class HaxeRunBuild( sublime_plugin.TextCommand ):
+class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
-		complete = haxe.haxe_complete.HaxeComplete.instance()
 		view = self.view
 		print "do run build"
-		complete.run_build( view )
+		hxproject.run_build( view )
 
 
-class HaxeSelectBuild( sublime_plugin.TextCommand ):
+class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		print "do select build"
-		build_helper = haxe.haxe_complete.HaxeComplete.instance().build_helper
 		view = self.view
 		
-		build_helper.select_build( view )
+		hxproject.select_build( view )
 
 # called 
-class HaxeHint( sublime_plugin.TextCommand ):
+class HaxeHintCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		#print("haxe hint")
-		
 		
 		view = self.view
 		
@@ -166,12 +166,12 @@ class HaxeHint( sublime_plugin.TextCommand ):
 		
 
 
-class HaxeRestartServer( sublime_plugin.WindowCommand ):
+class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 
 	def run( self ) :
 		view = sublime.active_window().active_view()
-		haxe.haxe_complete.HaxeComplete.instance().stop_server()
-		haxe.haxe_complete.HaxeComplete.instance().start_server( view )
+		hxproject.ctx().server.stop_server()
+		hxproject.ctx().server.start_server( view )
 
 
 
@@ -180,7 +180,6 @@ class HaxeGenerateUsingCommand( sublime_plugin.TextCommand ):
 		print "generate using"
 		runner = haxe.codegen.HaxeGenerateImportOrUsing(haxe.haxe_panel.HaxePanel, self.view)
 		runner.generate_using(edit)
-
 
 class HaxeGenerateImportCommand( sublime_plugin.TextCommand ):
 

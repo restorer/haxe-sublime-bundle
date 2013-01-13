@@ -2,9 +2,9 @@ import sys
 import sublime
 import os
 import haxe.haxe_complete 
-import haxe.lib as hxlib
+
 import haxe.output_panel as haxe_panel
-import haxe.project as project
+
 import haxe.settings as hxsettings
 
 
@@ -20,7 +20,7 @@ stexec = __import__("exec")
 def runcmd( args, input=None ):
 	
 	settings = hxsettings.HaxeSettings
-	
+	import haxe.project as project
 	project_main_folder = project.Project.main_folder()
 
 	if project_main_folder == None:
@@ -46,7 +46,7 @@ def runcmd( args, input=None ):
 		#p = Popen(,  stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO, env=env)
 
 		encodedArgs = [a.encode(sys.getfilesystemencoding()) for a in args]
-		#print " ".join(encodedArgs)
+		print " ".join(encodedArgs)
 		p = Popen(encodedArgs, cwd=cwd, stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO, env=env)
 		
 
@@ -54,7 +54,7 @@ def runcmd( args, input=None ):
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
-		#print "runcmd: output:\n" + out.decode('utf-8')
+		print "runcmd: output:\n" + out.decode('utf-8')
 		
 		#print "error: " + err
 		return (out.decode('utf-8') if out else '', err.decode('utf-8') if err else '')
@@ -67,7 +67,8 @@ class HaxeExecCommand(stexec.ExecCommand):
 		super(HaxeExecCommand, self).finish(*args, **kwargs)  
 		outp = self.output_view.substr(sublime.Region(0, self.output_view.size()))
 		hc = haxe.haxe_complete.HaxeComplete.instance()
-		hc.errors = hc.extract_errors( outp )
+		ctx = haxe.haxe_complete.ctx()
+		ctx.errors = hc.extract_errors( outp )
 		hc.highlight_errors( self.window.active_view() )
 
 	def run(self, cmd = [], file_regex = "", line_regex = "", working_dir = "",
@@ -145,17 +146,7 @@ class HaxeExecCommand(stexec.ExecCommand):
 
 
 
-class HaxelibExecCommand(stexec.ExecCommand):
 
-	def run(self, *args, **kwargs):
-
-		print "hello running"
-		super(HaxelibExecCommand, self).run(*args, **kwargs)
-
-	def finish(self, *args, **kwargs):
-		super(HaxelibExecCommand, self).finish(*args, **kwargs)  
-		print "haxelibExec"
-		hxlib.HaxeLib.scan()
 
 
 

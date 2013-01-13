@@ -1,6 +1,7 @@
 import sublime, sublime_plugin
 import os
 
+import haxe.project as hxproject
 
 
 
@@ -11,21 +12,20 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 	classpath = None
 	currentFile = None
 	currentSrc = None
-	currentType = None
 
 	def run( self , paths = [] , t = "class" ) :
 		print "createtype"
-		hc = haxe.haxe_complete.HaxeComplete.instance();
+		
 
-		builds = hc.build_helper.builds
-		HaxeCreateType.currentType = t
+		builds = hxproject.ctx.builds
+		
 		view = sublime.active_window().active_view()
 		scopes = view.scope_name(view.sel()[0].end()).split()
 		
 		pack = [];
 
 		if len(builds) == 0 :
-			hc.build_helper.extract_build_args(view)
+			hxproject.extract_build_args(view)
 
 		if len(paths) == 0 :
 			fn = view.file_name()
@@ -60,9 +60,9 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 						
 		win = sublime.active_window()
 		sublime.status_message( "Current classpath : " + HaxeCreateType.classpath )
-		win.show_input_panel("Enter "+t+" name : " , ".".join(pack) , self.on_done , self.on_change , self.on_cancel )
+		win.show_input_panel("Enter "+t+" name : " , ".".join(pack) , lambda inp: self.on_done(inp, t) , self.on_change , self.on_cancel )
 
-	def on_done( self , inp ) :
+	def on_done( self , inp, cur_type ) :
 
 		fn = self.classpath;
 		parts = inp.split(".")
@@ -84,18 +84,40 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 		fn += ".hx"
 		
 		HaxeCreateType.currentFile = fn
-		t = HaxeCreateType.currentType
-		src = "\npackage " + ".".join(pack) + ";\n\n"+t+" "+cl+" " 
-		if t == "typedef" :
+		
+		src = "\npackage " + ".".join(pack) + ";\n\n"+cur_type+" "+cl+" " 
+		if cur_type == "typedef" :
 			src += "= "
 		src += "{\n\n\t\n\n}"
 		HaxeCreateType.currentSrc = src
 
-		v = sublime.active_window().open_file( fn )
+		sublime.active_window().open_file( fn )
  
-	@staticmethod
-	def on_activated( view ) : 
-		if view.file_name() == HaxeCreateType.currentFile and view.size() == 0 :
+	
+
+
+	def on_change( self , inp ) :
+		#sublime.status_message( "Current classpath : " + HaxeCreateType.classpath )
+		print( inp )
+
+	def on_cancel( self ) :
+		None
+
+class HaxeCreateTypeListener( sublime_plugin.EventListener ):
+	
+	def __del__ (self):
+		print "delete_type_listener"
+	def __init__ (self):
+		print "create_type_listener"
+
+	def on_activated( self, view ) : 
+		self.create_file(view)		
+
+	def on_load (self, view):
+		self.create_file(view)
+
+	def create_file(self, view):
+		if view is not None and view.file_name() != None and view.file_name() == HaxeCreateType.currentFile and view.size() == 0 :
 			e = view.begin_edit()
 			view.insert(e,0,HaxeCreateType.currentSrc)
 			view.end_edit(e)
@@ -103,11 +125,3 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 			sel.clear()
 			pt = view.text_point(5,1)
 			sel.add( sublime.Region(pt,pt) )
-
-
-	def on_change( self , inp ) :
-		sublime.status_message( "Current classpath : " + HaxeCreateType.classpath )
-		#print( inp )
-
-	def on_cancel( self ) :
-		None

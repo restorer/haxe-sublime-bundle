@@ -10,7 +10,7 @@ import sublime
 #import haxe.output_panel
 import re
 
-
+from haxe.haxe_exec import runcmd
 
 
 hxml_cache = {}
@@ -117,6 +117,9 @@ def find_hxml( folder ) :
 
 extractTag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
 
+
+
+
 def find_nmml( folder ) :
 	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
 
@@ -181,7 +184,8 @@ class HaxeBuild :
 	nme_target = Config.nme_target
 
 	def __init__(self) :
-
+		self.std_classes = []
+		self.std_packs = []
 		self.args = []
 		self.main = None
 		self.target = None
@@ -193,6 +197,11 @@ class HaxeBuild :
 		self.classes = None
 		self.packages = None
  
+	def set_std_classes(self, std_classes):
+		self.std_classes = std_classes
+
+	def set_std_packs(self, std_packs):
+		self.std_packs = std_packs
 
 	def equals (self, other):
 		
@@ -288,11 +297,7 @@ class HaxeBuild :
 
 		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
 
-
-
-		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ) )
-
-
+		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ), [], [] )
 
 		self.classes = classes;
 		self.packages = packages;
@@ -312,12 +317,18 @@ class HaxeBuild :
 		cmd = [haxe_path]
 		for a in self.args :
 			cmd.extend( list(a) )
+
+		if self.main != None:
+			cmd.append("-main")
+			cmd.append(self.main)
 		return cmd
+
+	
 
 	def set_auto_completion (self, display, macro_completion = False):
 		
 		args = self.args
-
+		self.main = None
 		def filterTargets (x):
 			return x[0] != "-cs" and x[0] != "-x" and x[0] != "-js" and x[0] != "-php" and x[0] != "-cpp" and x[0] != "-swf" and x[0] != "-java"
 
@@ -344,5 +355,38 @@ class HaxeBuild :
 
 		return self.classes, self.packages
 
-	
+	def run (self, haxeExec, serverMode, view, server):
+		b = self.copy()
+		
+		is_x = None
+		
+		for i in range(0, len(b.args)):
+			if b.args[i][0] == "-x":
+				is_x = b.args[i][1] + ".n"
+				b.args[i] = ("-neko", is_x)
+				
+
+
+		
+
+		# ignore servermode when -x
+		print b.target
+		if serverMode:
+			server.start_server( view )
+			b.set_server_mode(server.get_server_port())
+
+		
+		b.set_build_cwd()
+		cmd = b.get_command_args(haxeExec)
+
+		print "cmd : " + " ".join(cmd)
+		res, err = runcmd( cmd, "" )
+
+		if is_x is not None:
+			neko_file = os.path.join(self.get_build_folder(), is_x)
+			print neko_file
+			res1, err1 = runcmd(["neko", neko_file])
+			print res1
+			#print err1
+		return res,err
 
