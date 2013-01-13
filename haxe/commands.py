@@ -91,7 +91,8 @@ class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
 			view.run_command( "auto_complete" , {
 				"api_completions_only" : True,
 				"disable_auto_insert" : True,
-				"next_completion_if_showing" : True
+				"next_completion_if_showing" : False,
+				'auto_complete_commit_on_tab': True
 			} )
 		sublime.set_timeout(f, 0)
 
@@ -114,8 +115,7 @@ class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
 		view.run_command( "auto_complete" , {
 			"api_completions_only" : True,
 			"disable_auto_insert" : True,
-			"next_completion_if_showing" : True,
-			"macroCompletion" : True
+			"next_completion_if_showing" : True
 		} )
 
 		

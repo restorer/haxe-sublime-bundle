@@ -147,7 +147,7 @@ class HaxeBuild :
 
 	def update_types(self):
 
-		haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
+		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
 
 
 
