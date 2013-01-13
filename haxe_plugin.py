@@ -48,7 +48,8 @@ mods_load_order = [
     'haxe.output_panel',
     'haxe.settings',
     'haxe.startup',
-    'haxe.project'
+    'haxe.project',
+    'haxe.temp'
     
     
 ]  
@@ -167,6 +168,7 @@ from haxe.commands import HaxeSelectBuild,HaxeHint,HaxeGenerateUsingCommand,Haxe
 from haxe.lib import HaxeInstallLib
 from haxe.project import Project
 from haxe.output_panel import HaxePanel
+from haxe.temp import TempClasspath
 
 f = os.path.dirname(os.path.realpath(__file__))
 def plugin_dir():
