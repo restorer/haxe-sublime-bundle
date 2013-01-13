@@ -1,10 +1,8 @@
-import time,os, codecs, glob,sys
+import time,os, codecs, glob
 
-import haxe.haxe_complete
+import haxe.haxe_complete as hc
+import haxe.hxtools as hxtools
 
-
-
-hc = sys.modules["haxe.haxe_complete"]
 
 
 cache_time_ms = 30000 # in milliseconds
@@ -64,10 +62,10 @@ def extract_types( path , depth = 0 ) :
 							
 		if cl not in hc.HaxeComplete.stdClasses:
 			s = codecs.open( os.path.join( path , f ) , "r" , "utf-8" , "ignore" )
-			src = hc.comments.sub( "" , s.read() )
+			src = hxtools.comments.sub( "" , s.read() )
 			
 			clPack = "";
-			for ps in hc.packageLine.findall( src ) :
+			for ps in hxtools.packageLine.findall( src ) :
 				clPack = ps
 			
 			if clPack == "" :
@@ -75,7 +73,7 @@ def extract_types( path , depth = 0 ) :
 			else:
 				packDepth = len(clPack.split("."))
 
-			for decl in hc.typeDecl.findall( src ):
+			for decl in hxtools.typeDecl.findall( src ):
 				t = decl[1]
 
 				if( packDepth == depth ) : # and t == cl or cl == "StdTypes"

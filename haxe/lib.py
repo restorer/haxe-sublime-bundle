@@ -6,16 +6,16 @@ import haxe.haxe_complete
 import functools
 
 
-def haxe_settings () :
-	return haxe.settings.HaxeSettings
-def haxe_exec () :
-	return haxe.haxe_exec
+
  
 import os
 import sublime, sublime_plugin
 
 
-
+def haxe_settings () :
+	return haxe.settings.HaxeSettings
+def haxe_exec () :
+	return haxe.haxe_exec
 
 
 class HaxeLib :

@@ -1,13 +1,11 @@
-import sys
+
 import sublime
 import os
-import haxe.build
-hxbuild = sys.modules["haxe.build"]
+import haxe.build as hxbuild
+
 import haxe.output_panel
 
-import haxe.haxe_complete
-
-hxcomplete = sys.modules["haxe.haxe_complete"]
+import haxe.haxe_complete as hxcomplete
 
 
 def panel () : 

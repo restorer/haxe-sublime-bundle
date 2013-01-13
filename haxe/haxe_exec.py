@@ -2,16 +2,12 @@ import sys
 import sublime
 import os
 import haxe.haxe_complete 
-import haxe.lib
-import haxe.output_panel
-import haxe.project
-import haxe.settings
+import haxe.lib as hxlib
+import haxe.output_panel as haxe_panel
+import haxe.project as project
+import haxe.settings as hxsettings
 
 
-hxlib = sys.modules["haxe.lib"]
-hxsettings = sys.modules["haxe.settings"]
-haxe_panel = sys.modules["haxe.output_panel"]
-project = sys.modules["haxe.project"]
 
 
 from startup import STARTUP_INFO

@@ -1,50 +1,55 @@
-import sys
+
 #sys.path.append("/usr/lib/python2.6/")
 #sys.path.append("/usr/lib/python2.6/lib-dynload")
 
 import sublime, sublime_plugin
 import time
-import tempfile
+
 import os
 #import xml.parsers.expat
 import re
-import codecs 
-import glob 
 
-import shutil
 
-import haxe.settings
+
+
+
+import haxe.settings as hxsettings
 import haxe.completion_server
-
 import haxe.typegen
-import haxe.build
-hxbuild = sys.modules["haxe.build"]
-import haxe.config
-from haxe.config import Config
-import haxe.lib
+import haxe.build as hxbuild
+import haxe.lib as hxlib
 import haxe.commands
 import haxe.output_panel
 
-import haxe.types
+
+from haxe.config import Config
+
+
+
+import haxe.types as hxtypes
 
 import thread
 
-import haxe.project
+import haxe.project as hxproject
+import haxe.hxtools as hxsourcetools
 
 from haxe.tools import ViewTools, ScopeTools
 
 
 from haxe.temp import TempClasspath
+from haxe.haxe_exec import runcmd
+
+    
+from xml.etree import ElementTree
+
+
+from elementtree import SimpleXMLTreeBuilder # part of your codebase
+
+ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
 
 
-project = sys.modules["haxe.project"]
-hxproject = project
-hxbuild = sys.modules["haxe.build"]
-hxsettings =  sys.modules["haxe.settings"]
-hxconfig =  sys.modules["haxe.config"]
-hxlib =  sys.modules["haxe.lib"]
-hxtypes =  sys.modules["haxe.types"]
+
 
 def log (msg):
 	print msg
@@ -55,42 +60,11 @@ def panel () :
 
 def HaxeCreateType (): 
 	return haxe.typegen.HaxeCreateType
-    
-from xml.etree import ElementTree
-
-
-from elementtree import SimpleXMLTreeBuilder # part of your codebase
-
-ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
-
-
-from datetime import datetime
-
-
-from haxe.haxe_exec import runcmd
 
 compilerOutput = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
-compactFunc = re.compile("\(.*\)")
-compactProp = re.compile(":.*\.([a-z_0-9]+)", re.I)
-spaceChars = re.compile("\s")
-wordChars = re.compile("[a-z0-9._]", re.I)
-importLine = re.compile("^([ \t]*)import\s+([a-z0-9._]+);", re.I | re.M)
-usingLine = re.compile("^([ \t]*)using\s+([a-z0-9._]+);", re.I | re.M)
-packageLine = re.compile("package\s*([a-z0-9.]*);", re.I)
+libFlag = re.compile("-lib\s+(.*?)")
 libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
 classpathLine = re.compile("Classpath : (.*)")
-typeDecl = re.compile("(class|typedef|enum|typedef|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
-libFlag = re.compile("-lib\s+(.*?)")
-skippable = re.compile("^[a-zA-Z0-9_\s]*$")
-inAnonymous = re.compile("[{,]\s*([a-zA-Z0-9_\"\']+)\s*:\s*$" , re.M | re.U )
-
-variables = re.compile("var\s+([^:;\s]*)", re.I)
-functions = re.compile("function\s+([^;\.\(\)\s]*)", re.I)
-functionParams = re.compile("function\s+[a-zA-Z0-9_]+\s*\(([^\)]*)", re.M)
-paramDefault = re.compile("(=\s*\"*[^\"]*\")", re.M)
-isType = re.compile("^[A-Z][a-zA-Z0-9_]*$")
-comments = re.compile("(//[^\n\r]*?[\n\r]|/\*(.*?)\*/)", re.MULTILINE | re.DOTALL )
-
 
 haxeVersion = re.compile("haxe_([0-9]{3})",re.M)
 
@@ -149,7 +123,7 @@ class HaxeOutputConverter ():
 			for i in li.getiterator("i"):
 				name = i.get("n")
 				sig = i.find("t").text
-				doc = i.find("d").text #nothing to do
+				#doc = i.find("d").text #nothing to do
 				insert = name
 				hint = name
 
@@ -168,7 +142,7 @@ class HaxeOutputConverter ():
 						else:
 							hint = name + "( " + " , ".join( types ) + " )\t" + ret
 							if len(hint) > 40: # compact arguments
-								hint = compactFunc.sub("(...)", hint);
+								hint = hxsourcetools.compactFunc.sub("(...)", hint);
 							insert = cm
 					else :
 						hint = name + "\t" + ret
@@ -183,9 +157,9 @@ class HaxeOutputConverter ():
 					#print(doc)
 				
 				if len(hint) > 40: # compact return type
-					m = compactProp.search(hint)
+					m = hxsourcetools.compactProp.search(hint)
 					if not m is None:
-						hint = compactProp.sub(": " + m.group(1), hint)
+						hint = hxsourcetools.compactProp.sub(": " + m.group(1), hint)
 				
 				comps.append( ( hint, insert ) )
 
@@ -477,7 +451,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 
 	comps = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super"),("else\ttoplevel","else")]
 
-	src = comments.sub("",src)
+	src = hxsourcetools.comments.sub("",src)
 	
 
 
@@ -485,7 +459,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 
 
 
-	localTypes = typeDecl.findall( src )
+	localTypes = hxsourcetools.typeDecl.findall( src )
 	for t in localTypes :
 		if t[1] not in cl:
 			print "local" + str(t[1])
@@ -498,7 +472,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 			print "package" + str(c)
 			cl.append( c )
 
-	imports = importLine.findall( src )
+	imports = hxsourcetools.importLine.findall( src )
 	imported = []
 	for i in imports :
 		imp = i[1]
@@ -565,17 +539,17 @@ def get_toplevel_completion( src , src_dir , build ) :
 	packs.extend( stdPackages )
 	
 
-	for v in variables.findall(src) :
+	for v in hxsourcetools.variables.findall(src) :
 		comps.append(( v + "\tvar" , v ))
 	
-	for f in functions.findall(src) :
+	for f in hxsourcetools.functions.findall(src) :
 		if f not in ["new"] :
 			comps.append(( f + "\tfunction" , f ))
 
 	
 	#TODO can we restrict this to local scope ?
-	for paramsText in functionParams.findall(src) :
-		cleanedParamsText = re.sub(paramDefault,"",paramsText)
+	for paramsText in hxsourcetools.functionParams.findall(src) :
+		cleanedParamsText = re.sub(hxsourcetools.paramDefault,"",paramsText)
 		paramsList = cleanedParamsText.split(",")
 		for param in paramsList:
 			a = param.strip();
@@ -621,7 +595,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 			cm = ( display , clname )
 		else :
 			cm = ( display , ".".join(spl) )
-		if cm not in comps and tarPkg is None or (top not in hxconfig.Config.targetPackages) or (top == tarPkg) : #( build.target is None or (top not in HaxeBuild.targets) or (top == build.target) ) :
+		if cm not in comps and tarPkg is None or (top not in Config.targetPackages) or (top == tarPkg) : #( build.target is None or (top not in HaxeBuild.targets) or (top == build.target) ) :
 			comps.append( cm )
 	
 	for p in packs :
@@ -796,7 +770,7 @@ def get_completion_info (view, offset, src, prev):
 
 			completeOffset = max( prevDot + 1, prevPar + 1 , prevColon + 1 )
 			skipped = src[completeOffset:offset]
-			toplevelComplete = skippable.search( skipped ) is None and inAnonymous.search( skipped ) is None
+			toplevelComplete = hxsourcetools.skippable.search( skipped ) is None and hxsourcetools.inAnonymous.search( skipped ) is None
 
 	return (commas, completeOffset, toplevelComplete)
 

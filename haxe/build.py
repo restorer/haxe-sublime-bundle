@@ -1,17 +1,16 @@
 
 import os
 from haxe.config import Config
-import haxe.types
-import haxe.lib
-import sys
+import haxe.types as hxtypes
+import haxe.lib as hxlib
+#import sys
 import glob
 import codecs
 import sublime
 #import haxe.output_panel
 import re
 
-hxlib = sys.modules["haxe.lib"]
-hxtypes = sys.modules["haxe.types"]
+
 
 
 hxml_cache = {}
