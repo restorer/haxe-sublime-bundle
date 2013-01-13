@@ -1,36 +1,176 @@
 
 import os
 from haxe.config import Config
-import haxe.haxe_complete
+import haxe.types
+import haxe.lib
 import sys
+import glob
+import codecs
+import sublime
+#import haxe.output_panel
+import re
 
-import haxe.output_panel
-
-haxe_complete = sys.modules["haxe.haxe_complete"]
-
-def find_types (classpaths, libs, projectPath):
-	classes = []
-	packs = []
-
-	cp = []
-	cp.extend( classpaths )
-
-	for lib in libs :
-		if lib is not None :
-			cp.append( lib.path )
+hxlib = sys.modules["haxe.lib"]
+hxtypes = sys.modules["haxe.types"]
 
 
-	for path in cp :
-		c, p = haxe_complete.extract_types( os.path.join( projectPath, path ) )
-		classes.extend( c )
-		packs.extend( p )
+hxml_cache = {}
 
-	
-	
-	classes.sort()
-	packs.sort()
+def find_hxml( folder ) :
+	print "find_hxml"
+	builds = []
+	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
+	for build in hxmls:
+		new_build = HaxeBuild()
+		if build in hxml_cache:
+			cached = hxml_cache[build]
+			if cached.equals(new_build):
+				print "builds equal"
+				currentBuild = cached
+				print "builds differ"
+			else:
+				hxml_cache[build] = new_build
+				currentBuild = new_build
 
-	return classes,packs
+		currentBuild = HaxeBuild()
+		currentBuild.hxml = build
+		buildPath = os.path.dirname(build);
+
+		# print("build file exists")
+		f = codecs.open( build , "r+" , "utf-8" , "ignore" )
+		while 1:
+			l = f.readline() 
+			if not l : 
+				break;
+			if l.startswith("--next") :
+				builds.append( currentBuild )
+				currentBuild = HaxeBuild()
+				currentBuild.hxml = build
+				
+			l = l.strip()
+			
+			if l.startswith("-main") :
+				spl = l.split(" ")
+				if len( spl ) == 2 :
+					currentBuild.main = spl[1]
+				else :
+					sublime.status_message( "Invalid build.hxml : no Main class" )
+			
+			if l.startswith("-lib") :
+				spl = l.split(" ")
+				if len( spl ) == 2 :
+					lib = hxlib.HaxeLib.get( spl[1] )
+					currentBuild.libs.append( lib )
+				else :
+					sublime.status_message( "Invalid build.hxml : lib not found" )
+
+			if l.startswith("-cmd") :
+				spl = l.split(" ")
+				currentBuild.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
+
+			#if l.startswith("--connect") and HaxeComplete.instance().serverMode :
+			#	currentBuild.args.append( ( "--connect" , str(self.serverPort) ))
+			
+			for flag in [ "lib" , "D" , "swf-version" , "swf-header", "debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , "-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , "-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , "-remap" , "-php-front" , "-php-lib", "-dce" , "-js-modern" ] :
+				if l.startswith( "-"+flag ) :
+					currentBuild.args.append( tuple(l.split(" ") ) )
+					
+					break
+			
+			for flag in [ "resource" , "xml" , "x" , "swf-lib" ] :
+				if l.startswith( "-"+flag ) :
+					spl = l.split(" ")
+					outp = os.path.join( folder , " ".join(spl[1:]) )
+					currentBuild.args.append( ("-"+flag, outp) )
+					
+					break
+
+			for flag in HaxeBuild.targets :
+				if l.startswith( "-" + flag + " " ) :
+					spl = l.split(" ")
+					#outp = os.path.join( folder , " ".join(spl[1:]) ) 
+					outp = " ".join(spl[1:]) 
+					currentBuild.args.append( ("-"+flag, outp) )
+					
+					currentBuild.target = flag
+					currentBuild.output = outp
+					break
+
+			if l.startswith("-cp "):
+				cp = l.split(" ")
+				#view.set_status( "haxe-status" , "Building..." )
+				cp.pop(0)
+				classpath = " ".join( cp )
+				
+				absClasspath = os.path.join( buildPath , classpath )
+				normAbsClasspath = os.path.normpath(absClasspath)
+				currentBuild.classpaths.append( normAbsClasspath )
+				currentBuild.args.append( ("-cp" , normAbsClasspath ) )
+		
+		if len(currentBuild.classpaths) == 0:
+			print "no classpaths"
+			currentBuild.classpaths.append( buildPath )
+			currentBuild.args.append( ("-cp" , buildPath ) )
+		
+		if currentBuild.main is not None :
+			builds.append( currentBuild )
+	return builds
+
+extractTag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
+
+def find_nmml( folder ) :
+	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
+
+	builds = []
+
+	for build in nmmls:
+		currentBuild = HaxeBuild()
+		currentBuild.hxml = build
+		currentBuild.nmml = build
+		buildPath = os.path.dirname(build)
+
+		# TODO delegate compiler options extractions to NME 3.2:
+		# runcmd("nme diplay project.nmml nme_target")
+
+		outp = "NME"
+		f = codecs.open( build , "r+", "utf-8" , "ignore" )
+		while 1:
+			l = f.readline() 
+			if not l : 
+				break;
+			m = extractTag.search(l)
+			if not m is None:
+				#print(m.groups())
+				tag = m.group(1)
+				name = m.group(3)
+				if (tag == "app"):
+					currentBuild.main = name
+					mFile = re.search("\\b(file|title)=\"([a-z0-9_-]+)\"", l, re.I)
+					if not mFile is None:
+						outp = mFile.group(2)
+				elif (tag == "haxelib"):
+					currentBuild.libs.append( hxlib.HaxeLib.get( name ) )
+					currentBuild.args.append( ("-lib" , name) )
+				elif (tag == "classpath"):
+					currentBuild.classpaths.append( os.path.join( buildPath , name ) )
+					currentBuild.args.append( ("-cp" , os.path.join( buildPath , name ) ) )
+			else: # NME 3.2
+				mPath = re.search("\\bpath=\"([a-z0-9_-]+)\"", l, re.I)
+				if not mPath is None:
+					#print(mPath.groups())
+					path = mPath.group(1)
+					currentBuild.classpaths.append( os.path.join( buildPath , path ) )
+					currentBuild.args.append( ("-cp" , os.path.join( buildPath , path ) ) )
+		
+		outp = os.path.join( folder , outp )
+		currentBuild.target = "cpp"
+		currentBuild.args.append( ("--remap", "flash:nme") )
+		currentBuild.args.append( ("-cpp", outp) )
+		currentBuild.output = outp
+
+		if currentBuild.main is not None :
+			builds.append( currentBuild )
+	return builds
 
 
 
@@ -151,7 +291,7 @@ class HaxeBuild :
 
 
 
-		classes, packages = find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ) )
+		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ) )
 
 
 

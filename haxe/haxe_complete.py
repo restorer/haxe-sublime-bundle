@@ -18,11 +18,14 @@ import haxe.completion_server
 
 import haxe.typegen
 import haxe.build
+hxbuild = sys.modules["haxe.build"]
 import haxe.config
 from haxe.config import Config
 import haxe.lib
 import haxe.commands
 import haxe.output_panel
+
+import haxe.types
 
 import thread
 
@@ -36,10 +39,12 @@ from haxe.temp import TempClasspath
 
 
 project = sys.modules["haxe.project"]
+hxproject = project
 hxbuild = sys.modules["haxe.build"]
 hxsettings =  sys.modules["haxe.settings"]
 hxconfig =  sys.modules["haxe.config"]
 hxlib =  sys.modules["haxe.lib"]
+hxtypes =  sys.modules["haxe.types"]
 
 def log (msg):
 	print msg
@@ -78,7 +83,7 @@ typeDecl = re.compile("(class|typedef|enum|typedef|abstract)\s+([A-Z][a-zA-Z0-9_
 libFlag = re.compile("-lib\s+(.*?)")
 skippable = re.compile("^[a-zA-Z0-9_\s]*$")
 inAnonymous = re.compile("[{,]\s*([a-zA-Z0-9_\"\']+)\s*:\s*$" , re.M | re.U )
-extractTag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
+
 variables = re.compile("var\s+([^:;\s]*)", re.I)
 functions = re.compile("function\s+([^;\.\(\)\s]*)", re.I)
 functionParams = re.compile("function\s+[a-zA-Z0-9_]+\s*\(([^\)]*)", re.M)
@@ -97,7 +102,7 @@ bundleFile = __file__
 bundlePath = os.path.abspath(bundleFile)
 bundleDir = os.path.dirname(bundlePath)
 
-hxml_cache = {}
+
 
 
 
@@ -412,7 +417,7 @@ def background_completion(completion_id, basic_comps, temp_file, orig_file, temp
 		print "do remove temp_path"
 		TempClasspath.remove_path(temp_path)
 		comps.extend(comps_)
-		
+
 		
 		if completion_id == HaxeComplete.current_completion_id:
 			cache["output"] = (ret_,comps,status_)
@@ -459,74 +464,7 @@ def supported_compiler_completion_char (char):
 	return char in "(.,"
 
 
-type_cache = {}
 
-
-def extract_types( path , depth = 0 ) :
-
-	now = time.time()
-
-	if path in type_cache:
-		old_time = type_cache[path][1]
-		
-		if (now - old_time) < 30000:
-			log("use-type-cache")
-			return type_cache[path][0]
-		else:
-			del type_cache[path]
-
-	classes = []
-	packs = []
-	hasClasses = False
-	
-	for fullpath in glob.glob( os.path.join(path,"*.hx") ) : 
-		f = os.path.basename(fullpath)
-
-		cl, ext = os.path.splitext( f )
-							
-		if cl not in HaxeComplete.stdClasses:
-			s = codecs.open( os.path.join( path , f ) , "r" , "utf-8" , "ignore" )
-			src = comments.sub( "" , s.read() )
-			
-			clPack = "";
-			for ps in packageLine.findall( src ) :
-				clPack = ps
-			
-			if clPack == "" :
-				packDepth = 0
-			else:
-				packDepth = len(clPack.split("."))
-
-			for decl in typeDecl.findall( src ):
-				t = decl[1]
-
-				if( packDepth == depth ) : # and t == cl or cl == "StdTypes"
-					if t == cl or cl == "StdTypes":
-						classes.append( t )
-					else: 
-						classes.append( cl + "." + t )
-
-					hasClasses = True
-	
-
-	if hasClasses or depth == 0 : 
-		
-		for f in os.listdir( path ) :
-			
-			cl, ext = os.path.splitext( f )
-											
-			if os.path.isdir( os.path.join( path , f ) ) and f not in HaxeComplete.stdPackages :
-				packs.append( f )
-				subclasses,subpacks = extract_types( os.path.join( path , f ) , depth + 1 )
-				for cl in subclasses :
-					classes.append( f + "." + cl )
-				
-	classes.sort()
-	packs.sort()
-
-	type_cache[path] = ((list(classes), list(packs)), now)
-
-	return classes, packs
 
 
 
@@ -554,7 +492,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 			cl.append( t[1] )
 
 
-	packageClasses, subPacks = extract_types( src_dir )
+	packageClasses, subPacks = hxtypes.extract_types( src_dir )
 	for c in packageClasses :
 		if c not in cl:
 			print "package" + str(c)
@@ -709,10 +647,7 @@ def get_hxml_completions( view , offset ) :
 	else :
 		return []
 
-def savetotemp( path, src ):
-	f = tempfile.NamedTemporaryFile( delete=False )
-	f.write( src )
-	return f
+
 
 def collect_compiler_info ():
 	out, err = runcmd( [hxsettings.HaxeSettings.haxeExec(), "-main", "Nothing", "-v", "--no-output"] )
@@ -729,175 +664,16 @@ def collect_compiler_info ():
 	for p in stdPaths : 
 		#print("std path : "+p)
 		if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
-			classes, packs = extract_types( p )
+			classes, packs = hxtypes.extract_types( p )
 			
 
 	ver = re.search( haxeVersion , out )
 
 	return (classes, packs, ver, stdPaths)
 
-def find_hxml( folder ) :
-	print "find_hxml"
-	builds = []
-	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
-	for build in hxmls:
-		new_build = hxbuild.HaxeBuild()
-		if build in hxml_cache:
-			cached = hxml_cache[build]
-			if cached.equals(new_build):
-				print "builds equal"
-				currentBuild = cached
-				print "builds differ"
-			else:
-				hxml_cache[build] = new_build
-				currentBuild = new_build
-
-		currentBuild = hxbuild.HaxeBuild()
-		currentBuild.hxml = build
-		buildPath = os.path.dirname(build);
-
-		# print("build file exists")
-		f = codecs.open( build , "r+" , "utf-8" , "ignore" )
-		while 1:
-			l = f.readline() 
-			if not l : 
-				break;
-			if l.startswith("--next") :
-				builds.append( currentBuild )
-				currentBuild = hxbuild.HaxeBuild()
-				currentBuild.hxml = build
-				
-			l = l.strip()
-			
-			if l.startswith("-main") :
-				spl = l.split(" ")
-				if len( spl ) == 2 :
-					currentBuild.main = spl[1]
-				else :
-					sublime.status_message( "Invalid build.hxml : no Main class" )
-			
-			if l.startswith("-lib") :
-				spl = l.split(" ")
-				if len( spl ) == 2 :
-					lib = hxlib.HaxeLib.get( spl[1] )
-					currentBuild.libs.append( lib )
-				else :
-					sublime.status_message( "Invalid build.hxml : lib not found" )
-
-			if l.startswith("-cmd") :
-				spl = l.split(" ")
-				currentBuild.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
-
-			#if l.startswith("--connect") and HaxeComplete.instance().serverMode :
-			#	currentBuild.args.append( ( "--connect" , str(self.serverPort) ))
-			
-			for flag in [ "lib" , "D" , "swf-version" , "swf-header", "debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , "-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , "-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , "-remap" , "-php-front" , "-php-lib", "-dce" , "-js-modern" ] :
-				if l.startswith( "-"+flag ) :
-					currentBuild.args.append( tuple(l.split(" ") ) )
-					
-					break
-			
-			for flag in [ "resource" , "xml" , "x" , "swf-lib" ] :
-				if l.startswith( "-"+flag ) :
-					spl = l.split(" ")
-					outp = os.path.join( folder , " ".join(spl[1:]) )
-					currentBuild.args.append( ("-"+flag, outp) )
-					
-					break
-
-			for flag in hxbuild.HaxeBuild.targets :
-				if l.startswith( "-" + flag + " " ) :
-					spl = l.split(" ")
-					#outp = os.path.join( folder , " ".join(spl[1:]) ) 
-					outp = " ".join(spl[1:]) 
-					currentBuild.args.append( ("-"+flag, outp) )
-					
-					currentBuild.target = flag
-					currentBuild.output = outp
-					break
-
-			if l.startswith("-cp "):
-				cp = l.split(" ")
-				#view.set_status( "haxe-status" , "Building..." )
-				cp.pop(0)
-				classpath = " ".join( cp )
-				main_folder = project.Project.main_folder()
-				absClasspath = os.path.join( main_folder , classpath )
-				normAbsClasspath = os.path.normpath(absClasspath)
-				currentBuild.classpaths.append( normAbsClasspath )
-				currentBuild.args.append( ("-cp" , normAbsClasspath ) )
-		
-		if len(currentBuild.classpaths) == 0:
-			print "no classpaths"
-			currentBuild.classpaths.append( buildPath )
-			currentBuild.args.append( ("-cp" , buildPath ) )
-		
-		if currentBuild.main is not None :
-			builds.append( currentBuild )
-	return builds
-
-def find_nmml( folder ) :
-	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
-
-	builds = []
-
-	for build in nmmls:
-		currentBuild = hxbuild.HaxeBuild()
-		currentBuild.hxml = build
-		currentBuild.nmml = build
-		buildPath = os.path.dirname(build)
-
-		# TODO delegate compiler options extractions to NME 3.2:
-		# runcmd("nme diplay project.nmml nme_target")
-
-		outp = "NME"
-		f = codecs.open( build , "r+", "utf-8" , "ignore" )
-		while 1:
-			l = f.readline() 
-			if not l : 
-				break;
-			m = extractTag.search(l)
-			if not m is None:
-				#print(m.groups())
-				tag = m.group(1)
-				name = m.group(3)
-				if (tag == "app"):
-					currentBuild.main = name
-					mFile = re.search("\\b(file|title)=\"([a-z0-9_-]+)\"", l, re.I)
-					if not mFile is None:
-						outp = mFile.group(2)
-				elif (tag == "haxelib"):
-					currentBuild.libs.append( hxlib.HaxeLib.get( name ) )
-					currentBuild.args.append( ("-lib" , name) )
-				elif (tag == "classpath"):
-					currentBuild.classpaths.append( os.path.join( buildPath , name ) )
-					currentBuild.args.append( ("-cp" , os.path.join( buildPath , name ) ) )
-			else: # NME 3.2
-				mPath = re.search("\\bpath=\"([a-z0-9_-]+)\"", l, re.I)
-				if not mPath is None:
-					#print(mPath.groups())
-					path = mPath.group(1)
-					currentBuild.classpaths.append( os.path.join( buildPath , path ) )
-					currentBuild.args.append( ("-cp" , os.path.join( buildPath , path ) ) )
-		
-		outp = os.path.join( folder , outp )
-		currentBuild.target = "cpp"
-		currentBuild.args.append( ("--remap", "flash:nme") )
-		currentBuild.args.append( ("-cpp", outp) )
-		currentBuild.output = outp
-
-		if currentBuild.main is not None :
-			builds.append( currentBuild )
-	return builds
 
 
 
-def select_nme_target( build, i, view ):
-	target = hxbuild.HaxeBuild.nme_targets[i]
-	if build.nmml is not None:
-		hxbuild.HaxeBuild.nme_target = target
-		view.set_status( "haxe-build" , build.to_string() )
-		panel().status( "haxe-build" , build.to_string() )
 
 def highlight_errors( errors , view ) :
 	print "highlight_errors" + str(len(errors))
@@ -1041,229 +817,42 @@ def run_nme( view, build ) :
 
 
 
-class HaxeBuildHelper ():
 
-
-	def __init__ (self):
-
-		self.currentBuild = None
-		self.selectingBuild = False
-		self.builds = []
-
-
-	def generate_build(self, view) :
-
-		fn = view.file_name()
-
-		if self.currentBuild is not None and fn == self.currentBuild.hxml and view.size() == 0 :	
-			e = view.begin_edit()
-			hxmlSrc = self.currentBuild.make_hxml()
-			view.insert(e,0,hxmlSrc)
-			view.end_edit(e)
-
-
-	def select_build( self , view ) :
-		scopes = view.scope_name(view.sel()[0].end()).split()
-		
-		if 'source.hxml' in scopes:
-			view.run_command("save")
-
-		self.extract_build_args( view , True )
-
-
-	# called everytime a view is activated
-
-	def extract_build_args( self , view , forcePanel = False ) :
-		
-		self.builds = []
-
-		fn = view.file_name()
-
-
-		settings = view.settings()
-
-		print "filename: " + fn
-
-		folder = os.path.dirname(fn)
-		
-
-		folders = view.window().folders()
-		
-		for f in folders:
-			self.builds.extend(find_hxml(f))
-			self.builds.extend(find_nmml(f))
-				
-
-		
-		print "num builds:" + str(len(self.builds))
-
-		# settings.set("haxe-complete-folder", folder)
-		
-
-		if len(self.builds) == 1:
-			if forcePanel : 
-				sublime.status_message("There is only one build")
-
-			# will open the build file
-			#if forcePanel :
-			#	b = self.builds[0]
-			#	f = b.hxml
-			#	v = view.window().open_file(f,sublime.TRANSIENT) 
-
-			self.set_current_build( view , int(0), forcePanel )
-
-		elif len(self.builds) == 0 and forcePanel :
-			sublime.status_message("No hxml or nmml file found")
-
-			f = os.path.join(folder,"build.hxml")
-
-			self.currentBuild = None
-			self.get_build(view)
-			self.currentBuild.hxml = f
-
-			#for whatever reason generate_build doesn't work without transient
-			v = view.window().open_file(f,sublime.TRANSIENT)
-
-			self.set_current_build( view , int(0), forcePanel )
-
-		elif len(self.builds) > 1 and forcePanel :
-			buildsView = []
-			for b in self.builds :
-				#for a in b.args :
-				#	v.append( " ".join(a) )
-				buildsView.append( [b.to_string(), os.path.basename( b.hxml ) ] )
-
-			self.selectingBuild = True
-			sublime.status_message("Please select your build")
-			view.window().show_quick_panel( buildsView , lambda i : self.set_current_build(view, int(i), forcePanel) , sublime.MONOSPACE_FONT )
-
-		elif settings.has("haxe-build-id"):
-			self.set_current_build( view , int(settings.get("haxe-build-id")), forcePanel )
-		
-		else:
-			self.set_current_build( view , int(0), forcePanel )
-
-
-	def set_current_build( self , view , id , forcePanel ) :
-		
-		print "set_current_build"
-		if id < 0 or id >= len(self.builds) :
-			id = 0
-		
-		view.settings().set( "haxe-build-id" , id )	
-
-		if len(self.builds) > 0 :
-			self.currentBuild = self.builds[id]
-			print "set_current_build - 2"
-			panel().status( "haxe-build" , self.currentBuild.to_string() )
-		else:
-			panel().status( "haxe-build" , "No build" )
-			
-		self.selectingBuild = False
- 
-		if forcePanel and self.currentBuild is not None: # choose NME target
-			if self.currentBuild.nmml is not None:
-				sublime.status_message("Please select a NME target")
-				nme_targets = []
-				for t in hxbuild.HaxeBuild.nme_targets :
-					nme_targets.append( t[0] )
-
-				view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.currentBuild, i, view))
-
-	def clear_build( self  ) :
-		self.currentBuild = None
-
-	def get_build( self , view ) :
-		
-		if self.currentBuild is None and view.score_selector(0,"source.haxe.2") > 0 :
-
-			fn = view.file_name()
-
-			src_dir = os.path.dirname( fn )
-
-			src = view.substr(sublime.Region(0, view.size()))
-		
-			build = hxbuild.HaxeBuild()
-			build.target = "js"
-
-			folder = os.path.dirname(fn)
-			folders = view.window().folders()
-			for f in folders:
-				if f in fn :
-					folder = f
-
-			pack = []
-			for ps in packageLine.findall( src ) :
-				if ps == "":
-					continue
-					
-				pack = ps.split(".")
-				for p in reversed(pack) : 
-					spl = os.path.split( src_dir )
-					if( spl[1] == p ) :
-						src_dir = spl[0]
-
-			cl = os.path.basename(fn)
-			cl = cl.encode('ascii','ignore')
-			cl = cl[0:cl.rfind(".")]
-
-			main = pack[0:]
-			main.append( cl )
-			build.main = ".".join( main )
-
-			build.output = os.path.join(folder,build.main.lower() + ".js")
-
-			print "add cp: " + src_dir
-
-			build.args.append( ("-cp" , src_dir) )
-			#build.args.append( ("-main" , build.main ) )
-
-			build.args.append( ("-js" , build.output ) )
-			#build.args.append( ("--no-output" , "-v" ) )
-
-			build.hxml = os.path.join( src_dir , "build.hxml")
-			
-			#build.hxml = os.path.join( src_dir , "build.hxml")
-			self.currentBuild = build
-			
-		return self.currentBuild	
-
-
-class PanelHelper ():
-
-	def __init__ (self):
-		self.panel = None
-
-
-	def clear_output_panel(self, view) :
-		win = view.window()
-
-		self.panel = win.get_output_panel("haxe")
-
-	def panel_output( self , view , text , scope = None ) :
-		win = view.window()
-		if self.panel is None :
-			self.panel = win.get_output_panel("haxe")
-
-		panel = self.panel
-
-		text = datetime.now().strftime("%H:%M:%S") + " " + text;
-		
-		edit = panel.begin_edit()
-		region = sublime.Region(panel.size(),panel.size() + len(text))
-		panel.insert(edit, panel.size(), text + "\n")
-		panel.end_edit( edit )
-
-		if scope is not None :
-			icon = "dot"
-			key = "haxe-" + scope
-			regions = panel.get_regions( key );
-			regions.append(region)
-			panel.add_regions( key , regions , scope , icon )
-		#print( err )
-		win.run_command("show_panel",{"panel":"output.haxe"})
-
-		return self.panel
+#class PanelHelper ():
+#
+#	def __init__ (self):
+#		self.panel = None
+#
+#
+#	def clear_output_panel(self, view) :
+#		win = view.window()
+#
+#		self.panel = win.get_output_panel("haxe")
+#
+#	def panel_output( self , view , text , scope = None ) :
+#		win = view.window()
+#		if self.panel is None :
+#			self.panel = win.get_output_panel("haxe")
+#
+#		panel = self.panel
+#
+#		text = datetime.now().strftime("%H:%M:%S") + " " + text;
+#		
+#		edit = panel.begin_edit()
+#		region = sublime.Region(panel.size(),panel.size() + len(text))
+#		panel.insert(edit, panel.size(), text + "\n")
+#		panel.end_edit( edit )
+#
+#		if scope is not None :
+#			icon = "dot"
+#			key = "haxe-" + scope
+#			regions = panel.get_regions( key );
+#			regions.append(region)
+#			panel.add_regions( key , regions , scope , icon )
+#		#print( err )
+#		win.run_command("show_panel",{"panel":"output.haxe"})
+#
+#		return self.panel
 
 def is_delayed_completion(view):
 	id = view.id() 
@@ -1377,7 +966,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			HaxeComplete.stdClasses.extend( classes )
 			HaxeComplete.stdPackages.extend( packs )
 
-			
 
 			if ver is not None :
 				HaxeComplete.inst.server.serverMode = int(ver.group(1)) >= 209
@@ -1392,8 +980,8 @@ class HaxeComplete( sublime_plugin.EventListener ):
 	def __init__(self):
 		
 		self.server = haxe.completion_server.CompletionServer(6000, True)
-		self.panel_helper = PanelHelper()
-		self.build_helper = HaxeBuildHelper()
+		#self.panel_helper = PanelHelper()
+		
 		HaxeComplete.inst = self
 		
 		
@@ -1422,13 +1010,13 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			HaxeCreateType().on_activated( view )
 		
 		
-		self.build_helper.generate_build( view )
+		hxproject.generate_build( view )
 		highlight_errors( self.errors, view )
 
 
 	def on_post_save( self , view ) :
 		if ViewTools.is_hxml(view):
-			self.build_helper.clear_build()
+			hxproject.clear_build()
 			self.clear_completion()
 
 	# view is None when it's a preview
@@ -1452,10 +1040,10 @@ class HaxeComplete( sublime_plugin.EventListener ):
 		if ViewTools.is_haxe(view) :
 			HaxeCreateType().on_activated( view )
 		
-		self.build_helper.get_build(view)
-		self.build_helper.extract_build_args( view )
+		hxproject.get_build(view)
+		hxproject.extract_build_args( view )
 		
-		self.build_helper.generate_build(view)
+		hxproject.generate_build(view)
 		highlight_errors( self.errors, view )
 
 	def on_pre_save( self , view ) :
@@ -1611,7 +1199,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 				else:
 					# get build and maybe use cache
-					build = self.build_helper.get_build( view ).copy()
+					build = hxproject.get_build( view ).copy()
 					cache = self.currentCompletion
 					
 

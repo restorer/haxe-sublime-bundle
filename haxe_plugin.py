@@ -49,7 +49,8 @@ mods_load_order = [
     'haxe.settings',
     'haxe.startup',
     'haxe.project',
-    'haxe.temp'
+    'haxe.temp',
+    'haxe.types'
     
     
 ]  

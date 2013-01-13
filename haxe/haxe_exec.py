@@ -5,23 +5,25 @@ import haxe.haxe_complete
 import haxe.lib
 import haxe.output_panel
 import haxe.project
+import haxe.settings
 
 
 hxlib = sys.modules["haxe.lib"]
+hxsettings = sys.modules["haxe.settings"]
 haxe_panel = sys.modules["haxe.output_panel"]
 project = sys.modules["haxe.project"]
 
 
 from startup import STARTUP_INFO
 from subprocess import Popen, PIPE
-import haxe.settings
+
 
 stexec = __import__("exec") 
 
 
 def runcmd( args, input=None ):
 	
-	settings = haxe.settings.HaxeSettings
+	settings = hxsettings.HaxeSettings
 	
 	project_main_folder = project.Project.main_folder()
 
