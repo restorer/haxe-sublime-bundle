@@ -59,8 +59,21 @@ class HaxeSettings:
 				return None
 			
 				
-
 	
+	
+	
+	@staticmethod
+	def no_fuzzy_completion (view = None):
+		return HaxeSettings.getBool("no-fuzzy-completion", False, view)
+
+	@staticmethod
+	def top_level_completions_on_demand (view = None):
+		return HaxeSettings.getBool("top-level-completions-on-demand", False, view)
+
+	@staticmethod
+	def only_delayed_completions (view = None):
+		return HaxeSettings.getBool("only-delayed-completions", False, view)
+
 	@staticmethod
 	def is_delayed_completion (view = None):
 		return HaxeSettings.getBool("delayed-completion", False, view)

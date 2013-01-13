@@ -10,6 +10,8 @@ import haxe.build
 import haxe.commands
 import haxe.startup
 import haxe.config
+import haxe.temp
+import haxe.types
 import sys
 
 
@@ -25,7 +27,8 @@ haxe_build = sys.modules["haxe.build"]
 commands = sys.modules["haxe.commands"]
 startup = sys.modules["haxe.startup"]
 config = sys.modules["haxe.config"]
- 
+temp = sys.modules["haxe.temp"]
+types = sys.modules["haxe.types"]
 
 __all__ = [
     "haxe"
@@ -39,6 +42,8 @@ __all__ = [
     "build",
     "config",
     "commands",
-    "startup"
+    "startup",
+    "temp",
+    "types"
 
  ]      

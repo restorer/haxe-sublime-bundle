@@ -48,7 +48,9 @@ mods_load_order = [
     'haxe.output_panel',
     'haxe.settings',
     'haxe.startup',
-    'haxe.project'
+    'haxe.project',
+    'haxe.temp',
+    'haxe.types'
     
     
 ]  
@@ -58,9 +60,6 @@ print reload_mods
 for mod in mods_load_order:
     if mod in reload_mods:
         reload(sys.modules[mod])
-
-
-
 
 
 if not hook_match:
@@ -151,9 +150,11 @@ import haxe.haxe_exec
 import haxe.codegen 
 import haxe.config 
 import haxe.tools
+import haxe.build
 import haxe.settings
 
 from haxe.settings import HaxeSettings
+from haxe.build import HaxeBuild
 
 from haxe.haxe_complete import HaxeComplete,HaxeOutputConverter
 from haxe.commands import *
@@ -168,6 +169,7 @@ from haxe.commands import HaxeSelectBuild,HaxeHint,HaxeGenerateUsingCommand,Haxe
 from haxe.lib import HaxeInstallLib
 from haxe.project import Project
 from haxe.output_panel import HaxePanel
+from haxe.temp import TempClasspath
 
 f = os.path.dirname(os.path.realpath(__file__))
 def plugin_dir():
