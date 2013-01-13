@@ -1,15 +1,15 @@
 [
-	{
+	/*{
 		"command": "haxe_insert_completion"
-	},
+	},*/
 	/*{	"command" : "soft_undo"   },*/
-	{
+	/*{
 		"command": "insert",
 		"args":
 		{
 			"characters": "."
 		}
-	},
+	},*/
 	{
 		"command": "haxe_display_completion"
 	}
