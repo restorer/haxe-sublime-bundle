@@ -38,7 +38,7 @@ if reload_mods:
  
 mods_load_order = [
     'haxe',
-    'haxe.config'
+    'haxe.config',
     'haxe.commands', 
     'haxe.build',
     'haxe.haxe_complete',
@@ -64,8 +64,10 @@ print reload_mods
 
 for mod in mods_load_order:
     if mod in reload_mods:
+        print "reload " + mod
         reload(sys.modules[mod])
 
+ 
 
 if not hook_match:
     class ExcepthookChain1(object):
@@ -147,38 +149,7 @@ def unload_handler():
 
 
 
-import haxe.haxe_complete
-import haxe.lib
-import haxe.commands
-import haxe.typegen
-import haxe.haxe_exec
-import haxe.codegen 
-import haxe.config 
-import haxe.tools
-import haxe.build
-import haxe.compiler.outputparser
-import haxe.settings
 
-from haxe.compiler.server import Server
-from haxe.settings import HaxeSettings
-from haxe.build import HaxeBuild
-
-from haxe.haxe_complete import HaxeComplete
-from haxe.commands import *
- 
-from haxe.compiler.server import Server
-
-#from haxe.haxe_exec import HaxelibExecCommand
-from haxe.config import Config
-from haxe.tools import PathTools, ViewTools, CaretTools, SublimeTools, ScopeTools
-
-from haxe.typegen import HaxeCreateType, HaxeCreateTypeListener
-from haxe.commands import HaxeSelectBuildCommand,HaxeHintCommand,HaxeGenerateUsingCommand,HaxeGenerateImportCommand
-from haxe.lib import HaxeInstallLib
-from haxe.project import Project
-from haxe.output_panel import HaxePanel
-
-from haxe.types import *
 #from haxe.temp import TempClasspath
 
 f = os.path.dirname(os.path.realpath(__file__))

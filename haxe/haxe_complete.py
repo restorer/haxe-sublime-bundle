@@ -44,8 +44,7 @@ def log (msg):
 def panel () : 
 	return haxe.output_panel.HaxePanel
 
-def HaxeCreateType (): 
-	return haxe.typegen.HaxeCreateType
+
 
 
 haxeFileRegex = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
@@ -235,13 +234,18 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 
 			if delayed:
 				background_completion(completion_id, list(comps), temp_file, orig_file,temp_path,
-					view, handle_completion_output, run_compiler_completion, cache,
-					current_input, completeOffset)
+					view, cache, current_input, completeOffset, run_compiler_completion)
 				
 				ret, comps1, status = "", [], ""
 			else:
 				ret, err = run_compiler_completion()
-				comps1, status = handle_completion_output(temp_file, orig_file, view, err)
+
+				(hints, comps1, err1) = parse_completion_output(temp_file, orig_file, err)
+				
+				status, errors = handle_completion_output(hints, comps, err1, temp_file, orig_file)
+
+				ctx().set_errors(errors)
+				highlight_errors( errors, view )
 		else:
 			ret, comps1, status = "",[], ""
 
@@ -270,8 +274,7 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 	return comps
 
 def background_completion(completion_id, basic_comps, temp_file, orig_file, temp_path, 
-		view, handle_completion_output, run_compiler_completion,
-		cache, current_input, completeOffset):
+		view, cache, current_input, completeOffset, run_compiler_completion):
 	hide_delay, show_delay = hxsettings.HaxeSettings.get_completion_delays()
 
 	
@@ -283,7 +286,13 @@ def background_completion(completion_id, basic_comps, temp_file, orig_file, temp
 
 	def in_main (ret_, err_):
 
-		comps_, status_ = handle_completion_output(temp_file, orig_file, view, err_)
+		(hints, comps_, err1) = parse_completion_output(temp_file, orig_file, err_)
+				
+		status_, errors = handle_completion_output(hints, comps, err1, temp_file, orig_file)
+
+		ctx().set_errors(errors)
+		highlight_errors( errors, view )
+
 		
 		print "do remove temp_path"
 		temp.remove_path(temp_path)
@@ -497,13 +506,13 @@ def get_toplevel_completion( src , src_dir , build ) :
 	
 	return comps
 
-def get_hxsl_completions( view , offset ) :
+def hxsl_query_completion( view , offset ) :
 	comps = []
 	for t in ["Float","Float2","Float3","Float4","Matrix","M44","M33","M34","M43","Texture","CubeTexture","Int","Color","include"] :
 		comps.append( ( t , "hxsl Type" ) )
 	return comps
 
-def get_hxml_completions( view , offset ) :
+def hxml_query_completions( view , offset ) :
 	src = view.substr(sublime.Region(0, offset))
 	currentLine = src[src.rfind("\n")+1:offset]
 	m = libFlag.match( currentLine )
@@ -511,13 +520,6 @@ def get_hxml_completions( view , offset ) :
 		return hxlib.HaxeLib.get_completions()
 	else :
 		return []
-
-
-
-
-
-
-
 
 
 def highlight_errors( errors , view ) :
@@ -542,56 +544,7 @@ def highlight_errors( errors , view ) :
 			
 	view.add_regions("haxe-error" , regions , "invalid" , "dot" )
 
-def handle_completion_error(err, temp_file, orig_file, status):
-	err = err.replace( temp_file , orig_file )
-	err = re.sub( u"\(display(.*)\)" ,"",err)
-	
-	lines = err.split("\n")
-	l = lines[0].strip()
-	
-	if len(l) > 0 :
-		if l == "<list>" :
-			status = "No autocompletion available"
-		elif not re.match( haxeFileRegex , l ):
-			status = l
-		else :
-			status = ""
 
-	#regions = []
-	
-	# for infos in compilerOutput.findall(err) :
-	# 	infos = list(infos)
-	# 	f = infos.pop(0)
-	# 	l = int( infos.pop(0) )-1
-	# 	left = int( infos.pop(0) )
-	# 	right = infos.pop(0)
-	# 	if right != "" :
-	# 		right = int( right )
-	# 	else :
-	# 		right = left+1
-	# 	m = infos.pop(0)
-
-	# 	self.errors.append({
-	# 		"file" : f,
-	# 		"line" : l,
-	# 		"from" : left,
-	# 		"to" : right,
-	# 		"message" : m
-	# 	})
-		
-	# 	if( f == fn ):
-	# 		status = m
-		
-	# 	if not autocomplete :
-	# 		w = view.window()
-	# 		if not w is None :
-	# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
-	# 	#if not autocomplete
-
-	errors = outputparser.extract_errors( err )
-
-	return (status,errors)
-	#
 
 
 def count_commas_and_complete_offset (src, prevComa, completeOffset):
@@ -775,10 +728,7 @@ def is_macro_completion (view):
 
 	
 
-def hxsl_query_completion(view, offset):
-	return get_hxsl_completions( view , offset )
-def hxml_query_completion(view, offset):
-	return get_hxml_completions( view , offset )
+
 
 def get_compiler_completion( build, view , display, temp_file, orig_file, macroCompletion = False ) :
 		
@@ -804,7 +754,7 @@ def get_compiler_completion( build, view , display, temp_file, orig_file, macroC
 
 
 
-def handle_completion_output(temp_file, orig_file, view, err):
+def parse_completion_output(temp_file, orig_file, err):
 
 	try :
 		x = "<root>"+err.encode('utf-8')+"</root>";
@@ -823,24 +773,79 @@ def handle_completion_output(temp_file, orig_file, view, err):
 		hints = []
 		comps = []
 
+	return (hints, comps, err)
+	
+
+def handle_completion_output(hints, comps, err, temp_file, orig_file):
 	status = ""
 	
+	errors = []
+
 	if len(hints) > 0 :
 		status = " | ".join(hints)
 
 	elif len(hints) == 0 and len(comps) == 0:
-		status, errors = handle_completion_error(err, temp_file, orig_file, status)
-		ctx().set_errors(errors)
-		highlight_errors( errors, view )
+		status, errors = get_completion_errors(err, temp_file, orig_file, status)
+		
 	
+	return status, errors
 
-	return ( comps, status )
+def get_completion_errors(err, temp_file, orig_file, status):
+	err = err.replace( temp_file , orig_file )
+	err = re.sub( u"\(display(.*)\)" ,"",err)
+	
+	lines = err.split("\n")
+	l = lines[0].strip()
+	
+	if len(l) > 0 :
+		if l == "<list>" :
+			status = "No autocompletion available"
+		elif not re.match( haxeFileRegex , l ):
+			status = l
+		else :
+			status = ""
 
+	#regions = []
+	
+	# for infos in compilerOutput.findall(err) :
+	# 	infos = list(infos)
+	# 	f = infos.pop(0)
+	# 	l = int( infos.pop(0) )-1
+	# 	left = int( infos.pop(0) )
+	# 	right = infos.pop(0)
+	# 	if right != "" :
+	# 		right = int( right )
+	# 	else :
+	# 		right = left+1
+	# 	m = infos.pop(0)
+
+	# 	self.errors.append({
+	# 		"file" : f,
+	# 		"line" : l,
+	# 		"from" : left,
+	# 		"to" : right,
+	# 		"message" : m
+	# 	})
+		
+	# 	if( f == fn ):
+	# 		status = m
+		
+	# 	if not autocomplete :
+	# 		w = view.window()
+	# 		if not w is None :
+	# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
+	# 	#if not autocomplete
+
+	errors = outputparser.extract_errors( err )
+
+	return (status,errors)
+	#
+
+# EventListener are created once by sublime at start
 class HaxeComplete( sublime_plugin.EventListener ):
 
 	def on_load( self, view ) :
 
-		
 		if view is None or view.file_name() is None or ViewTools.is_unsupported(view): 
 			return
 		
@@ -855,7 +860,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
 	# view is None then it's a preview
 	def on_activated( self , view ) :
-		
 		if view is None or view.file_name() is None or ViewTools.is_unsupported(view): 
 			return
 		

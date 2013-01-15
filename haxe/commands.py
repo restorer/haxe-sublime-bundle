@@ -92,18 +92,13 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
 
 	def run( self , edit ) :
-
-		def f ():
-			print("run HaxeDisplayCompletion")
-			self.view.run_command( "auto_complete" , {
-				"api_completions_only" : True,
-				"disable_auto_insert" : True,
-				"next_completion_if_showing" : False,
-				'auto_complete_commit_on_tab': True
-			} )
-		sublime.set_timeout(f, 0)
-
-
+		print "run me 4"
+		self.view.run_command( "auto_complete" , {
+			"api_completions_only" : True,
+			"disable_auto_insert" : True,
+			"next_completion_if_showing" : False,
+			'auto_complete_commit_on_tab': True
+		})
 
 
 class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
@@ -178,12 +173,13 @@ class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 class HaxeGenerateUsingCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		print "generate using"
-		runner = haxe.codegen.HaxeGenerateImportOrUsing(haxe.haxe_panel.HaxePanel, self.view)
-		runner.generate_using(edit)
+		haxe.codegen.generate_using(self.view, edit)
+		
 
 class HaxeGenerateImportCommand( sublime_plugin.TextCommand ):
 
 	def run( self, edit ) :
 		print "generate import"
-		runner = haxe.codegen.HaxeGenerateImportOrUsing(haxe.haxe_panel.HaxePanel, self.view);
-		runner.generate_import(edit)
+		
+		haxe.codegen.generate_import(self.view, edit)
+		
