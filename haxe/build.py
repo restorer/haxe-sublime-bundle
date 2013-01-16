@@ -7,6 +7,8 @@ import haxe.lib as hxlib
 import glob
 import codecs
 import sublime
+from haxe.settings import HaxeSettings 
+
 #import haxe.output_panel
 import re
 
@@ -380,7 +382,17 @@ class HaxeBuild :
 		cmd = b.get_command_args(haxeExec)
 
 		print "cmd : " + " ".join(cmd)
-		res, err = runcmd( cmd, "" )
+
+		libPath = HaxeSettings.haxeLibraryPath();
+		env = os.environ.copy()
+		if libPath != None :
+			absLibPath = os.path.normpath(os.path.join(self.get_build_folder(), libPath))
+			env["HAXE_LIBRARY_PATH"] = absLibPath
+
+
+			print "cwd:" + self.get_build_folder()
+			print "hxml:" + self.hxml
+		res, err = runcmd( args=cmd, input="", cwd=self.get_build_folder(), env=env )
 
 		if is_x is not None:
 			neko_file = os.path.join(self.get_build_folder(), is_x)

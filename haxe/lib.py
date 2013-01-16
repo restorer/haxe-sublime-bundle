@@ -13,7 +13,7 @@ import os
 import sublime, sublime_plugin
 
 
-libFlag = re.compile("-lib\s+(.*?)")
+
 libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
 
 def haxe_settings () :

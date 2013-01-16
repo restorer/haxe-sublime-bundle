@@ -21,6 +21,9 @@ classpathLine = re.compile("Classpath : (.*)")
 haxeVersion = re.compile("haxe_([0-9]{3})",re.M)
 
 
+def msgToPanel (msg) : 
+	return haxe.output_panel.normal_panel.write(msg)
+
 def panel () : 
 	return haxe.output_panel.HaxePanel
 
@@ -206,12 +209,14 @@ def set_current_build( view , id , forcePanel ) :
 def run_build( view ) :
 	
 	haxeExec = HaxeSettings.haxeExec(view)
+	extract_build_args(view, True)
 	build = get_build(view)
 
 	out, err = build.run(haxeExec, ctx().serverMode, view, ctx().server)
 	print out
+	print err
 	print "run_build_complete"
-
+	msgToPanel(err)
 	view.set_status( "haxe-status" , "build finished" )
 	
 	
@@ -287,6 +292,25 @@ class Project():
 	@staticmethod
 	def folders ():
 		return sublime.active_window().folders()
+
+
+	# could return no folder if project file is not located in a root of a folder
+	# or multiple folders if they contain project files
+	@staticmethod
+	def get_project_folder ():
+		found = []
+		folders = sublime.active_window().folders()
+		print str(folders)
+		for folder in folders:
+			files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder,f))]
+			print str(files)
+			for f in files:
+				print(os.path.splitext(f))
+				if os.path.splitext(f)[1] == ".sublime-project":
+					found.append((folder, f))
+		
+		return found		
+		
 
 	@staticmethod
 	def main_folder ():

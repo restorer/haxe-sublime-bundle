@@ -2,11 +2,20 @@
 import haxe.hxtools as hxtools, sublime, re
 import haxe.output_panel
 
+from xml.etree import ElementTree
+
+
+from elementtree import SimpleXMLTreeBuilder # part of your codebase
+
+ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
+
+
+
 def panel () : 
 	return haxe.output_panel.HaxePanel
 
 compilerOutput = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
-
+haxeFileRegex = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
 
 
 def get_type_hint (types):
@@ -120,3 +129,98 @@ def extract_errors( str ):
 		sublime.status_message(errors[0]["message"])
 
 	return errors
+
+
+def get_completion_output(temp_file, orig_file, output):
+	hints, comps = parse_completion_output(temp_file, orig_file, output)
+	status, errors = get_completion_status_and_errors(hints, comps, output, temp_file, orig_file)
+
+	return (hints, comps, status, errors)
+
+
+
+def parse_completion_output(temp_file, orig_file, output):
+
+	try :
+		x = "<root>"+output.encode('utf-8')+"</root>";
+		tree = ElementTree.XML(x);
+		
+	except Exception,e:
+		tree = None
+		print("invalid xml - error: " + str(e))
+
+
+	if tree is not None :
+
+		hints = get_type_hint(tree.getiterator("type"))
+		comps = collect_completion_fields(tree.find("list"))
+	else:
+		hints = []
+		comps = []
+
+	return (hints, comps)
+	
+
+def get_completion_status_and_errors(hints, comps, output, temp_file, orig_file):
+	status = ""
+	
+	errors = []
+
+	if len(hints) > 0 :
+		status = " | ".join(hints)
+
+	elif len(hints) == 0 and len(comps) == 0:
+		status, errors = parse_completion_errors(output, temp_file, orig_file, status)
+		
+	
+	return status, errors
+
+def parse_completion_errors(output, temp_file, orig_file, status):
+	output = output.replace( temp_file , orig_file )
+	output = re.sub( u"\(display(.*)\)" ,"",output)
+	
+	lines = output.split("\n")
+	l = lines[0].strip()
+	
+	if len(l) > 0 :
+		if l == "<list>" :
+			status = "No autocompletion available"
+		elif not re.match( haxeFileRegex , l ):
+			status = l
+		else :
+			status = ""
+
+	#regions = []
+	
+	# for infos in compilerOutput.findall(err) :
+	# 	infos = list(infos)
+	# 	f = infos.pop(0)
+	# 	l = int( infos.pop(0) )-1
+	# 	left = int( infos.pop(0) )
+	# 	right = infos.pop(0)
+	# 	if right != "" :
+	# 		right = int( right )
+	# 	else :
+	# 		right = left+1
+	# 	m = infos.pop(0)
+
+	# 	self.errors.append({
+	# 		"file" : f,
+	# 		"line" : l,
+	# 		"from" : left,
+	# 		"to" : right,
+	# 		"message" : m
+	# 	})
+		
+	# 	if( f == fn ):
+	# 		status = m
+		
+	# 	if not autocomplete :
+	# 		w = view.window()
+	# 		if not w is None :
+	# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
+	# 	#if not autocomplete
+
+	errors = extract_errors( output )
+
+	return (status,errors)

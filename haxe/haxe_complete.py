@@ -13,7 +13,10 @@ import haxe.lib as hxlib
 import haxe.commands
 import haxe.output_panel
 
-import haxe.compiler.outputparser as outputparser
+
+
+
+from haxe.compiler.output import get_completion_output
 
 from haxe.config import Config
 
@@ -30,12 +33,7 @@ from haxe.tools import ViewTools, ScopeTools
 
 import haxe.temp as temp
     
-from xml.etree import ElementTree
 
-
-from elementtree import SimpleXMLTreeBuilder # part of your codebase
-
-ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
 
 def log (msg):
@@ -45,9 +43,9 @@ def panel () :
 	return haxe.output_panel.HaxePanel
 
 
+libFlag = re.compile("-lib\s+(.*?)")
 
 
-haxeFileRegex = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
 controlStruct = re.compile( "\s*(if|switch|for|while)\($" );
 
 
@@ -120,28 +118,42 @@ def filter_top_level_completions (offsetChar, all_comps):
 	else:
 		comps = all_comps
 
-
 	print "number of top level completions filtered" + str(len(comps))
 	return comps
 
-def hx_query_completion(completion_id, last_completion_id, view, offset, build, cache, macroCompletion ):
-	
+def hx_auto_complete(view, offset):
 
+	completion_id = time.time()
+	last_completion_id = ctx().current_completion_id
+	
+	# if completion is triggered by a background
+	# completion return the result
+	if is_delayed_completion(view):
+		c = ctx().delayed_completions[view.id()][0]
+		del ctx().delayed_completions[view.id()]
+		comps = c
+	else:
+		# get build and maybe use cache
+		build = hxproject.get_build( view ).copy()
+		cache = ctx().currentCompletion
+		macro_completion = is_macro_completion(view)
+		comps = hx_normal_auto_complete(completion_id, last_completion_id, view, offset, build, cache, macro_completion)
+	return comps
+
+def hx_normal_auto_complete(completion_id, last_completion_id, view, offset, build, cache, macro_completion ):
+	
 	manual_completion = is_manual_completion(view)
 
 	if manual_completion:
 		log("this is manual completion")
 		delete_manual_completion(view)
 
+
 	if (hxsettings.HaxeSettings.no_fuzzy_completion() and not manual_completion):
 		trigger_manual_completion(view)
-		r = cancel_completion(view)
 		#log("start manual completion")
 		
-		return r
-
-
-		
+		return cancel_completion(view)
 
 
 	src = ViewTools.get_content(view)
@@ -161,6 +173,10 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 		# this should never happen, todo proper error message
 		return []
 
+	# autocompletion is triggered, but its already 
+	# running as a background process, starting it
+	# again would result in multiple queries for
+	# the same view and src position
 	if last_completion_id in ctx().completion_running:
 		o1, id1 = ctx().completion_running[last_completion_id]
 		if (o1 == completeOffset and id1 == view.id()):
@@ -170,12 +186,12 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 	top_level_build = build.copy()
 	build.add_classpath(temp_path)
 
-	completeChar = src[completeOffset-1]
-	inControlStruct = controlStruct.search( src[0:completeOffset] ) is not None
+	complete_char = src[completeOffset-1]
+	in_control_struct = controlStruct.search( src[0:completeOffset] ) is not None
 
 	on_demand = hxsettings.HaxeSettings.top_level_completions_on_demand()
 
-	toplevelComplete = (toplevelComplete or completeChar in ":(," or inControlStruct) and not on_demand
+	toplevelComplete = (toplevelComplete or complete_char in ":(," or in_control_struct) and not on_demand
 
 	
 
@@ -188,17 +204,15 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 	comps = []
 
 	if toplevelComplete :
-
 		all_comps = get_toplevel_completion( src , src_dir , top_level_build )
 		comps = filter_top_level_completions(offsetChar, all_comps)
-		
 	else:
 		print "comps_from_not_top_level"
 		comps = []
 	
 	
 
-	if toplevelComplete and (inControlStruct or completeChar not in "(,")  :
+	if toplevelComplete and (in_control_struct or complete_char not in "(,")  :
 		print "comps_from_not_top_level_and_control_struct"
 		return comps
 
@@ -212,10 +226,10 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 
 	offset = completeOffset
 
-	current_input = create_completion_input_key(orig_file, offset, commas, src, macroCompletion, completeChar)
+	current_input = create_completion_input_key(orig_file, offset, commas, src, macro_completion, complete_char)
 
 	def run_compiler_completion ():
-		return get_compiler_completion( build, view, display, temp_file, orig_file , macroCompletion )
+		return get_compiler_completion( build, view, display, temp_file, orig_file , macro_completion )
 
 	last_input = cache["input"]
 
@@ -226,11 +240,11 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 	use_cache = use_completion_cache(last_input, current_input)
 
 	if use_cache :
-		print "comps_from_cache"
+		log("use completions from cache")
 		ret, comps1, status = cache["output"]
 	else :
 
-		if supported_compiler_completion_char(completeChar): 
+		if supported_compiler_completion_char(complete_char): 
 
 			if delayed:
 				background_completion(completion_id, list(comps), temp_file, orig_file,temp_path,
@@ -239,12 +253,9 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 				ret, comps1, status = "", [], ""
 			else:
 				ret, err = run_compiler_completion()
-
-				(hints, comps1, err1) = parse_completion_output(temp_file, orig_file, err)
-				
-				status, errors = handle_completion_output(hints, comps, err1, temp_file, orig_file)
-
-				ctx().set_errors(errors)
+				hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err)
+	
+				#ctx().set_errors(errors)
 				highlight_errors( errors, view )
 		else:
 			ret, comps1, status = "",[], ""
@@ -264,10 +275,10 @@ def hx_query_completion(completion_id, last_completion_id, view, offset, build, 
 
 	
 	if not use_cache and delayed and hxsettings.HaxeSettings.only_delayed_completions():
-		print "empty completion"
-		#return [("... ...", " ")]
+		log("completion cancelled")
 		return cancel_completion(view, True)
-		
+	
+	
 	if len(comps) == 0 and hxsettings.HaxeSettings.no_fuzzy_completion():
 		return cancel_completion(view)
 
@@ -285,10 +296,7 @@ def background_completion(completion_id, basic_comps, temp_file, orig_file, temp
 	only_delayed = hxsettings.HaxeSettings.only_delayed_completions()
 
 	def in_main (ret_, err_):
-
-		(hints, comps_, err1) = parse_completion_output(temp_file, orig_file, err_)
-				
-		status_, errors = handle_completion_output(hints, comps, err1, temp_file, orig_file)
+		hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_)
 
 		ctx().set_errors(errors)
 		highlight_errors( errors, view )
@@ -333,6 +341,8 @@ def background_completion(completion_id, basic_comps, temp_file, orig_file, temp
 	ctx().current_completion_id = completion_id
 	thread.start_new_thread(in_thread, ())	
 
+
+
 def create_completion_input_key (fn, offset, commas, src, macro_completion, complete_char):
 	return (fn,offset,commas,src[0:offset-1], macro_completion, complete_char)
 
@@ -355,7 +365,7 @@ def get_toplevel_completion( src , src_dir , build ) :
 	packs = []
 	stdPackages = []
 
-	comps = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super"),("else\ttoplevel","else")]
+	comps = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
 
 	src = hxsourcetools.comments.sub("",src)
 
@@ -506,13 +516,13 @@ def get_toplevel_completion( src , src_dir , build ) :
 	
 	return comps
 
-def hxsl_query_completion( view , offset ) :
+def hxsl_auto_complete( view , offset ) :
 	comps = []
 	for t in ["Float","Float2","Float3","Float4","Matrix","M44","M33","M34","M43","Texture","CubeTexture","Int","Color","include"] :
 		comps.append( ( t , "hxsl Type" ) )
 	return comps
 
-def hxml_query_completions( view , offset ) :
+def hxml_auto_complete( view , offset ) :
 	src = view.substr(sublime.Region(0, offset))
 	currentLine = src[src.rfind("\n")+1:offset]
 	m = libFlag.match( currentLine )
@@ -616,41 +626,7 @@ def run_nme( view, build ) :
 
 
 
-#class PanelHelper ():
-#
-#	def __init__ (self):
-#		self.panel = None
-#
-#
-#	def clear_output_panel(self, view) :
-#		win = view.window()
-#
-#		self.panel = win.get_output_panel("haxe")
-#
-#	def panel_output( self , view , text , scope = None ) :
-#		win = view.window()
-#		if self.panel is None :
-#			self.panel = win.get_output_panel("haxe")
-#
-#		panel = self.panel
-#
-#		text = datetime.now().strftime("%H:%M:%S") + " " + text;
-#		
-#		edit = panel.begin_edit()
-#		region = sublime.Region(panel.size(),panel.size() + len(text))
-#		panel.insert(edit, panel.size(), text + "\n")
-#		panel.end_edit( edit )
-#
-#		if scope is not None :
-#			icon = "dot"
-#			key = "haxe-" + scope
-#			regions = panel.get_regions( key );
-#			regions.append(region)
-#			panel.add_regions( key , regions , scope , icon )
-#		#print( err )
-#		win.run_command("show_panel",{"panel":"output.haxe"})
-#
-#		return self.panel
+
 
 def is_delayed_completion(view):
 	id = view.id() 
@@ -725,11 +701,6 @@ def is_macro_completion (view):
 			macroComp = True
 	return macroComp
 
-
-	
-
-
-
 def get_compiler_completion( build, view , display, temp_file, orig_file, macroCompletion = False ) :
 		
 	serverMode = hxproject.ctx().is_server_mode()
@@ -752,105 +723,46 @@ def get_compiler_completion( build, view , display, temp_file, orig_file, macroC
 	return build.run(haxeExec, serverMode, view, hxproject.ctx().server)
 
 
+# triggered from event
+def auto_complete (view, prefix, locations):
+	start_time = time.time()
 
-
-def parse_completion_output(temp_file, orig_file, err):
-
-	try :
-		x = "<root>"+err.encode('utf-8')+"</root>";
-		tree = ElementTree.XML(x);
-		
-	except Exception,e:
-		tree = None
-		print("invalid xml - error: " + str(e))
-
-
-	if tree is not None :
-
-		hints = outputparser.get_type_hint(tree.getiterator("type"))
-		comps = outputparser.collect_completion_fields(tree.find("list"))
-	else:
-		hints = []
-		comps = []
-
-	return (hints, comps, err)
+	pos = locations[0]
 	
+	offset = pos - len(prefix)
 
-def handle_completion_output(hints, comps, err, temp_file, orig_file):
-	status = ""
-	
-	errors = []
+	comps =  []
 
-	if len(hints) > 0 :
-		status = " | ".join(hints)
+	if offset == 0 : 
+		return comps 
+	
+	scopes = ViewTools.get_scopes_at(view, pos)
 
-	elif len(hints) == 0 and len(comps) == 0:
-		status, errors = get_completion_errors(err, temp_file, orig_file, status)
-		
-	
-	return status, errors
+	if (ScopeTools.contains_string_or_comment(scopes)):
+		return comps
 
-def get_completion_errors(err, temp_file, orig_file, status):
-	err = err.replace( temp_file , orig_file )
-	err = re.sub( u"\(display(.*)\)" ,"",err)
+	if Config.SOURCE_HXML in scopes:
+		comps = hxml_auto_complete( view , offset )
 	
-	lines = err.split("\n")
-	l = lines[0].strip()
-	
-	if len(l) > 0 :
-		if l == "<list>" :
-			status = "No autocompletion available"
-		elif not re.match( haxeFileRegex , l ):
-			status = l
+	if Config.SOURCE_HAXE in scopes :
+		if ViewTools.is_hxsl(view) :
+			comps = hxsl_auto_complete( view , offset )
 		else :
-			status = ""
-
-	#regions = []
-	
-	# for infos in compilerOutput.findall(err) :
-	# 	infos = list(infos)
-	# 	f = infos.pop(0)
-	# 	l = int( infos.pop(0) )-1
-	# 	left = int( infos.pop(0) )
-	# 	right = infos.pop(0)
-	# 	if right != "" :
-	# 		right = int( right )
-	# 	else :
-	# 		right = left+1
-	# 	m = infos.pop(0)
-
-	# 	self.errors.append({
-	# 		"file" : f,
-	# 		"line" : l,
-	# 		"from" : left,
-	# 		"to" : right,
-	# 		"message" : m
-	# 	})
-		
-	# 	if( f == fn ):
-	# 		status = m
-		
-	# 	if not autocomplete :
-	# 		w = view.window()
-	# 		if not w is None :
-	# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
-	# 	#if not autocomplete
-
-	errors = outputparser.extract_errors( err )
-
-	return (status,errors)
-	#
+			comps = hx_auto_complete(view, offset) 
+			
+			
+	end_time = time.time()
+	log("on_query_completion time: " + str(end_time-start_time))
+	log("number of completions: " + str(len(comps)))
+	return comps
 
 # EventListener are created once by sublime at start
 class HaxeComplete( sublime_plugin.EventListener ):
 
 	def on_load( self, view ) :
 
-		if view is None or view.file_name() is None or ViewTools.is_unsupported(view): 
-			return
-		
-		hxproject.generate_build( view )
-		highlight_errors( ctx().errors, view )
+		if view is not None and view.file_name() is not None and ViewTools.is_unsupported(view): 
+			hxproject.generate_build( view )
 
 
 	def on_post_save( self , view ) :
@@ -858,73 +770,24 @@ class HaxeComplete( sublime_plugin.EventListener ):
 			hxproject.clear_build()
 			ctx().clear_completion()
 
-	# view is None then it's a preview
+	# if view is None it's a preview
 	def on_activated( self , view ) :
-		if view is None or view.file_name() is None or ViewTools.is_unsupported(view): 
-			return
-		
-		hxproject.get_build(view)
-		hxproject.extract_build_args( view )
-		
-		hxproject.generate_build(view)
-		highlight_errors( ctx().errors, view )
+		if view is not None and view.file_name() is not None and ViewTools.is_unsupported(view): 
+			hxproject.get_build(view)
+			hxproject.extract_build_args( view )
+			hxproject.generate_build(view)	
+
 
 	def on_pre_save( self , view ) :
 
-		if not ViewTools.is_haxe(view) :
-			return []
-
-		ViewTools.create_missing_folders(view)
-		
+		if ViewTools.is_haxe(view) :
+			ViewTools.create_missing_folders(view)
 
 
 	def on_query_completions(self, view, prefix, locations):
-
-		start_time = time.time()
-
-		completion_id = start_time
-		last_completion_id = ctx().current_completion_id
+		return auto_complete(view, prefix, locations)
 		
-		pos = locations[0]
-		
-		offset = pos - len(prefix)
-
-		comps =  []
-
-		if offset == 0 : 
-			return comps 
-		
-		scopes = ViewTools.get_scopes_at(view, pos)
-
-		if (ScopeTools.contains_string_or_comment(scopes)):
-			return comps
-
-		if Config.SOURCE_HXML in scopes:
-			comps = hxml_query_completion( view , offset )
-		
-		if Config.SOURCE_HAXE in scopes :
-			if ViewTools.is_hxsl(view) :
-				comps = hxsl_query_completion( view , offset )
-			else : 
-
-				if is_delayed_completion(view):
-					c = ctx().delayed_completions[view.id()][0]
-					del ctx().delayed_completions[view.id()]
-					comps = c
-
-				else:
-					# get build and maybe use cache
-					build = hxproject.get_build( view ).copy()
-					cache = ctx().currentCompletion
-					
-
-					macro_completion = is_macro_completion(view)
-					comps = hx_query_completion(completion_id, last_completion_id, view, offset, build, cache, macro_completion)
-				
-		end_time = time.time()
-		log("on_query_completion time: " + str(end_time-start_time))
-		log("number of completions: " + str(len(comps)))
-		return comps
+	
 	
 
 	# def on_modified( self , view ):

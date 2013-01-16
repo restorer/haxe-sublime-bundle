@@ -17,27 +17,16 @@ from subprocess import Popen, PIPE
 stexec = __import__("exec") 
 
 
-def runcmd( args, input=None ):
+def runcmd( args, input=None, cwd=None, env=None ):
 	
-	settings = hxsettings.HaxeSettings
-	import haxe.project as project
-	project_main_folder = project.Project.main_folder()
+	if (cwd == None): 
+		cwd = "."
 
-	if project_main_folder == None:
-		project_main_folder = "."
-
-	cwd = project_main_folder;
 	try: 
-		libPath = settings.haxeLibraryPath();
 		
-		env = os.environ.copy()
-		if libPath != None :
-			#print "std lib: set: " + libPath
-			#env = {}
-			absLibPath = project_main_folder + "/" + libPath
-			print "runcmd: export HAXE_LIBRARY_PATH="+absLibPath
-			env["HAXE_LIBRARY_PATH"] = absLibPath
-			#print "library in env:" + env["HAXE_LIBRARY_PATH"]
+		if (env == None):
+			env = os.environ.copy()
+
 		args = filter(lambda s: s != "", args)
 		
 

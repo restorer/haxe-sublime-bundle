@@ -37,37 +37,43 @@ if reload_mods:
     sys.excepthook = sys.__excepthook__
  
 mods_load_order = [
-    'haxe',
-    'haxe.config',
-    'haxe.commands', 
-    'haxe.build',
-    'haxe.haxe_complete',
-    'haxe.typegen', 
-    'haxe.haxe_exec',
-    'haxe.codegen',
-    'haxe.compiler.server'
-    'haxe.lib', 
-    'haxe.tools', 
-    'haxe.output_panel',
-    'haxe.settings',
-    'haxe.startup',
-    'haxe.project',
-    'haxe.temp',
-    'haxe.types',
-    'haxe.hxtools',
-    'haxe.compiler.outputparser'
-    
-    
+     'haxe'
+    ,'haxe.config'
+    ,'haxe.commands'
+    ,'haxe.build'
+    ,'haxe.haxe_complete'
+    ,'haxe.typegen'
+    ,'haxe.haxe_exec'
+    ,'haxe.codegen'
+    ,'haxe.compiler.server'
+    ,'haxe.compiler.output'
+    ,'haxe.lib'
+    ,'haxe.tools'
+    ,'haxe.output_panel'
+    ,'haxe.settings'
+    ,'haxe.startup'
+    ,'haxe.project'
+    ,'haxe.temp'
+    ,'haxe.types'
+    ,'haxe.hxtools'
+    ,'haxe.compiler.outputparser'
 ]  
  
-print reload_mods
+def my_import(name):
+    mod = __import__(name)
+    components = name.split('.')
+    for comp in components[1:]:
+        mod = getattr(mod, comp)
+    return mod
 
 for mod in mods_load_order:
     if mod in reload_mods:
-        print "reload " + mod
         reload(sys.modules[mod])
 
- 
+        #sys.modules[mod]
+
+from haxe.haxe_complete import HaxeComplete 
+from haxe.commands import * 
 
 if not hook_match:
     class ExcepthookChain1(object):
