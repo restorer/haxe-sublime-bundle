@@ -5,7 +5,7 @@ import haxe.project as hxproject
 
 
 
-import haxe.haxe_complete
+import haxe.hxtools as hxtools
 
 class HaxeCreateType( sublime_plugin.WindowCommand ):
 
@@ -17,15 +17,20 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 		print "createtype"
 		
 
-		builds = hxproject.ctx.builds
+		
 		
 		view = sublime.active_window().active_view()
+
+		project = hxproject.current_project(view)
+
+		builds = project.builds
+
 		scopes = view.scope_name(view.sel()[0].end()).split()
 		
 		pack = [];
 
 		if len(builds) == 0 :
-			hxproject.extract_build_args(view)
+			project.extract_build_args(view)
 
 		if len(paths) == 0 :
 			fn = view.file_name()
@@ -72,7 +77,7 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 			p = parts.pop(0)
 			
 			fn = os.path.join( fn , p )
-			if haxe.haxe_complete.isType.match( p ) : 
+			if hxtools.isType.match( p ) : 
 				cl = p
 				break;
 			else :
@@ -105,10 +110,6 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 
 class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 	
-	def __del__ (self):
-		print "delete_type_listener"
-	def __init__ (self):
-		print "create_type_listener"
 
 	def on_activated( self, view ) : 
 		self.create_file(view)		

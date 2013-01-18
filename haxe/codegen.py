@@ -2,17 +2,17 @@
 import sublime
 from haxe.hxtools import wordChars, spaceChars, importLine, usingLine, packageLine
 
-from haxe.output_panel import HaxePanel
+import haxe.panel as hxpanel
 
 import re
 
 
 def generate_using (view, edit):
-	p = HaxeGenerateImportOrUsing(HaxePanel, view)
+	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
 	return p.generate_statement(edit, "using", usingLine)
 
 def generate_import (view, edit):
-	p = HaxeGenerateImportOrUsing(HaxePanel, view)
+	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
 	return p.generate_statement(edit, "import", importLine)
 
 class HaxeGenerateImportOrUsing:

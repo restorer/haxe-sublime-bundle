@@ -3,13 +3,10 @@ import os
 from haxe.config import Config
 import haxe.types as hxtypes
 import haxe.lib as hxlib
-#import sys
 import glob
 import codecs
 import sublime
 from haxe.settings import HaxeSettings 
-
-#import haxe.output_panel
 import re
 
 from haxe.haxe_exec import runcmd
@@ -118,8 +115,6 @@ def find_hxml( folder ) :
 	return builds
 
 extractTag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
-
-
 
 
 def find_nmml( folder ) :
@@ -357,7 +352,7 @@ class HaxeBuild :
 
 		return self.classes, self.packages
 
-	def run (self, haxeExec, serverMode, view, server):
+	def run (self, haxeExec, serverMode, view, project):
 		b = self.copy()
 		
 		is_x = None
@@ -374,8 +369,8 @@ class HaxeBuild :
 		# ignore servermode when -x
 		print b.target
 		if serverMode:
-			server.start_server( view )
-			b.set_server_mode(server.get_server_port())
+			project.start_server( view )
+			b.set_server_mode(project.server.get_server_port())
 
 		
 		b.set_build_cwd()

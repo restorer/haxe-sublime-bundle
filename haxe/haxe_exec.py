@@ -1,13 +1,9 @@
 import sys
 import sublime
 import os
-import haxe.haxe_complete 
-
-import haxe.output_panel as haxe_panel
-
-import haxe.settings as hxsettings
 
 
+import haxe.panel as hxpanel
 
 
 from startup import STARTUP_INFO
@@ -55,6 +51,7 @@ class HaxeExecCommand(stexec.ExecCommand):
 	def finish(self, *args, **kwargs):
 		super(HaxeExecCommand, self).finish(*args, **kwargs)  
 		outp = self.output_view.substr(sublime.Region(0, self.output_view.size()))
+		import haxe.haxe_complete 
 		hc = haxe.haxe_complete.HaxeComplete.instance()
 		ctx = haxe.haxe_complete.ctx()
 		ctx.errors = hc.extract_errors( outp )
@@ -95,7 +92,7 @@ class HaxeExecCommand(stexec.ExecCommand):
 		self.proc = None
 		if not self.quiet:
 			print "Running " + " ".join(cmd).encode('utf-8')
-			haxe_panel.HaxePanel.writeln("Building")
+			hxpanel.slide_panel().writeln("Building")
 			sublime.status_message("Building")
 
 		show_panel_on_build = sublime.load_settings("Preferences.sublime-settings").get("show_panel_on_build", True)

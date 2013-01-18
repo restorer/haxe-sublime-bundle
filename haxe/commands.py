@@ -67,8 +67,6 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 		word = view.substr(sel[0])
 
-
-
 		replacement = "(hxsublime.Utils.getTypeOfExpr(" + word + "))."
 
 		newSel = Region(sel[0].a, sel[0].a + len(replacement))
@@ -134,13 +132,13 @@ class HaxeSaveAllAndBuildCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		view = self.view
 		view.window().run_command("save_all")
-		hxproject.run_build( view )
+		hxproject.currentProject(self.view).run_build( view )
 
 class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		view = self.view
 		print "do run build"
-		hxproject.run_build( view )
+		hxproject.currentProject(self.view).run_build( view )
 
 
 class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
@@ -148,7 +146,7 @@ class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
 		print "do select build"
 		view = self.view
 		
-		hxproject.select_build( view )
+		hxproject.currentProject(self.view).select_build( view )
 
 # called 
 class HaxeHintCommand( sublime_plugin.TextCommand ):
@@ -165,8 +163,11 @@ class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 
 	def run( self ) :
 		view = sublime.active_window().active_view()
-		hxproject.ctx().server.stop_server()
-		hxproject.ctx().server.start_server( view )
+		
+		project = hxproject.currentProject(self.view)
+
+		project.server.stop_server()
+		project.server.start_server( view )
 
 
 

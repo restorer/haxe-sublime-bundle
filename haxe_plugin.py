@@ -72,6 +72,8 @@ for mod in mods_load_order:
 
         #sys.modules[mod]
 
+from haxe.panel import *
+from haxe.project import Project 
 from haxe.haxe_complete import HaxeComplete 
 from haxe.commands import * 
 
