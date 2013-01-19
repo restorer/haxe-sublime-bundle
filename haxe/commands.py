@@ -4,12 +4,12 @@ import haxe.haxe_complete
 
 
 import sublime, sublime_plugin
-import time
+
 
 
 from haxe.log import log
 
-import haxe.lib as hxlib
+
 
 
 from sublime import Region

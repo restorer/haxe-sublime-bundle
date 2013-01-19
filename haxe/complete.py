@@ -6,15 +6,10 @@ import os
 import re
 
 import haxe.settings as hxsettings
-import haxe.completion_server
-import haxe.typegen
+
 import haxe.build as hxbuild
 import haxe.lib as hxlib
-import haxe.commands
 import haxe.panel as hxpanel
-
-
-
 
 from haxe.compiler.output import get_completion_output
 

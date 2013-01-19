@@ -41,9 +41,9 @@ mods_load_order = [
     ,'haxe.config'
     ,'haxe.commands'
     ,'haxe.build'
-    ,'haxe.haxe_complete'
+    ,'haxe.complete'
     ,'haxe.typegen'
-    ,'haxe.haxe_exec'
+    ,'haxe.execute'
     ,'haxe.codegen'
     ,'haxe.compiler.server'
     ,'haxe.compiler.output'
@@ -73,9 +73,9 @@ for mod in mods_load_order:
         #sys.modules[mod]
 
 from haxe.panel import *
-from haxe.project import Project 
-from haxe.haxe_complete import HaxeComplete 
-from haxe.commands import * 
+from haxe.project import Project
+from haxe.complete import HaxeComplete
+from haxe.commands import *
 
 if not hook_match:
     class ExcepthookChain1(object):

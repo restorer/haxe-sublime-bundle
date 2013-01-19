@@ -5,7 +5,7 @@ import haxe.types as hxtypes
 
 import functools
 
-from haxe.haxe_exec import runcmd
+from haxe.execute import run_cmd
 
 import re
  
@@ -67,12 +67,12 @@ class HaxeLib :
 	@staticmethod
 	def scan() :
 		#print "do scan haxelib"
-		hlout, hlerr = runcmd( [hxsettings.haxelib_exec() , "config" ] )
+		hlout, hlerr = run_cmd( [hxsettings.haxelib_exec() , "config" ] )
 		HaxeLib.basePath = hlout.strip()
 
 		HaxeLib.available = {}
 
-		hlout, hlerr = runcmd( [hxsettings.haxelib_Exec() , "list" ] )
+		hlout, hlerr = run_cmd( [hxsettings.haxelib_Exec() , "list" ] )
 
 		for l in hlout.split("\n") :
 			found = libLine.match( l )
@@ -103,7 +103,7 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 
 	def run(self):
 		print "try install lib"
-		out,err = runcmd([hxsettings.haxelib_exec() , "search" , " "]);
+		out,err = run_cmd([hxsettings.haxelib_exec() , "search" , " "]);
 		
 		libs = self.collect_libraries(out)
 
@@ -130,4 +130,4 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 			else :
 				cmd = [haxelib, "install" , lib ]	
 
-		runcmd(cmd)
+		run_cmd(cmd)
