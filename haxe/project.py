@@ -14,7 +14,7 @@ import haxe.settings as hxsettings
 
 import re
 
-from haxe.haxe_exec import runcmd
+from haxe.execute import run_cmd
 
 
 
@@ -23,9 +23,6 @@ import haxe.compiler.server as hxserver
 classpathLine = re.compile("Classpath : (.*)")
 
 haxeVersion = re.compile("haxe_([0-9]{3})",re.M)
-
-
-
 
 
 
@@ -305,7 +302,7 @@ def collect_compiler_info (project_path):
         if project_path != None:
             haxe_exec = os.path.normpath(os.path.join(project_path, haxe_exec))
     
-    out, err = runcmd( [haxe_exec, "-main", "Nothing", "-v", "--no-output"] )
+    out, err = run_cmd( [haxe_exec, "-main", "Nothing", "-v", "--no-output"] )
     print out       
     m = classpathLine.match(out)
     

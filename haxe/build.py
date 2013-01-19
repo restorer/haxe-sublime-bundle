@@ -9,7 +9,8 @@ import sublime
 import haxe.settings as hxsettings 
 import re
 
-from haxe.haxe_exec import runcmd
+from haxe.execute import run_cmd, run_cmd_async
+
 
 
 hxml_cache = {}
@@ -352,19 +353,17 @@ class HaxeBuild :
 
 		return self.classes, self.packages
 
-	def run (self, haxeExec, serverMode, view, project):
+	
+	def prepare_run (self, haxeExec, serverMode, view, project):
 		b = self.copy()
 		
-		is_x = None
+		nekox_file_name = None
 		
 		for i in range(0, len(b.args)):
 			if b.args[i][0] == "-x":
-				is_x = b.args[i][1] + ".n"
-				b.args[i] = ("-neko", is_x)
-				
+				nekox_file_name = b.args[i][1] + ".n"
+				b.args[i] = ("-neko", nekox_file_name)
 
-
-		
 
 		# ignore servermode when -x
 		print b.target
@@ -387,13 +386,37 @@ class HaxeBuild :
 
 			print "cwd:" + self.get_build_folder()
 			print "hxml:" + self.hxml
-		res, err = runcmd( args=cmd, input="", cwd=self.get_build_folder(), env=env )
+		
 
-		if is_x is not None:
-			neko_file = os.path.join(self.get_build_folder(), is_x)
-			print neko_file
-			res1, err1 = runcmd(["neko", neko_file])
-			print res1
-			#print err1
-		return res,err
+		return (cmd, self.get_build_folder(), env, nekox_file_name)
+
+	def run_async (self, haxeExec, serverMode, view, project, callback):
+		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxeExec, serverMode, view, project)
+		
+		def cb (out, err):
+			if nekox_file_name is not None:
+				self.run_neko_x(build_folder, nekox_file_name)
+			callback(out, err)
+
+		run_cmd_async( args=cmd, input="", cwd=build_folder, env=env, callback=cb )
+		
+		
+
+	def run (self, haxeExec, serverMode, view, project):
+		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxeExec, serverMode, view, project)
+		
+		out, err = run_cmd( args=cmd, input="", cwd=build_folder, env=env )
+
+		# execute compiled file if hxml/build has -x target
+		if nekox_file_name is not None:
+			self.run_neko_x(build_folder, nekox_file_name)
+		return out,err
+
+	def run_neko_x(self, build_folder, neko_file_name):
+		neko_file = os.path.join(build_folder, neko_file_name)
+		print neko_file
+		out1, err1 = run_cmd(["neko", neko_file])
+		print out1
+		#print err1
+
 
