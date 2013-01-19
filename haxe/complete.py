@@ -28,35 +28,35 @@ from haxe.tools import ViewTools, ScopeTools
 
 import haxe.temp as temp
     
-
+TRIGGER_SUBLIME = "auto_sublime"
+TRIGGER_MANUAL_MACRO = "manual_macro"
+TRIGGER_MANUAL_NORMAL = "manual_normal"
 
 class CompletionContext:
 
-    TRIGGER_SUBLIME = "auto_sublime"
-    TRIGGER_MANUAL_MACRO = "manual_macro"
-    TRIGGER_MANUAL_NORMAL = "manual_normal"
+    
 
     def __init__(self):
         
-        self.completion_running = {}
+        self.running = {}
         self.trigger = {}
         
-        self.current_completion_id = None   
+        self.current_id = None   
         self.errors = []
-        self.delayed_completions = {}
-        self.currentCompletion = {
+        self.delayed = {}
+        self.current = {
             "input" : None,
             "output" : None
         }
 
 
     def set_manual_trigger(self, view, macro):
-        cls = CompletionContext
-        t = cls.TRIGGER_MANUAL_MACRO if macro else cls.TRIGGER_MANUAL_NORMAL
+        
+        t = TRIGGER_MANUAL_MACRO if macro else TRIGGER_MANUAL_NORMAL
         self.trigger[view.id()] = (t, time.time())
 
     def clear_completion (self):
-        self.currentCompletion = {
+        self.current = {
             "inp" : None,
             "outp" : None
         }
@@ -67,7 +67,7 @@ class CompletionContext:
     def get_and_delete_trigger(self, view):
         id = view.id() 
         now = time.time()
-        trigger = CompletionContext.TRIGGER_SUBLIME
+        trigger = TRIGGER_SUBLIME
         
         trigger_dict = self.trigger
 
@@ -137,34 +137,35 @@ def filter_top_level_completions (offsetChar, all_comps):
 
 def hx_auto_complete(project, view, offset):
 
-    completion_id = time.time()
-    last_completion_id = project.completion_context.current_completion_id
+    
     
     # if completion is triggered by a background
     # completion return the result
     if is_delayed_completion(project, view):
-        c = project.completion_context.delayed_completions[view.id()][0]
-        del project.completion_context.delayed_completions[view.id()]
+        c = project.completion_context.delayed[view.id()][0]
+        del project.completion_context.delayed[view.id()]
         comps = c
     else:
         # get build and maybe use cache
         build = project.get_build( view ).copy()
-        cache = project.completion_context.currentCompletion
+        cache = project.completion_context.current
+                
         
         
-        
-        comps = hx_normal_auto_complete(project, completion_id, last_completion_id, view, offset, build, cache)
+        comps = hx_normal_auto_complete(project, view, offset, build, cache)
     return comps
 
-def hx_normal_auto_complete(project, completion_id, last_completion_id, view, offset, build, cache):
+def hx_normal_auto_complete(project, view, offset, build, cache):
     
+    completion_id = time.time()
+    last_completion_id = project.completion_context.current_id
+
     trigger = project.completion_context.get_and_delete_trigger(view)
     
 
+    manual_completion = trigger is not TRIGGER_SUBLIME
 
-    manual_completion = trigger is not CompletionContext.TRIGGER_SUBLIME
-
-    macro_completion = trigger is CompletionContext.TRIGGER_MANUAL_MACRO
+    macro_completion = trigger is TRIGGER_MANUAL_MACRO
 
     
     
@@ -203,8 +204,8 @@ def hx_normal_auto_complete(project, completion_id, last_completion_id, view, of
     # running as a background process, starting it
     # again would result in multiple queries for
     # the same view and src position
-    if last_completion_id in project.completion_context.completion_running:
-        o1, id1 = project.completion_context.completion_running[last_completion_id]
+    if last_completion_id in project.completion_context.running:
+        o1, id1 = project.completion_context.running[last_completion_id]
         if (o1 == completeOffset and id1 == view.id()):
             print "cancel completion, same is running"
             return cancel_completion(view, False)
@@ -342,7 +343,7 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
         comps.extend(comps_)
 
         
-        if completion_id == project.completion_context.current_completion_id:
+        if completion_id == project.completion_context.current_id:
             cache["output"] = (ret_,comps,status_)
             cache["input"] = current_input
         else:
@@ -350,9 +351,9 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
         
         # do we still need this completion, or is it old
         has_new_comps = len(comps) > len(basic_comps)
-        if completion_id == project.completion_context.current_completion_id and (has_new_comps or hxsettings.only_delayed_completions()):
+        if completion_id == project.completion_context.current_id and (has_new_comps or hxsettings.only_delayed_completions()):
             now = time.time()
-            project.completion_context.delayed_completions[view_id] = (comps, now)
+            project.completion_context.delayed[view_id] = (comps, now)
             if only_delayed:
                 print "trigger_auto_complete"
                 view.run_command('auto_complete', {'disable_auto_insert': True})
@@ -363,7 +364,7 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
         else:
             log("ignore background completion")
         
-        del project.completion_context.completion_running[completion_id]
+        del project.completion_context.running[completion_id]
     def in_thread():
         ret_, err_ = run_compiler_completion()
 
@@ -372,8 +373,8 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
         
         sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_delayed else 20)
 
-    project.completion_context.completion_running[completion_id] = (completeOffset, view.id())
-    project.completion_context.current_completion_id = completion_id
+    project.completion_context.running[completion_id] = (completeOffset, view.id())
+    project.completion_context.current_id = completion_id
 
     thread.start_new_thread(in_thread, ())  
 
@@ -658,8 +659,8 @@ def is_delayed_completion(project, view):
     now = time.time()
     delayed = False
     
-    if id in project.completion_context.delayed_completions:
-        oldTime = project.completion_context.delayed_completions[id][1]
+    if id in project.completion_context.delayed:
+        oldTime = project.completion_context.delayed[id][1]
         
         print "check times"
         if (now - oldTime) < 1000:
@@ -712,7 +713,6 @@ def get_compiler_completion( project, build, view , display, temp_file, orig_fil
     return build.run(haxe_exec, server_mode, view, project)
 
 
-# triggered from event
 def auto_complete (project, view, prefix, locations):
     start_time = time.time()
 
@@ -737,7 +737,7 @@ def auto_complete (project, view, prefix, locations):
         if ViewTools.is_hxsl(view) :
             comps = hxsl_auto_complete( project, view , offset )
         else :
-            comps = hx_auto_complete(project, view, offset) 
+            comps = hx_auto_complete( project, view, offset ) 
             
             
     end_time = time.time()
@@ -746,24 +746,24 @@ def auto_complete (project, view, prefix, locations):
     return comps
 
 # EventListener are created once by sublime at start
-class HaxeComplete( sublime_plugin.EventListener ):
+class HaxeCompleteListener( sublime_plugin.EventListener ):
 
     def on_load( self, view ) :
 
         if view is not None and view.file_name() is not None and ViewTools.is_unsupported(view): 
-            hxproject.currentProject(view).generate_build( view )
+            hxproject.current_project(view).generate_build( view )
 
 
     def on_post_save( self , view ) :
         if ViewTools.is_hxml(view):
-            project = hxproject.currentProject(view)
+            project = hxproject.current_project(view)
             project.clear_build()
             
 
     # if view is None it's a preview
     def on_activated( self , view ) :
         if view is not None and view.file_name() is not None and ViewTools.is_unsupported(view): 
-            project = hxproject.currentProject(view)
+            project = hxproject.current_project(view)
             project.get_build(view)
             project.extract_build_args( view )
             project.generate_build(view)    
@@ -777,7 +777,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
     def on_query_completions(self, view, prefix, locations):
         log("on_query_completions triggered")
-        project = hxproject.currentProject(view)
+        project = hxproject.current_project(view)
         return auto_complete(project, view, prefix, locations)
         
     

@@ -1,4 +1,4 @@
-import haxe.haxe_complete
+#import haxe.complete
 
 
 
@@ -93,7 +93,7 @@ class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
 		log("run HaxeDisplayCompletion")
 		
 		view = self.view
-		project = hxproject.currentProject(self.view)
+		project = hxproject.current_project(self.view)
 		project.completion_context.set_manual_trigger(view, False)
 		
 
@@ -112,7 +112,7 @@ class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
 		log("run HaxeDisplayMacroCompletion")
 		
 		view = self.view
-		project = hxproject.currentProject(view)
+		project = hxproject.current_project(view)
 		project.completion_context.set_manual_trigger(view, True)
 		
 		
@@ -140,13 +140,13 @@ class HaxeSaveAllAndBuildCommand( sublime_plugin.TextCommand ):
 		log("run HaxeSaveAllAndBuildCommand")
 		view = self.view
 		view.window().run_command("save_all")
-		hxproject.currentProject(self.view).run_build( view )
+		hxproject.current_project(self.view).run_build( view )
 
 class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		view = self.view
 		log("run HaxeRunBuildCommand")
-		hxproject.currentProject(self.view).run_build( view )
+		hxproject.current_project(self.view).run_build( view )
 
 
 class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
@@ -154,7 +154,7 @@ class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
 		log("run HaxeSelectBuildCommand")
 		view = self.view
 		
-		hxproject.currentProject(self.view).select_build( view )
+		hxproject.current_project(self.view).select_build( view )
 
 # called 
 class HaxeHintCommand( sublime_plugin.TextCommand ):
@@ -173,7 +173,7 @@ class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 		log("run HaxeRestartServerCommand")
 		view = sublime.active_window().active_view()
 		
-		project = hxproject.currentProject(self.view)
+		project = hxproject.current_project(self.view)
 
 		project.server.stop_server()
 		project.server.start_server( view )

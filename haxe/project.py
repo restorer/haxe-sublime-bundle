@@ -28,7 +28,7 @@ haxeVersion = re.compile("haxe_([0-9]{3})",re.M)
 
 class Project:
     def __init__(self, id, file, server_port):
-        import haxe.haxe_complete as hxcomplete
+        import haxe.complete as hxcomplete
         self.completion_context = hxcomplete.CompletionContext()
         self.currentBuild = None
         self.selectingBuild = False
@@ -403,7 +403,7 @@ def select_nme_target( build, i, view ):
 
 
 
-def currentProject(view):
+def current_project(view):
     global _ctx
     global _next_server_port
     file = _get_project_file()

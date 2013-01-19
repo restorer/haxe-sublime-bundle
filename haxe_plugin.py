@@ -74,7 +74,7 @@ for mod in mods_load_order:
 
 from haxe.panel import *
 from haxe.project import Project
-from haxe.complete import HaxeComplete
+from haxe.complete import *
 from haxe.commands import *
 
 if not hook_match:
