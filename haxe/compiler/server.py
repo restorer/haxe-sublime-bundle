@@ -1,5 +1,4 @@
 
-import haxe.settings
 
 
 import sublime

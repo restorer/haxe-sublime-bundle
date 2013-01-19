@@ -43,7 +43,7 @@ class SlidePanel ():
 		#print( err )
 		win.run_command("show_panel",{"panel":"output.haxe"})
 
-		return self.panel
+		return panel
 
 	def writeln (self, msg, scope = None):
 		self.write(msg + "\n", scope)

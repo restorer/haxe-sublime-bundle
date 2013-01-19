@@ -1,5 +1,5 @@
 
-import haxe.settings
+import haxe.settings as hxsettings
 
 import haxe.types as hxtypes
 
@@ -16,10 +16,8 @@ import sublime, sublime_plugin
 
 libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
 
-def haxe_settings () :
-	return haxe.settings.HaxeSettings
-def haxe_exec () :
-	return haxe.haxe_exec
+
+
 
 
 class HaxeLib :
@@ -69,12 +67,12 @@ class HaxeLib :
 	@staticmethod
 	def scan() :
 		#print "do scan haxelib"
-		hlout, hlerr = runcmd( [haxe_settings().haxeLibExec() , "config" ] )
+		hlout, hlerr = runcmd( [hxsettings.haxelib_exec() , "config" ] )
 		HaxeLib.basePath = hlout.strip()
 
 		HaxeLib.available = {}
 
-		hlout, hlerr = runcmd( [haxe_settings().haxeLibExec() , "list" ] )
+		hlout, hlerr = runcmd( [hxsettings.haxelib_Exec() , "list" ] )
 
 		for l in hlout.split("\n") :
 			found = libLine.match( l )
@@ -105,7 +103,7 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 
 	def run(self):
 		print "try install lib"
-		out,err = runcmd([haxe_settings().haxeLibExec() , "search" , " "]);
+		out,err = runcmd([hxsettings.haxelib_exec() , "search" , " "]);
 		
 		libs = self.collect_libraries(out)
 
@@ -121,14 +119,15 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 		if i < 0 :
 			return
 
+		haxelib = hxsettings.haxelib_exec
 		if i == len(libs) :
-			cmd = [haxe_settings().haxeLibExec() , "upgrade" ]
+			cmd = [haxelib , "upgrade" ]
 		else :
 			lib = libs[i]
 			print "lib to install: " + lib
 			if lib in HaxeLib.available :
-				cmd = [haxe_settings().haxeLibExec() , "remove" , lib ]	
+				cmd = [haxelib , "remove" , lib ]	
 			else :
-				cmd = [haxe_settings().haxeLibExec(), "install" , lib ]	
+				cmd = [haxelib, "install" , lib ]	
 
 		runcmd(cmd)

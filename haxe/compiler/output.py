@@ -1,6 +1,6 @@
 
 import haxe.hxtools as hxtools, sublime, re
-import haxe.output_panel
+import haxe.panel as hxpanel
 
 from xml.etree import ElementTree
 
@@ -11,8 +11,7 @@ ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
 
 
-def panel () : 
-	return haxe.output_panel.HaxePanel
+
 
 compilerOutput = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
 haxeFileRegex = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
@@ -125,7 +124,7 @@ def extract_errors( str ):
 	#print(errors)
 	if len(errors) > 0:
 		print "should show panel"
-		panel().writeln(errors[0]["message"])
+		hxpanel.slide_panel().writeln(errors[0]["message"])
 		sublime.status_message(errors[0]["message"])
 
 	return errors

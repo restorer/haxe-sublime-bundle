@@ -140,7 +140,7 @@ def hx_normal_auto_complete(project, completion_id, last_completion_id, view, of
 		delete_manual_completion(project, view)
 
 
-	if (hxsettings.HaxeSettings.no_fuzzy_completion() and not manual_completion):
+	if (hxsettings.no_fuzzy_completion() and not manual_completion):
 		trigger_manual_completion(project, view)
 		#log("start manual completion")
 		
@@ -180,7 +180,7 @@ def hx_normal_auto_complete(project, completion_id, last_completion_id, view, of
 	complete_char = src[completeOffset-1]
 	in_control_struct = controlStruct.search( src[0:completeOffset] ) is not None
 
-	on_demand = hxsettings.HaxeSettings.top_level_completions_on_demand()
+	on_demand = hxsettings.top_level_completions_on_demand()
 
 	toplevelComplete = (toplevelComplete or complete_char in ":(," or in_control_struct) and not on_demand
 
@@ -208,7 +208,7 @@ def hx_normal_auto_complete(project, completion_id, last_completion_id, view, of
 		return comps
 
 
-	delayed = hxsettings.HaxeSettings.is_delayed_completion()
+	delayed = hxsettings.is_delayed_completion()
 
 	display = temp_file + "@" + str(offset)
 	
@@ -270,12 +270,12 @@ def hx_normal_auto_complete(project, completion_id, last_completion_id, view, of
 	tab_panel().status( "haxe-status" , status )
 
 	
-	if not use_cache and delayed and hxsettings.HaxeSettings.only_delayed_completions():
+	if not use_cache and delayed and hxsettings.only_delayed_completions():
 		log("delayed is running: completion cancelled")
 		return cancel_completion(view, True)
 	
 	
-	if len(comps) == 0 and hxsettings.HaxeSettings.no_fuzzy_completion():
+	if len(comps) == 0 and hxsettings.no_fuzzy_completion():
 		log("no fuzzy and 0: completion cancelled")
 		return cancel_completion(view)
 
@@ -284,14 +284,14 @@ def hx_normal_auto_complete(project, completion_id, last_completion_id, view, of
 
 def background_completion(project, completion_id, basic_comps, temp_file, orig_file, temp_path, 
 		view, cache, current_input, completeOffset, run_compiler_completion):
-	hide_delay, show_delay = hxsettings.HaxeSettings.get_completion_delays()
+	hide_delay, show_delay = hxsettings.get_completion_delays()
 
 	
 	view_id = view.id()
 	
 	comps = list(basic_comps) # make copy
 
-	only_delayed = hxsettings.HaxeSettings.only_delayed_completions()
+	only_delayed = hxsettings.only_delayed_completions()
 
 	timer = time.time()
 
@@ -315,7 +315,7 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
 		
 		# do we still need this completion, or is it old
 		has_new_comps = len(comps) > len(basic_comps)
-		if completion_id == project.completion_context.current_completion_id and (has_new_comps or hxsettings.HaxeSettings.only_delayed_completions()):
+		if completion_id == project.completion_context.current_completion_id and (has_new_comps or hxsettings.only_delayed_completions()):
 			now = time.time()
 			project.completion_context.delayed_completions[view_id] = (comps, now)
 			if only_delayed:
@@ -604,7 +604,7 @@ def get_completion_info (view, offset, src, prev):
 
 def run_nme( view, build ) :
 
-	cmd = [ hxsettings.HaxeSettings.haxeLibExec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
+	cmd = [ hxsettings.haxelib_exec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
 	target = hxbuild.HaxeBuild.nme_target[1].split(" ")
 	cmd.extend(target)
 	cmd.append("-debug")
@@ -700,7 +700,7 @@ def get_compiler_completion( project, build, view , display, temp_file, orig_fil
 
 	build.set_auto_completion(display, macroCompletion)
 	
-	if hxsettings.HaxeSettings.showCompletionTimes(view):
+	if hxsettings.show_completion_times(view):
 		build.set_times()
 
 
@@ -708,7 +708,7 @@ def get_compiler_completion( project, build, view , display, temp_file, orig_fil
 	build.set_build_cwd()
 
 
-	haxeExec = hxsettings.HaxeSettings.haxeExec(view)
+	haxeExec = hxsettings.haxe_exec(view)
 
 	return build.run(haxeExec, serverMode, view, project)
 

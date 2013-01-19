@@ -6,7 +6,7 @@ import haxe.lib as hxlib
 import glob
 import codecs
 import sublime
-from haxe.settings import HaxeSettings 
+import haxe.settings as hxsettings 
 import re
 
 from haxe.haxe_exec import runcmd
@@ -378,7 +378,7 @@ class HaxeBuild :
 
 		print "cmd : " + " ".join(cmd)
 
-		libPath = HaxeSettings.haxeLibraryPath();
+		libPath = hxsettings.haxe_library_path();
 		env = os.environ.copy()
 		if libPath != None :
 			absLibPath = os.path.normpath(os.path.join(self.get_build_folder(), libPath))

@@ -49,7 +49,7 @@ mods_load_order = [
     ,'haxe.compiler.output'
     ,'haxe.lib'
     ,'haxe.tools'
-    ,'haxe.output_panel'
+    ,'haxe.panel'
     ,'haxe.settings'
     ,'haxe.startup'
     ,'haxe.project'

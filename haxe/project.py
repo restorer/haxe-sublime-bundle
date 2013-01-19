@@ -10,7 +10,7 @@ import haxe.panel as hxpanel
 import haxe.hxtools as hxtools
 
 import haxe.types as hxtypes
-from haxe.settings import HaxeSettings
+import haxe.settings as hxsettings
 
 import re
 
@@ -57,7 +57,7 @@ class Project:
         return p
 
     def start_server(self, view):
-        haxepath = HaxeSettings.haxeExec(view)
+        haxepath = hxsettings.haxe_exec(view)
                  
         merged_env = os.environ.copy()
         
@@ -65,7 +65,7 @@ class Project:
             user_env = view.settings().get('build_env')
             if user_env:
                 merged_env.update(user_env)
-            libPath = HaxeSettings.haxeLibraryPath()
+            libPath = hxsettings.haxe_library_path()
             if libPath != None :
                 merged_env["HAXE_LIBRARY_PATH"] = libPath
 
@@ -92,7 +92,7 @@ class Project:
         self.stdClasses.extend(classes)
 
     def is_server_mode (self):
-        return self.serverMode and HaxeSettings.getBool('haxe-use-server-mode', True)
+        return self.serverMode and hxsettings.get_bool('haxe-use-server-mode', True)
 
     def generate_build(self, view) :
 
@@ -194,9 +194,9 @@ class Project:
         if len(self.builds) > 0 :
             self.currentBuild = self.builds[id]
             print "set_current_build - 2"
-            slide_panel().status( "haxe-build" , self.currentBuild.to_string() )
+            hxpanel.slide_panel().status( "haxe-build" , self.currentBuild.to_string() )
         else:
-            slide_panel().status( "haxe-build" , "No build" )
+            hxpanel.slide_panel().status( "haxe-build" , "No build" )
             
         self.selectingBuild = False
 
@@ -211,7 +211,7 @@ class Project:
 
     def run_build( self, view ) :
         
-        haxeExec = HaxeSettings.haxeExec(view)
+        haxeExec = hxsettings.haxe_exec(view)
         self.extract_build_args(view, True)
         build = self.get_build(view)
 
@@ -219,7 +219,7 @@ class Project:
         print out
         print err
         print "run_build_complete"
-        slide_panel().writeln(err)
+        hxpanel.slide_panel().writeln(err)
         view.set_status( "haxe-status" , "build finished" )
 
     def clear_build( self ) :
@@ -293,17 +293,14 @@ class Project:
 _last_modification_time = None
 # used for caching the path of current project file
 _last_project = None
+# hash to store all active projects, files without project file use the "global" context
 _ctx = {}
 _next_server_port = 6000
 
-def slide_panel (msg) : 
-    return hxpanel.slide_panel()
 
-def tab_panel (msg) : 
-    return hxpanel.tab_panel()
 
 def collect_compiler_info (project_path):
-    haxe_exec = HaxeSettings.haxeExec()
+    haxe_exec = hxsettings.haxe_exec()
     if haxe_exec != "haxe":
         if project_path != None:
             haxe_exec = os.path.normpath(os.path.join(project_path, haxe_exec))
@@ -398,13 +395,13 @@ def select_nme_target( build, i, view ):
     if build.nmml is not None:
         hxbuild.HaxeBuild.nme_target = target
         view.set_status( "haxe-build" , build.to_string() )
-        slide_panel().status( "haxe-build" , build.to_string() )
+        hxpanel.slide_panel().status( "haxe-build" , build.to_string() )
 
 
 
 
 
-# hash to store all active projects, files without project file use the "global" context
+
 
 
 
