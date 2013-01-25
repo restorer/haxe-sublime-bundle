@@ -2,8 +2,12 @@
 import haxe.hxtools as hxtools, sublime, re
 import haxe.panel as hxpanel
 
+import haxe.settings as hxsettings
+
 from xml.etree import ElementTree
 
+
+from haxe.log import log
 
 from elementtree import SimpleXMLTreeBuilder # part of your codebase
 
@@ -15,6 +19,71 @@ ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
 compilerOutput = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
 haxeFileRegex = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
+
+
+
+def split_signature (signature):
+	openP = 0
+	openB = 0
+	openS = 0
+
+	types = []
+	count = len(signature)
+	cur = ""
+	pos = 0
+	while (True):
+		if pos > count-1:
+			types.append(cur)
+			break
+
+		c = signature[pos]
+		next = signature[pos+1] if pos < count-1 else None
+		
+
+		if (c == "-" and next == ">"):
+			if (openP == 0 and openB == 0 and openS == 0):
+				types.append(cur)
+				cur = ""
+			else:
+				cur += "->"
+			
+			pos += 2
+		elif (c == " " and openP == 0 and openB == 0 and openS == 0):
+			pos += 1
+		elif (c == "{"):
+			pos += 1
+			openB += 1
+			cur += c
+		elif (c == "}"):
+			pos += 1
+			openB -= 1
+			cur += c
+		elif (c == "("):
+			pos += 1
+			openP += 1
+			cur += c
+		elif (c == ")"):
+			pos += 1
+			openP -= 1
+			cur += c
+		elif (c == "<"):
+			pos += 1
+			openS += 1
+			cur += c
+		
+		elif (c == ">"):
+			pos += 1
+			openS -= 1
+			cur += c
+		else:
+			pos += 1
+			cur += c
+	return types
+
+
+
+
+
 
 
 def get_type_hint (types):
@@ -43,7 +112,7 @@ def get_type_hint (types):
 		#else :
 		msg = hint
 			#msg = ", ".join(types[commas:]) 
-
+		log("hint: " + msg)
 		if msg :
 			#msg =  " ( " + " , ".join( types ) + " ) : " + ret + "      " + msg
 			hints.append( msg )
@@ -55,12 +124,25 @@ def collect_completion_fields (li):
 		for i in li.getiterator("i"):
 			name = i.get("n")
 			sig = i.find("t").text
-			#doc = i.find("d").text #nothing to do
+			doc = i.find("d").text #nothing to do
 			insert = name
+			insert_smart = None
 			hint = name
+			hint_smart = None
+
+			smart_snippets = hxsettings.smart_snippets()
+			show_smart = smart_snippets != "none"
+			show_hints = smart_snippets != "only"
+
+			smart_id = "-" if show_hints else ""
 
 			if sig is not None :
-				types = sig.split(" -> ")
+				types = split_signature(sig) 
+				
+				def escape_type (x):
+					return x.replace("}", "\}").replace("{", "\{")
+				
+				
 				ret = types.pop()
 
 				if( len(types) > 0 ) :
@@ -70,30 +152,54 @@ def collect_completion_fields (li):
 						types = []
 						#cm += ")"
 						hint = name + "()\t"+ ret
+						hint_smart = name + smart_id +"()\t"+ ret
 						insert = cm
+						insert_smart = "" + name + "${1:()}"
 					else:
 						hint = name + "( " + " , ".join( types ) + " )\t" + ret
+						
+						hint_smart = "" + name + smart_id +"( " + " , ".join( types ) + " )\t" + ret
 						if len(hint) > 40: # compact arguments
 							hint = hxtools.compactFunc.sub("(...)", hint);
+						if len(hint_smart) > 40: # compact arguments
+							hint_smart = hxtools.compactFunc.sub("(...)", hint_smart);
 						insert = cm
+						new_types = list(types)
+						for i in range(0, len(new_types)):
+							new_types[i] = "${" + str(i+2) + ":" + escape_type(new_types[i]) + "}"
+
+						insert_smart = name + "${1:( " + " , ".join( new_types ) + " )}"
 				else :
 					hint = name + "\t" + ret
+					
 			else :
 				if re.match("^[A-Z]",name ) :
 					hint = name + "\tclass"
+					
 				else :
 					hint = name + "\tpackage"
+					
 
-			#if doc is not None :
 			#	hint += "\t" + doc
 				#print(doc)
+			
+			# store docs and after selection show them in panel (on_modified)
+
 			
 			if len(hint) > 40: # compact return type
 				m = hxtools.compactProp.search(hint)
 				if not m is None:
 					hint = hxtools.compactProp.sub(": " + m.group(1), hint)
 			
-			comps.append( ( hint, insert ) )
+			if (show_hints or hint_smart == None):
+				comps.append( ( hint, insert, doc ) )
+
+			if show_smart and hint_smart != None:
+				if len(hint_smart) > 40: # compact return type
+					m = hxtools.compactProp.search(hint_smart)
+					if not m is None:
+						hint_smart = hxtools.compactProp.sub(": " + m.group(1), hint_smart)
+				comps.append( ( hint_smart, insert_smart, doc ) )
 
 	return comps
 
@@ -123,7 +229,7 @@ def extract_errors( str ):
 
 	#print(errors)
 	if len(errors) > 0:
-		print "should show panel"
+		log("should show panel")
 		hxpanel.slide_panel().writeln(errors[0]["message"])
 		sublime.status_message(errors[0]["message"])
 
@@ -146,7 +252,7 @@ def parse_completion_output(temp_file, orig_file, output):
 		
 	except Exception,e:
 		tree = None
-		print("invalid xml - error: " + str(e))
+		log("invalid xml - error: " + str(e))
 
 
 	if tree is not None :

@@ -5,8 +5,7 @@ from datetime import datetime
 from haxe.tools import ViewTools, SublimeTools
 
 
-
-
+import haxe.tools as hxtools
 
 class SlidePanel ():
 
@@ -55,11 +54,24 @@ class SlidePanel ():
 
 
 def make_tab_panel (win, name, syntax):
+	print "make " + name
+	active = win.active_view()
 	v = win.new_file()
 	v.set_name(name)
 	v.set_read_only(True)
+	v.settings().set('word_wrap', True)
+
+	v.settings().set("haxe_panel_win_id", win.id())
 	v.set_scratch(True)
 	v.set_syntax_file(syntax)
+	last_group = win.num_groups()-1
+	print "view_index:" + str(win.get_view_index(v))
+	print "num_groups:" + str(win.num_groups())
+	print "last_group:" + str(last_group)
+	if name == "Haxe Output": 
+		last_group -= 1
+	win.set_view_index(v, last_group, 0)
+	win.focus_view(active)
 	return v
 
 def valid_message (msg):
@@ -68,85 +80,122 @@ def valid_message (msg):
 class TabPanel():
 	
 
-	def __init__ (self, win):
+	def __init__ (self, win, panel_name = "Haxe Output", panel_syntax = "Packages/Haxe/Haxe.tmLanguage"):
 		self.win = win
 		self.output_view = None
+		self.output_view_id = None
 		self.all = []
+		self.panel_name = panel_name
+		self.panel_syntax = panel_syntax
 
 	
 	def write (self, msg):
-		
+		print "write for: " + self.panel_name
+
 		def f () : 
-		
+			
+
+			self.all = self.all[0:300]
+			msg1 = datetime.now().strftime("%H:%M:%S") + " " + msg
+
 			if valid_message(msg):
-				self.all.insert(0,msg)
+				self.all.insert(0,msg1)
 
 				v = self.output_view
 
 				if (v == None): 
-					v = SublimeTools.find_view_by_name("Haxe Output")
+					v = SublimeTools.find_view_by_name(self.panel_name)
 					
 					if (v == None):
-						v = make_tab_panel(self.win, "Haxe Output", "Packages/Haxe/Haxe.tmLanguage")
+						v = make_tab_panel(self.win, self.panel_name, self.panel_syntax)
+						ViewTools.replace_content(v, "".join(self.all))
 
 					self.output_view = v
+					self.output_view_id = v.id()
+					print "output_view_id:" + str(self.output_view_id)
 
 				if (v != None):
-					ViewTools.replace_content(v, "".join(self.all))
+					v.set_read_only(False)
+					edit = v.begin_edit()
+					v.insert(edit, 0, msg1)
+					v.end_edit( edit )
 					v.set_read_only(True)
 
-		sublime.set_timeout(f,1)
+		sublime.set_timeout(f,40)
 
 	
 	def writeln (self, msg):
+		
 		self.write(msg + "\n")
 
 	
 	def status (self, title, msg):
-		if valid_message(msg):
-			self.writeln(title + ": " + msg)
+		
+		#if valid_message(msg):
+		self.writeln(title + ": " + msg)
 
 
 class PanelCloseListener (sublime_plugin.EventListener):
 	def on_close(self, view):
-		win = view.active_window()
+		win = view.window()
+		if (win == None):
+			win = sublime.active_window();
+		
 		win_id = win.id()
 		view_id = view.id()
+
+		print "view closed " + str(view_id)
 		if win_id in _slide_panel:
-			panel = slide_panel(win_id)
+			panel = slide_panel(win)
 			if panel.output_view != None and view_id == panel.output_view.id():
-				print "haxe slide panel closed"
+				print("slide panel closed")
 				panel.output_view = None
 
-		if win_id in _tab_panel:
-			panel = tab_panel(win_id)
-			if panel.output_view != None and view_id == panel.output_view.id():
-				print "haxe tab panel closed"
-				panel.output_view = None
+		panel_win_id = view.settings().get("haxe_panel_win_id")
+		if (panel_win_id != None):
+			for p in [_tab_panel, _debug_panel]:
+				print "panels: " + str(p)
+				panel = p.get_or_default(panel_win_id, None)
+				if panel != None and panel.output_view != None and view_id == panel.output_view_id:
+					panel.output_view = None
+					panel.output_view_id = None
 
 
-_tab_panel = {}
+
+_tab_panel = hxtools.Cache()
 
 def tab_panel(win = None):
-	global _tab_panel
-	if (win is None):
-		win = sublime.active_window()
-	id = win.id()
-	if (id not in _tab_panel):
-		_tab_panel[id] = TabPanel(win)
-	return _tab_panel[id]
-
-_slide_panel = {}
-
-def slide_panel(win = None):
-	global _slide_panel
+	
 	if (win is None):
 		win = sublime.active_window()
 	
-	id = win.id()
+	return _tab_panel.get_or_insert(win.id(), lambda: TabPanel(win, panel_name="Haxe Output"))
 
-	if (id not in _slide_panel):
-		_slide_panel[id] = SlidePanel(win)
-	return _slide_panel[id]
+_debug_panel = hxtools.Cache()
 
-__all__ = ["tab_panel", "slide_panel"]
+def debug_panel(win = None):
+	
+	if (win is None):
+		win = sublime.active_window()
+	return _debug_panel.get_or_insert(win.id(), lambda: TabPanel(win, "Haxe Plugin Debug Panel"))
+
+_slide_panel = {}
+
+def __slide_panel(win = None):
+	return tab_panel(win)
+
+def default_panel(win = None):
+	return slide_panel(win)
+
+def slide_panel(win = None):
+	
+	if (win is None):
+		win = sublime.active_window()
+	
+	win_id = win.id()
+
+	if (win_id not in _slide_panel):
+		_slide_panel[win_id] = SlidePanel(win)
+	return _slide_panel[win_id]
+
+__all__ = ["tab_panel", "slide_panel", "debug_panel", "default_panel"]

@@ -7,16 +7,18 @@ import os
 import haxe.build as hxbuild
 
 import haxe.panel as hxpanel
-import haxe.hxtools as hxtools
+import haxe.hxtools as hxsrctools
 
 import haxe.types as hxtypes
 import haxe.settings as hxsettings
 
 import re
 
+import haxe.tools as hxtools
+
 from haxe.execute import run_cmd
 
-
+from haxe.log import log
 
 import haxe.compiler.server as hxserver
 
@@ -72,8 +74,8 @@ class Project:
 
     
         cwd = self.project_dir(".")
-        print "server cwd: " + cwd
-        print "server env: " + merged_env["HAXE_LIBRARY_PATH"]
+        log( "server cwd: " + cwd)
+        log( "server env: " + merged_env["HAXE_LIBRARY_PATH"])
 
         self.server.start(haxepath, cwd, merged_env)
         
@@ -119,7 +121,7 @@ class Project:
 
         settings = view.settings()
 
-        print "filename: " + fn
+        log("filename: " + fn)
 
         folder = os.path.dirname(fn)
         
@@ -127,12 +129,12 @@ class Project:
         folders = view.window().folders()
         
         for f in folders:
-            self.builds.extend(hxbuild.find_hxml(f))
-            self.builds.extend(hxbuild.find_nmml(f))
+            self.builds.extend(hxbuild.find_hxmls(f))
+            self.builds.extend(hxbuild.find_nmmls(f))
                 
 
         
-        print "num builds:" + str(len(self.builds))
+        log( "num builds:" + str(len(self.builds)))
 
         # settings.set("haxe-complete-folder", folder)
         
@@ -182,7 +184,7 @@ class Project:
 
     def set_current_build( self, view , id , forcePanel ) :
         
-        print "set_current_build"
+        log( "set_current_build")
         if id < 0 or id >= len(self.builds) :
             id = 0
         
@@ -190,7 +192,7 @@ class Project:
 
         if len(self.builds) > 0 :
             self.currentBuild = self.builds[id]
-            print "set_current_build - 2"
+            log( "set_current_build - 2")
             hxpanel.slide_panel().status( "haxe-build" , self.currentBuild.to_string() )
         else:
             hxpanel.slide_panel().status( "haxe-build" , "No build" )
@@ -213,19 +215,20 @@ class Project:
         build = self.get_build(view)
 
         out, err = build.run(haxeExec, self.serverMode, view, self)
-        print out
-        print err
-        print "run_build_complete"
+        log( out)
+        log( err)
+        log( "run_build_complete")
         hxpanel.slide_panel().writeln(err)
         view.set_status( "haxe-status" , "build finished" )
 
     def clear_build( self ) :
         self.currentBuild = None
-        self.completionContext.clear_completion()
+        self.completion_context.clear_completion()
+
 
 
     def __del__(self) :
-        print "kill server"
+        log( "kill server")
         self.server.stop()
 
 
@@ -249,7 +252,7 @@ class Project:
                     folder = f
 
             pack = []
-            for ps in hxtools.packageLine.findall( src ) :
+            for ps in hxsrctools.packageLine.findall( src ) :
                 if ps == "":
                     continue
                     
@@ -269,7 +272,7 @@ class Project:
 
             build.output = os.path.join(folder,build.main.lower() + ".js")
 
-            print "add cp: " + src_dir
+            log( "add cp: " + src_dir)
 
             build.args.append( ("-cp" , src_dir) )
             #build.args.append( ("-main" , build.main ) )
@@ -291,19 +294,40 @@ _last_modification_time = None
 # used for caching the path of current project file
 _last_project = None
 # hash to store all active projects, files without project file use the "global" context
-_ctx = {}
+
 _next_server_port = 6000
+
+
+def run_nme( view, build ) :
+
+    cmd = [ hxsettings.haxelib_exec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
+    target = hxbuild.HaxeBuild.nme_target[1].split(" ")
+    cmd.extend(target)
+    cmd.append("-debug")
+
+    view.window().run_command("exec", {
+        "cmd": cmd,
+        "working_dir": os.path.dirname(build.nmml),
+        "file_regex": "^([^:]*):([0-9]+): characters [0-9]+-([0-9]+) :.*$"
+    })
+    return ("" , [], "" )
 
 
 
 def collect_compiler_info (project_path):
     haxe_exec = hxsettings.haxe_exec()
+    lib_path = hxsettings.haxe_library_path();
+    env = os.environ.copy()
+    if lib_path != None :
+        abs_lib_path = os.path.normpath(os.path.join(project_path, lib_path))
+        env["HAXE_LIBRARY_PATH"] = abs_lib_path
+        log("export HAXE_LIBRARY_PATH=" + abs_lib_path)
     if haxe_exec != "haxe":
         if project_path != None:
             haxe_exec = os.path.normpath(os.path.join(project_path, haxe_exec))
     
-    out, err = run_cmd( [haxe_exec, "-main", "Nothing", "-v", "--no-output"] )
-    print out       
+    out, err = run_cmd( [haxe_exec, "-main", "Nothing", "-v", "--no-output"], env=env )
+    log( out       )
     m = classpathLine.match(out)
     
     classes = []
@@ -314,7 +338,7 @@ def collect_compiler_info (project_path):
         stdPaths = set(m.group(1).split(";")) - set([".","./"])
     
     for p in stdPaths : 
-        #print("std path : "+p)
+        #log(("std path : "+p))
         if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
             classes, packs = hxtypes.extract_types( p, [], [] )
             
@@ -323,15 +347,11 @@ def collect_compiler_info (project_path):
 
     return (classes, packs, ver, stdPaths)
 
-
-
-
-
 def _get_project_file(win_id = None):
     global _last_project
     global _last_modification_time
 
-    print "try getting project file"
+    log( "try getting project file")
 
     if win_id == None:
         win_id = sublime.active_window().id()
@@ -354,7 +374,7 @@ def _get_project_file(win_id = None):
         and _last_project != None
         ):
         _last_modification_time = mtime
-        print "cached project id"
+        log( "cached project id")
         return _last_project
     else:
         _last_modification_time = mtime
@@ -382,11 +402,6 @@ def _get_project_file(win_id = None):
     return project
 
 
-
-
-    
-    
-
 def select_nme_target( build, i, view ):
     target = hxbuild.HaxeBuild.nme_targets[i]
     if build.nmml is not None:
@@ -395,29 +410,27 @@ def select_nme_target( build, i, view ):
         hxpanel.slide_panel().status( "haxe-build" , build.to_string() )
 
 
+_ctx = hxtools.Cache()
 
-
-
-
-
-
-
-
-def current_project(view):
+def current_project(view = None):
     global _ctx
     global _next_server_port
+
     file = _get_project_file()
     if (file == None): 
-        id = "global" + view.window().id()
+        if (view != None):
+            win = view.window();
+        else:
+            win = sublime.active_window()
+
+        id = "global" + str(win.id())
     else:
         id = file
-    if not id in _ctx:
-        _ctx[id] = Project(id, file, _next_server_port)
+    def create ():
+        global _next_server_port        
+        p = Project(id, file, _next_server_port)
         _next_server_port += 1
-    return _ctx[id]
-
-        
-
+        return p
+    res = _ctx.get_or_insert(id, create )
     
-
-        
+    return res

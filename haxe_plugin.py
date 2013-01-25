@@ -5,8 +5,6 @@ import traceback
 import os
 
 
-import haxe
-
 # thx to wbond for this dynamic loading technique
 
 reloading = {
@@ -50,6 +48,8 @@ mods_load_order = [
     ,'haxe.lib'
     ,'haxe.tools'
     ,'haxe.panel'
+    ,'haxe.log'
+    
     ,'haxe.settings'
     ,'haxe.startup'
     ,'haxe.project'
@@ -73,6 +73,7 @@ for mod in mods_load_order:
         #sys.modules[mod]
 
 from haxe.panel import *
+from haxe.panel import PanelCloseListener
 from haxe.project import Project
 from haxe.complete import *
 from haxe.commands import *

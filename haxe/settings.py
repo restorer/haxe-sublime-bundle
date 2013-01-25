@@ -88,4 +88,6 @@ def haxe_library_path (view = None):
 
 def haxelib_exec (view = None):
 	return get_string("haxelib-exec", "haxelib", view)
-		
+	
+def smart_snippets (view = None):
+	return get_string("smart-snippets", "only", view)	

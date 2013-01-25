@@ -1,7 +1,6 @@
 import sys
 import os
 
-import haxe.panel as hxpanel
 
 from startup import STARTUP_INFO
 from subprocess import Popen, PIPE
@@ -10,8 +9,7 @@ import sublime
 
 import thread
 
-def log (msg):
-	print msg
+
 
 def run_cmd_async(args, callback, input=None, cwd=None, env=None):
 
@@ -36,7 +34,7 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		args = filter(lambda s: s != "", args)
 		
 		encodedArgs = [a.encode(sys.getfilesystemencoding()) for a in args]
-		hxpanel.slide_panel().status("exec: ", " ".join(encodedArgs))
+		#log("exec: " + " ".join(encodedArgs))
 		p = Popen(encodedArgs, cwd=cwd, stdout=PIPE, stderr=PIPE, stdin=PIPE, startupinfo=STARTUP_INFO, env=env)
 		
 
@@ -44,7 +42,7 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		if isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
-		log("runcmd: output:\n" + out.decode('utf-8'))
+		#log("runcmd: output:\n" + out.decode('utf-8'))
 		
 		#print "error: " + err
 		return (out.decode('utf-8') if out else '', err.decode('utf-8') if err else '')

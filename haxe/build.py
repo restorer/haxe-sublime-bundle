@@ -10,115 +10,126 @@ import haxe.settings as hxsettings
 import re
 
 from haxe.execute import run_cmd, run_cmd_async
-
+from haxe.log import log
 
 
 hxml_cache = {}
 
-def find_hxml( folder ) :
-	print "find_hxml"
+# one hxml can contain multiple builds separated by --next
+# should we really support or this, or how cam we handle this?
+# should the user select a part of the build for completion/build
+
+def hxml_to_builds (build, folder):
+	builds = []
+
+	currentBuild = HaxeBuild()
+	currentBuild.hxml = build
+	buildPath = os.path.dirname(build);
+
+	# print("build file exists")
+	f = codecs.open( build , "r+" , "utf-8" , "ignore" )
+	while 1:
+		l = f.readline() 
+		if not l : 
+			break;
+		if l.startswith("--next") :
+			builds.append( currentBuild )
+			currentBuild = HaxeBuild()
+			currentBuild.hxml = build
+			
+		l = l.strip()
+		
+		if l.startswith("-main") :
+			spl = l.split(" ")
+			if len( spl ) == 2 :
+				currentBuild.main = spl[1]
+			else :
+				sublime.status_message( "Invalid build.hxml : no Main class" )
+		
+		if l.startswith("-lib") :
+			spl = l.split(" ")
+			if len( spl ) == 2 :
+				lib = hxlib.HaxeLib.get( spl[1] )
+				currentBuild.libs.append( lib )
+			else :
+				sublime.status_message( "Invalid build.hxml : lib not found" )
+
+		if l.startswith("-cmd") :
+			spl = l.split(" ")
+			currentBuild.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
+		
+		for flag in [ "lib" , "D" , "swf-version" , "swf-header", "debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , "-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , "-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , "-remap" , "-php-front" , "-php-lib", "dce" , "-js-modern" ] :
+			if l.startswith( "-"+flag ) :
+				currentBuild.args.append( tuple(l.split(" ") ) )
+				
+				break
+		
+		for flag in [ "resource" , "xml" , "x" , "swf-lib" ] :
+			if l.startswith( "-"+flag ) :
+				spl = l.split(" ")
+				outp = os.path.join( folder , " ".join(spl[1:]) )
+				currentBuild.args.append( ("-"+flag, outp) )
+				
+				break
+
+		for flag in HaxeBuild.targets :
+			if l.startswith( "-" + flag + " " ) :
+				spl = l.split(" ")
+				#outp = os.path.join( folder , " ".join(spl[1:]) ) 
+				outp = " ".join(spl[1:]) 
+				currentBuild.args.append( ("-"+flag, outp) )
+				
+				currentBuild.target = flag
+				currentBuild.output = outp
+				break
+
+		if l.startswith("-cp "):
+			cp = l.split(" ")
+			#view.set_status( "haxe-status" , "Building..." )
+			cp.pop(0)
+			classpath = " ".join( cp )
+			
+			absClasspath = os.path.join( buildPath , classpath )
+			normAbsClasspath = os.path.normpath(absClasspath)
+			currentBuild.classpaths.append( normAbsClasspath )
+			currentBuild.args.append( ("-cp" , normAbsClasspath ) )
+	
+	if len(currentBuild.classpaths) == 0:
+		log("no classpaths")
+		currentBuild.classpaths.append( buildPath )
+		currentBuild.args.append( ("-cp" , buildPath ) )
+	
+	if currentBuild.main is not None :
+		builds.append( currentBuild )
+
+	return builds
+
+def find_hxmls( folder ) :
+	
 	builds = []
 	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
-	for build in hxmls:
-		new_build = HaxeBuild()
-		if build in hxml_cache:
-			cached = hxml_cache[build]
-			if cached.equals(new_build):
-				print "builds equal"
-				currentBuild = cached
-				print "builds differ"
-			else:
-				hxml_cache[build] = new_build
-				currentBuild = new_build
-
-		currentBuild = HaxeBuild()
-		currentBuild.hxml = build
-		buildPath = os.path.dirname(build);
-
-		# print("build file exists")
-		f = codecs.open( build , "r+" , "utf-8" , "ignore" )
-		while 1:
-			l = f.readline() 
-			if not l : 
-				break;
-			if l.startswith("--next") :
-				builds.append( currentBuild )
-				currentBuild = HaxeBuild()
-				currentBuild.hxml = build
-				
-			l = l.strip()
+	for hxml in hxmls:
+		mtime = os.path.getmtime(hxml)
+		if hxml in hxml_cache:
 			
-			if l.startswith("-main") :
-				spl = l.split(" ")
-				if len( spl ) == 2 :
-					currentBuild.main = spl[1]
-				else :
-					sublime.status_message( "Invalid build.hxml : no Main class" )
-			
-			if l.startswith("-lib") :
-				spl = l.split(" ")
-				if len( spl ) == 2 :
-					lib = hxlib.HaxeLib.get( spl[1] )
-					currentBuild.libs.append( lib )
-				else :
-					sublime.status_message( "Invalid build.hxml : lib not found" )
+			if (mtime > hxml_cache[hxml][1]): # modified
+				current = hxml_to_builds(hxml, folder)
+				hxml_cache[hxml] = (current, mtime)
+			else: # already in cache
+				current = hxml_cache[hxml][0]
 
-			if l.startswith("-cmd") :
-				spl = l.split(" ")
-				currentBuild.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
+		else: # not in cache
+			current = hxml_to_builds(hxml, folder)
+			hxml_cache[hxml] = (current, mtime)
 
-			#if l.startswith("--connect") and HaxeComplete.instance().serverMode :
-			#	currentBuild.args.append( ( "--connect" , str(self.serverPort) ))
-			
-			for flag in [ "lib" , "D" , "swf-version" , "swf-header", "debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , "-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , "-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , "-remap" , "-php-front" , "-php-lib", "-dce" , "-js-modern" ] :
-				if l.startswith( "-"+flag ) :
-					currentBuild.args.append( tuple(l.split(" ") ) )
-					
-					break
-			
-			for flag in [ "resource" , "xml" , "x" , "swf-lib" ] :
-				if l.startswith( "-"+flag ) :
-					spl = l.split(" ")
-					outp = os.path.join( folder , " ".join(spl[1:]) )
-					currentBuild.args.append( ("-"+flag, outp) )
-					
-					break
-
-			for flag in HaxeBuild.targets :
-				if l.startswith( "-" + flag + " " ) :
-					spl = l.split(" ")
-					#outp = os.path.join( folder , " ".join(spl[1:]) ) 
-					outp = " ".join(spl[1:]) 
-					currentBuild.args.append( ("-"+flag, outp) )
-					
-					currentBuild.target = flag
-					currentBuild.output = outp
-					break
-
-			if l.startswith("-cp "):
-				cp = l.split(" ")
-				#view.set_status( "haxe-status" , "Building..." )
-				cp.pop(0)
-				classpath = " ".join( cp )
-				
-				absClasspath = os.path.join( buildPath , classpath )
-				normAbsClasspath = os.path.normpath(absClasspath)
-				currentBuild.classpaths.append( normAbsClasspath )
-				currentBuild.args.append( ("-cp" , normAbsClasspath ) )
+		builds.extend(current)
 		
-		if len(currentBuild.classpaths) == 0:
-			print "no classpaths"
-			currentBuild.classpaths.append( buildPath )
-			currentBuild.args.append( ("-cp" , buildPath ) )
-		
-		if currentBuild.main is not None :
-			builds.append( currentBuild )
 	return builds
 
 extractTag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
 
 
-def find_nmml( folder ) :
+def find_nmmls( folder ) :
 	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
 
 	builds = []
@@ -177,6 +188,9 @@ def find_nmml( folder ) :
 class HaxeBuild :
 
 	#auto = None
+
+	
+
 	targets = Config.targets
 	nme_targets = Config.nme_targets
 	nme_target = Config.nme_target
@@ -354,7 +368,7 @@ class HaxeBuild :
 		return self.classes, self.packages
 
 	
-	def prepare_run (self, haxeExec, serverMode, view, project):
+	def prepare_run (self, haxe_exec, server_mode, view, project):
 		b = self.copy()
 		
 		nekox_file_name = None
@@ -366,34 +380,39 @@ class HaxeBuild :
 
 
 		# ignore servermode when -x
-		print b.target
-		if serverMode:
+		
+		if server_mode:
 			project.start_server( view )
 			b.set_server_mode(project.server.get_server_port())
 
 		
 		b.set_build_cwd()
-		cmd = b.get_command_args(haxeExec)
+		cmd = b.get_command_args(haxe_exec)
 
-		print "cmd : " + " ".join(cmd)
+		log("cmd : " + " ".join(cmd))
 
-		libPath = hxsettings.haxe_library_path();
+		lib_path = hxsettings.haxe_library_path();
 		env = os.environ.copy()
-		if libPath != None :
-			absLibPath = os.path.normpath(os.path.join(self.get_build_folder(), libPath))
-			env["HAXE_LIBRARY_PATH"] = absLibPath
+		if lib_path != None :
+			abs_lib_path = os.path.normpath(os.path.join(self.get_build_folder(), lib_path))
+			env["HAXE_LIBRARY_PATH"] = abs_lib_path
+			log("export HAXE_LIBRARY_PATH=" + abs_lib_path)
 
 
-			print "cwd:" + self.get_build_folder()
-			print "hxml:" + self.hxml
+		log("cwd:" + self.get_build_folder())
+		log("hxml:" + self.hxml)
 		
 
 		return (cmd, self.get_build_folder(), env, nekox_file_name)
 
-	def run_async (self, haxeExec, serverMode, view, project, callback):
-		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxeExec, serverMode, view, project)
+	def run_async (self, haxe_exec, server_mode, view, project, callback):
+		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
 		def cb (out, err):
+			log("-------------------------------------")
+			log("out:" + out)
+			log("err:" + err)
+			log("---------compiler-output-------------")
 			if nekox_file_name is not None:
 				self.run_neko_x(build_folder, nekox_file_name)
 			callback(out, err)
@@ -402,11 +421,14 @@ class HaxeBuild :
 		
 		
 
-	def run (self, haxeExec, serverMode, view, project):
-		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxeExec, serverMode, view, project)
+	def run (self, haxe_exec, server_mode, view, project):
+		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
 		out, err = run_cmd( args=cmd, input="", cwd=build_folder, env=env )
-
+		log("-------------------------------------")
+		log("out:" + out)
+		log("err:" + err)
+		log("---------compiler-output-------------")
 		# execute compiled file if hxml/build has -x target
 		if nekox_file_name is not None:
 			self.run_neko_x(build_folder, nekox_file_name)
@@ -414,9 +436,9 @@ class HaxeBuild :
 
 	def run_neko_x(self, build_folder, neko_file_name):
 		neko_file = os.path.join(build_folder, neko_file_name)
-		print neko_file
+		log(neko_file) 
 		out1, err1 = run_cmd(["neko", neko_file])
-		print out1
+		log(out1)
 		#print err1
 
 

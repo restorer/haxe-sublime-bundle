@@ -3,7 +3,7 @@ import os
 
 import haxe.project as hxproject
 
-
+from haxe.log import log
 
 import haxe.hxtools as hxtools
 
@@ -14,9 +14,9 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 	currentSrc = None
 
 	def run( self , paths = [] , t = "class" ) :
-		print "createtype"
+		log("createtype")
 		
-
+		
 		
 		
 		view = sublime.active_window().active_view()
@@ -36,7 +36,7 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 			fn = view.file_name()
 			paths.append(fn)
 
-		print paths
+		log(paths)
 		for path in paths :
 
 			if os.path.isfile( path ) :
@@ -103,7 +103,7 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 
 	def on_change( self , inp ) :
 		#sublime.status_message( "Current classpath : " + HaxeCreateType.classpath )
-		print( inp )
+		log( inp )
 
 	def on_cancel( self ) :
 		None

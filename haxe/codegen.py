@@ -4,6 +4,8 @@ from haxe.hxtools import wordChars, spaceChars, importLine, usingLine, packageLi
 
 import haxe.panel as hxpanel
 
+from haxe.log import log
+
 import re
 
 
@@ -24,9 +26,9 @@ class HaxeGenerateImportOrUsing:
 
 
 	def __init__ (self, panel, view):
-		print "construct"
+		log( "construct")
 		self.view = view
-		print (str(self.view))
+		log(str(self.view))
 		self.panel = panel
 		
 		
