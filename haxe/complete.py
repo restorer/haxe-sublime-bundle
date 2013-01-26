@@ -362,11 +362,8 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
         
         project.completion_context.running.delete(completion_id)
     def on_result(ret_, err_):
-        
-
         # replace current completion workaround
         # delays are customizable with project settings
-        
         sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_delayed else 20)
 
     project.completion_context.running.insert(completion_id, (complete_offset, view.id()))
@@ -713,7 +710,7 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
 
     def on_load( self, view ) :
 
-        if view is not None and view.file_name() is not None and view_tools.is_unsupported(view): 
+        if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
             hxproject.current_project(view).generate_build( view )
 
 
@@ -725,7 +722,7 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
 
     # if view is None it's a preview
     def on_activated( self , view ) :
-        if view is not None and view.file_name() is not None and view_tools.is_unsupported(view): 
+        if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
             project = hxproject.current_project(view)
             project.get_build(view)
             project.extract_build_args( view )
