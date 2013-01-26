@@ -12,7 +12,7 @@ import haxe.panel as hxpanel
 
 from haxe.compiler.output import get_completion_output
 
-from haxe.config import Config
+import haxe.config as hxconfig
 
 
 
@@ -20,11 +20,14 @@ import haxe.types as hxtypes
 
 
 import haxe.project as hxproject
-import haxe.hxtools as hxsourcetools
+import haxe.hxtools as hxsrctools
 
-import haxe.tools as hxtools
+from haxe.tools.cache import Cache
 
-from haxe.tools import ViewTools, ScopeTools
+
+import haxe.tools.view as view_tools
+import haxe.tools.scope as scope_tools
+
 
 from haxe.log import log
 
@@ -36,16 +39,16 @@ TRIGGER_MANUAL_NORMAL = "manual_normal"
 
 class CompletionContext:
 
-    
+      
 
     def __init__(self):
         
-        self.running = hxtools.Cache()
-        self.trigger = hxtools.Cache(1000)
-        
+        self.running = Cache()
+        self.trigger = Cache(1000)
+
         self.current_id = None   
         self.errors = []
-        self.delayed = hxtools.Cache(1000)
+        self.delayed = Cache(1000)
         self.current = {
             "input" : None,
             "output" : None
@@ -81,48 +84,42 @@ def slide_panel () :
 def tab_panel () : 
     return hxpanel.tab_panel()
 
-libFlag = re.compile("-lib\s+(.*?)")
+lib_flag = re.compile("-lib\s+(.*?)")
 
 
-controlStruct = re.compile( "\s*(if|switch|for|while)\($" );
+control_struct = re.compile( "\s*(if|switch|for|while)\($" );
 
 
-bundleFile = __file__
-bundlePath = os.path.abspath(bundleFile)
-bundleDir = os.path.dirname(bundlePath)
-
-
-
+bundle_file = __file__
+bundle_path = os.path.abspath(bundle_file)
+bundle_dir = os.path.dirname(bundle_path)
 
 
 
 
-def filter_top_level_completions (offsetChar, all_comps):
+
+
+
+def filter_top_level_completions (offset_char, all_comps):
     log("number of top level completions all:" + str(len(all_comps)))
         
     comps = []
 
-    isLower = offsetChar in "abcdefghijklmnopqrstuvwxyz"
-    isUpper = offsetChar in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    isDigit = offsetChar in "0123456789"
-    isSpecial = offsetChar in "$_"
-    offsetUpper = offsetChar.upper()
-    offsetLower = offsetChar.lower()
-    if isLower or isUpper or isDigit or isSpecial:
+    is_lower = offset_char in "abcdefghijklmnopqrstuvwxyz"
+    is_upper = offset_char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    is_digit = offset_char in "0123456789"
+    is_special = offset_char in "$_"
+    offset_upper = offset_char.upper()
+    offset_lower = offset_char.lower()
+    if is_lower or is_upper or is_digit or is_special:
         
         for c in all_comps:
 
             id = c[1]
-            id2 = c[0]
 
-            if ((offsetChar in id2
-                or (isUpper and offsetLower in id2)
-                or (isLower and offsetUpper in id2))
-                or
-
-                (offsetChar in id
-                or (isUpper and offsetLower in id)
-                or (isLower and offsetUpper in id))):
+            if (offset_char in id
+                or (is_upper and offset_lower in id)
+                or (is_lower and offset_upper in id)):
                 comps.append(c)
         
     else:
@@ -184,7 +181,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
         
 
 
-    src = ViewTools.get_content(view)
+    src = view_tools.get_content(view)
     orig_file = view.file_name()
     src_dir = os.path.dirname(orig_file)
     
@@ -193,7 +190,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     #find actual autocompletable char.
     prev = src[offset-1]
     
-    commas, completeOffset, toplevelComplete = get_completion_info(view, offset, src, prev)
+    commas, complete_offset, toplevel_complete, is_new = get_completion_info(view, offset, src, prev)
     
     # autocompletion is triggered, but its already 
     # running as a background process, starting it
@@ -201,49 +198,48 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     # the same view and src position
     if project.completion_context.running.exists(last_completion_id):
         o1, id1 = project.completion_context.running.get_or_default(last_completion_id, None)
-        if (o1 == completeOffset and id1 == view.id()):
+        if (o1 == complete_offset and id1 == view.id()):
             log("cancel completion, same is running")
             return cancel_completion(view, False)
 
 
     
 
-    complete_char = src[completeOffset-1]
-    in_control_struct = controlStruct.search( src[0:completeOffset] ) is not None
+    complete_char = src[complete_offset-1]
+    in_control_struct = control_struct.search( src[0:complete_offset] ) is not None
 
     on_demand = hxsettings.top_level_completions_on_demand()
 
-    toplevelComplete = (toplevelComplete or complete_char in ":(," or in_control_struct) and not on_demand
+    toplevel_complete = (toplevel_complete or complete_char in ":(," or in_control_struct) and not on_demand
 
-    if (hxsettings.no_fuzzy_completion() and not manual_completion and not toplevelComplete):
+    if (hxsettings.no_fuzzy_completion() and not manual_completion and not toplevel_complete):
         log("trigger manual -> cancel completion")
         trigger_manual_completion(project, view, macro_completion)
         
         return cancel_completion(view)
 
-    offsetChar = src[offset]
+    offset_char = src[offset]
     
 
-    if (offsetChar == "\n" and prev == "." and src[offset-2] == "." and src[offset-3] != "."):
+    if (offset_char == "\n" and prev == "." and src[offset-2] == "." and src[offset-3] != "."):
         log("iterator completion")
         return [(".\tint iterator", "..")]
 
     
 
-    
-
     comps = []
 
-    if toplevelComplete :
-        all_comps = get_toplevel_completion( project, src , src_dir , build.copy() )
-        comps = filter_top_level_completions(offsetChar, all_comps)
+    if is_new or toplevel_complete :
+        all_comps = get_toplevel_completion( project, src , src_dir , build.copy(), is_new )
+
+        comps = filter_top_level_completions(offset_char, all_comps)
     else:
         log("comps_from_not_top_level")
         comps = []
     
     
 
-    if toplevelComplete and (in_control_struct or complete_char not in "(,")  :
+    if is_new or (toplevel_complete and (in_control_struct or complete_char not in "(,"))  :
         log("comps_from_top_level_and_control_struct")
         return comps
 
@@ -257,7 +253,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     comps1 = []
     status = ""
 
-    offset = completeOffset
+    offset = complete_offset
 
     current_input = create_completion_input_key(orig_file, offset, commas, src, macro_completion, complete_char)
 
@@ -290,7 +286,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
             if delayed:
                 log("run delayed compiler completion")
                 background_completion(project, completion_id, list(comps), temp_file, orig_file,temp_path,
-                    view, cache, current_input, completeOffset, run_compiler_completion)
+                    view, cache, current_input, complete_offset, run_compiler_completion)
                 
                 ret, comps1, status, hints = "", [], "", []
             else:
@@ -344,7 +340,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     return comps
 
 def background_completion(project, completion_id, basic_comps, temp_file, orig_file, temp_path, 
-        view, cache, current_input, completeOffset, run_compiler_completion):
+        view, cache, current_input, complete_offset, run_compiler_completion):
     hide_delay, show_delay = hxsettings.get_completion_delays()
 
     
@@ -401,7 +397,7 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
         
         sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_delayed else 20)
 
-    project.completion_context.running.insert(completion_id, (completeOffset, view.id()))
+    project.completion_context.running.insert(completion_id, (complete_offset, view.id()))
     project.completion_context.current_id = completion_id
 
     run_compiler_completion(on_result, True)
@@ -421,37 +417,42 @@ def supported_compiler_completion_char (char):
 
 
 def is_package_available (target, pack):
-    cls = Config
+    cls = hxconfig
     res = True
     
-    if target != None and pack in cls.targetPackages:
+    if target != None and pack in cls.target_packages:
         if target in cls.target_std_packages:
-            res = cls.target_std_packages[target] == pack
+            if pack not in cls.target_std_packages[target]:
+                res = False;
+
 
     
     return res
 
-def get_toplevel_completion( project, src , src_dir , build ) :
+def get_toplevel_completion( project, src , src_dir , build, only_types = False ) :
     cl = []
     packs = []
-    stdPackages = []
+    std_packages = []
 
-    comps = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
+    if (only_types):
+        comps = []
+    else:
+        comps = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
 
-    src = hxsourcetools.comments.sub("",src)
+    src = hxsrctools.comments.sub("",src)
 
-    localTypes = hxsourcetools.typeDecl.findall( src )
-    for t in localTypes :
+    local_types = hxsrctools.type_decl.findall( src )
+    for t in local_types :
         if t[1] not in cl:
             cl.append( t[1] )
 
 
-    packageClasses, subPacks = hxtypes.extract_types( src_dir, project.stdClasses, project.stdPackages )
-    for c in packageClasses :
+    package_classes, sub_packs = hxtypes.extract_types( src_dir, project.std_classes, project.std_packages )
+    for c in package_classes :
         if c not in cl:
             cl.append( c )
 
-    imports = hxsourcetools.importLine.findall( src )
+    imports = hxsrctools.import_line.findall( src )
     imported = []
     for i in imports :
         imp = i[1]
@@ -459,7 +460,7 @@ def get_toplevel_completion( project, src , src_dir , build ) :
 
     #log(str(build.classpaths))
 
-    buildClasses , buildPacks = build.get_types()
+    build_classes , build_packs = build.get_types()
 
 
 
@@ -470,59 +471,52 @@ def get_toplevel_completion( project, src , src_dir , build ) :
                 return False
         return True
 
-    buildClasses = filter(filter_build, buildClasses)
+    build_classes = filter(filter_build, build_classes)
     
-
-
+    cl.extend( project.std_classes )
     
-
-    cl.extend( project.stdClasses )
-    
-    cl.extend( buildClasses )
+    cl.extend( build_classes )
     
     cl.sort();
 
-    for p in project.stdPackages :
+    log("target: " + str(build.target))
+
+    for p in project.std_packages :
         if is_package_available(build.target, p):
             if p == "flash9" or p == "flash8" :
                 p = "flash"
-            stdPackages.append(p)
+            std_packages.append(p)
 
+    packs.extend( std_packages )
     
-
+    if not only_types:
+        for v in hxsrctools.variables.findall(src) :
+            comps.append(( v + "\tvar" , v ))
     
-    packs.extend( stdPackages )
-    
-
-    for v in hxsourcetools.variables.findall(src) :
-        comps.append(( v + "\tvar" , v ))
-    
-    for f in hxsourcetools.functions.findall(src) :
-        if f not in ["new"] :
-            comps.append(( f + "\tfunction" , f ))
-
-    
-    #TODO can we restrict this to local scope ?
-    for paramsText in hxsourcetools.functionParams.findall(src) :
-        cleanedParamsText = re.sub(hxsourcetools.paramDefault,"",paramsText)
-        paramsList = cleanedParamsText.split(",")
-        for param in paramsList:
-            a = param.strip();
-            if a.startswith("?"):
-                a = a[1:]
-            
-            idx = a.find(":") 
-            if idx > -1:
-                a = a[0:idx]
-
-            idx = a.find("=")
-            if idx > -1:
-                a = a[0:idx]
+        for f in hxsrctools.functions.findall(src) :
+            if f not in ["new"] :
+                comps.append(( f + "\tfunction" , f ))
+        #TODO can we restrict this to local scope ?
+        for params_text in hxsrctools.function_params.findall(src) :
+            cleaned_params_text = re.sub(hxsrctools.param_default,"",params_text)
+            params_list = cleaned_params_text.split(",")
+            for param in params_list:
+                a = param.strip();
+                if a.startswith("?"):
+                    a = a[1:]
                 
-            a = a.strip()
-            cm = (a + "\tvar", a)
-            if cm not in comps:
-                comps.append( cm )
+                idx = a.find(":") 
+                if idx > -1:
+                    a = a[0:idx]
+
+                idx = a.find("=")
+                if idx > -1:
+                    a = a[0:idx]
+                    
+                a = a.strip()
+                cm = (a + "\tvar", a)
+                if cm not in comps:
+                    comps.append( cm )
 
     for c in cl :
         spl = c.split(".")
@@ -530,14 +524,11 @@ def get_toplevel_completion( project, src , src_dir , build ) :
             spl[0] = "flash"
 
         top = spl[0]
-        #print(spl)
         
         clname = spl.pop()
         pack = ".".join(spl)
         display = clname
 
-        #if pack in imported:
-        #   pack = ""
 
         if pack != "" :
             display += "\t" + pack
@@ -549,14 +540,18 @@ def get_toplevel_completion( project, src , src_dir , build ) :
         if pack in imported or c in imported :
             cm = ( display , clname )
         else :
+            #add an option for full packages in completion, something like this:
+            #cm = ( ".".join(spl) , ".".join(spl) )
+            
             cm = ( display , ".".join(spl) )
 
         if cm not in comps and is_package_available(build.target, top):
-            if (len(spl) > 2):
-                p1 = spl[0:len(spl)-2]
-                p = ".".join(p1)
-                if (p != ""):
-                    packs.append(p) 
+            # add packages to completion
+            z = [x for x in spl if x[0].lower() == x[0]]
+            if (len(z) > 0):
+                p = ".".join(z)
+                packs.append(p) 
+
             comps.append( cm )
     
     for p in packs :
@@ -575,8 +570,8 @@ def hxsl_auto_complete( project, view , offset ) :
 
 def hxml_auto_complete( project, view , offset ) :
     src = view.substr(sublime.Region(0, offset))
-    currentLine = src[src.rfind("\n")+1:offset]
-    m = libFlag.match( currentLine )
+    current_line = src[src.rfind("\n")+1:offset]
+    m = lib_flag.match( current_line )
     if m is not None :
         return hxlib.HaxeLib.get_completions()
     else :
@@ -603,56 +598,59 @@ def highlight_errors( errors , view ) :
     view.add_regions("haxe-error" , regions , "invalid" , "dot" )
 
 
-def count_commas_and_complete_offset (src, prevComa, completeOffset):
+def count_commas_and_complete_offset (src, prev_comma, complete_offset):
     commas = 0;
-    closedPars = 0
-    closedBrackets = 0
+    closed_pars = 0
+    closed_braces = 0
 
-    for i in range( prevComa , 0 , -1 ) :
+    for i in range( prev_comma , 0 , -1 ) :
         c = src[i]
         if c == ")" :
-            closedPars += 1
+            closed_pars += 1
         elif c == "(" :
-            if closedPars < 1 :
-                completeOffset = i+1
+            if closed_pars < 1 :
+                complete_offset = i+1
                 break
             else :
-                closedPars -= 1
+                closed_pars -= 1
         elif c == "," :
-            if closedPars == 0 :
+            if closed_pars == 0 :
                 commas += 1
         elif c == "{" : # TODO : check for { ... , ... , ... } to have the right comma count
             commas = 0
-            closedBrackets -= 1
+            closed_braces -= 1
         elif c == "}" :
-            closedBrackets += 1
+            closed_braces += 1
 
-    return (commas, completeOffset)
+    return (commas, complete_offset)
 
 def get_completion_info (view, offset, src, prev):
     commas = 0
-    toplevelComplete = False
-    completeOffset = offset
-    if prev not in "(." :
+    toplevel_complete = False
+    complete_offset = offset
+    is_new = False
+    if (prev == " " and src[offset-4:offset-1] == "new"):
+        is_new = True
+    elif prev not in "(." :
         fragment = view.substr(sublime.Region(0,offset))
-        prevDot = fragment.rfind(".")
-        prevPar = fragment.rfind("(")
-        prevComa = fragment.rfind(",")
-        prevColon = fragment.rfind(":")
-        prevBrace = fragment.rfind("{")
-        prevSymbol = max(prevDot,prevPar,prevComa,prevBrace,prevColon)
+        prev_dot = fragment.rfind(".")
+        prev_par = fragment.rfind("(")
+        prev_comma = fragment.rfind(",")
+        prev_colon = fragment.rfind(":")
+        prev_brace = fragment.rfind("{")
+        prev_symbol = max(prev_dot,prev_par,prev_comma,prev_brace,prev_colon)
         
-        if prevSymbol == prevComa:
-            commas, completeOffset = count_commas_and_complete_offset(src, prevComa, completeOffset)
+        if prev_symbol == prev_comma:
+            commas, complete_offset = count_commas_and_complete_offset(src, prev_comma, complete_offset)
             #print("closedBrackets : " + str(closedBrackets))
             
         else :
 
-            completeOffset = max( prevDot + 1, prevPar + 1 , prevColon + 1 )
-            skipped = src[completeOffset:offset]
-            toplevelComplete = hxsourcetools.skippable.search( skipped ) is None and hxsourcetools.inAnonymous.search( skipped ) is None
+            complete_offset = max( prev_dot + 1, prev_par + 1 , prev_colon + 1 )
+            skipped = src[complete_offset:offset]
+            toplevel_complete = hxsrctools.skippable.search( skipped ) is None and hxsrctools.in_anonymous.search( skipped ) is None
 
-    return (commas, completeOffset, toplevelComplete)
+    return (commas, complete_offset, toplevel_complete, is_new)
 
 
 def cancel_completion(view, hide_complete = True):
@@ -714,16 +712,16 @@ def auto_complete (project, view, prefix, locations):
     if offset == 0 : 
         return comps 
     
-    scopes = ViewTools.get_scopes_at(view, pos)
+    scopes = view_tools.get_scopes_at(view, pos)
 
-    if (ScopeTools.contains_string_or_comment(scopes)):
+    if (scope_tools.contains_string_or_comment(scopes)):
         return comps
 
-    if Config.SOURCE_HXML in scopes:
+    if hxconfig.SOURCE_HXML in scopes:
         comps = hxml_auto_complete( project, view , offset )
     
-    if Config.SOURCE_HAXE in scopes :
-        if ViewTools.is_hxsl(view) :
+    if hxconfig.SOURCE_HAXE in scopes :
+        if view_tools.is_hxsl(view) :
             comps = hxsl_auto_complete( project, view , offset )
         else :
             log("run hx auto complete")
@@ -741,19 +739,19 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
 
     def on_load( self, view ) :
 
-        if view is not None and view.file_name() is not None and ViewTools.is_unsupported(view): 
+        if view is not None and view.file_name() is not None and view_tools.is_unsupported(view): 
             hxproject.current_project(view).generate_build( view )
 
 
     def on_post_save( self , view ) :
-        if ViewTools.is_hxml(view):
+        if view_tools.is_hxml(view):
             project = hxproject.current_project(view)
             project.clear_build()
             
 
     # if view is None it's a preview
     def on_activated( self , view ) :
-        if view is not None and view.file_name() is not None and ViewTools.is_unsupported(view): 
+        if view is not None and view.file_name() is not None and view_tools.is_unsupported(view): 
             project = hxproject.current_project(view)
             project.get_build(view)
             project.extract_build_args( view )
@@ -762,8 +760,8 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
 
     def on_pre_save( self , view ) :
 
-        if ViewTools.is_haxe(view) :
-            ViewTools.create_missing_folders(view)
+        if view_tools.is_haxe(view) :
+            view_tools.create_missing_folders(view)
 
 
     def on_query_completions(self, view, prefix, locations):

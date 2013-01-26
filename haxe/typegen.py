@@ -77,7 +77,7 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 			p = parts.pop(0)
 			
 			fn = os.path.join( fn , p )
-			if hxtools.isType.match( p ) : 
+			if hxtools.is_type.match( p ) : 
 				cl = p
 				break;
 			else :

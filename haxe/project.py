@@ -14,26 +14,30 @@ import haxe.settings as hxsettings
 
 import re
 
-import haxe.tools as hxtools
+
 
 from haxe.execute import run_cmd
 
 from haxe.log import log
 
+import haxe.tools.path as path_tools
+
+from haxe.tools.cache import Cache
+
 import haxe.compiler.server as hxserver
 
-classpathLine = re.compile("Classpath : (.*)")
+classpath_line = re.compile("Classpath : (.*)")
 
-haxeVersion = re.compile("haxe_([0-9]{3})",re.M)
+haxe_version = re.compile("haxe_([0-9]{3})",re.M)
 
 
 
 class Project:
     def __init__(self, id, file, server_port):
-        import haxe.complete as hxcomplete
-        self.completion_context = hxcomplete.CompletionContext()
-        self.currentBuild = None
-        self.selectingBuild = False
+        from haxe.complete import CompletionContext
+        self.completion_context = CompletionContext()
+        self.current_build = None
+        self.selecting_build = False
         self.builds = []
         
         self.server = hxserver.Server(server_port)
@@ -67,11 +71,6 @@ class Project:
             libPath = hxsettings.haxe_library_path()
             if libPath != None :
                 merged_env["HAXE_LIBRARY_PATH"] = libPath
-
-
-        
-            
-
     
         cwd = self.project_dir(".")
         log( "server cwd: " + cwd)
@@ -81,14 +80,14 @@ class Project:
         
 
     def update_compiler_info (self):
-        classes, packs, ver, stdPaths = collect_compiler_info(self.project_path)
+        classes, packs, ver, std_paths = collect_compiler_info(self.project_path)
 
         self.serverMode = int(ver.group(1)) >= 209
 
-        self.stdPaths = stdPaths
-        self.stdPackages = packs
-        self.stdClasses = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
-        self.stdClasses.extend(classes)
+        self.std_paths = std_paths
+        self.std_packages = packs
+        self.std_classes = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
+        self.std_classes.extend(classes)
 
     def is_server_mode (self):
         return self.serverMode and hxsettings.get_bool('haxe-use-server-mode', True)
@@ -97,10 +96,10 @@ class Project:
 
         fn = view.file_name()
 
-        if self.currentBuild is not None and fn == self.currentBuild.hxml and view.size() == 0 :  
+        if self.current_build is not None and fn == self.current_build.hxml and view.size() == 0 :  
             e = view.begin_edit()
-            hxmlSrc = self.currentBuild.make_hxml()
-            view.insert(e,0,hxmlSrc)
+            hxml_src = self.current_build.make_hxml()
+            view.insert(e,0,hxml_src)
             view.end_edit(e)
 
     def select_build( self, view ) :
@@ -112,7 +111,7 @@ class Project:
         self.extract_build_args( view , True )
 
 
-    def extract_build_args( self, view , forcePanel = False ) :
+    def extract_build_args( self, view , force_panel = False ) :
     
         self.builds = []
 
@@ -140,49 +139,49 @@ class Project:
         
 
         if len(self.builds) == 1:
-            if forcePanel : 
+            if force_panel : 
                 sublime.status_message("There is only one build")
 
             # will open the build file
-            #if forcePanel :
+            #if force_panel :
             #   b = builds[0]
             #   f = b.hxml
             #   v = view.window().open_file(f,sublime.TRANSIENT) 
 
-            self.set_current_build( view , int(0), forcePanel )
+            self.set_current_build( view , int(0), force_panel )
 
-        elif len(self.builds) == 0 and forcePanel :
+        elif len(self.builds) == 0 and force_panel :
             sublime.status_message("No hxml or nmml file found")
 
             f = os.path.join(folder,"build.hxml")
 
-            self.currentBuild = None
+            self.current_build = None
             self.get_build(view)
-            self.currentBuild.hxml = f
+            self.current_build.hxml = f
 
             #for whatever reason generate_build doesn't work without transient
             view.window().open_file(f,sublime.TRANSIENT)
 
-            self.set_current_build( view , int(0), forcePanel )
+            self.set_current_build( view , int(0), force_panel )
 
-        elif len(self.builds) > 1 and forcePanel :
+        elif len(self.builds) > 1 and force_panel :
             buildsView = []
             for b in self.builds :
                 #for a in b.args :
                 #   v.append( " ".join(a) )
                 buildsView.append( [b.to_string(), os.path.basename( b.hxml ) ] )
 
-            self.selectingBuild = True
+            self.selecting_build = True
             sublime.status_message("Please select your build")
-            view.window().show_quick_panel( buildsView , lambda i : self.set_current_build(view, int(i), forcePanel) , sublime.MONOSPACE_FONT )
+            view.window().show_quick_panel( buildsView , lambda i : self.set_current_build(view, int(i), force_panel) , sublime.MONOSPACE_FONT )
 
         elif settings.has("haxe-build-id"):
-            self.set_current_build( view , int(settings.get("haxe-build-id")), forcePanel )
+            self.set_current_build( view , int(settings.get("haxe-build-id")), force_panel )
         
         else:
-            self.set_current_build( view , int(0), forcePanel )
+            self.set_current_build( view , int(0), force_panel )
 
-    def set_current_build( self, view , id , forcePanel ) :
+    def set_current_build( self, view , id , force_panel ) :
         
         log( "set_current_build")
         if id < 0 or id >= len(self.builds) :
@@ -191,22 +190,22 @@ class Project:
         view.settings().set( "haxe-build-id" , id ) 
 
         if len(self.builds) > 0 :
-            self.currentBuild = self.builds[id]
+            self.current_build = self.builds[id]
             log( "set_current_build - 2")
-            hxpanel.slide_panel().status( "haxe-build" , self.currentBuild.to_string() )
+            hxpanel.slide_panel().status( "haxe-build" , self.current_build.to_string() )
         else:
             hxpanel.slide_panel().status( "haxe-build" , "No build" )
             
-        self.selectingBuild = False
+        self.selecting_build = False
 
-        if forcePanel and self.currentBuild is not None: # choose NME target
-            if self.currentBuild.nmml is not None:
+        if force_panel and self.current_build is not None: # choose NME target
+            if self.current_build.nmml is not None:
                 sublime.status_message("Please select a NME target")
                 nme_targets = []
                 for t in hxbuild.HaxeBuild.nme_targets :
                     nme_targets.append( t[0] )
 
-                view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.currentBuild, i, view))
+                view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.current_build, i, view))
 
     def run_build( self, view ) :
         
@@ -222,7 +221,7 @@ class Project:
         view.set_status( "haxe-status" , "build finished" )
 
     def clear_build( self ) :
-        self.currentBuild = None
+        self.current_build = None
         self.completion_context.clear_completion()
 
 
@@ -234,7 +233,7 @@ class Project:
 
     def get_build( self, view ) :
         
-        if self.currentBuild is None and view.score_selector(0,"source.haxe.2") > 0 :
+        if self.current_build is None and view.score_selector(0,"source.haxe.2") > 0 :
 
             fn = view.file_name()
 
@@ -252,7 +251,7 @@ class Project:
                     folder = f
 
             pack = []
-            for ps in hxsrctools.packageLine.findall( src ) :
+            for ps in hxsrctools.package_line.findall( src ) :
                 if ps == "":
                     continue
                     
@@ -283,9 +282,9 @@ class Project:
             build.hxml = os.path.join( src_dir , "build.hxml")
             
             #build.hxml = os.path.join( src_dir , "build.hxml")
-            self.currentBuild = build
+            self.current_build = build
             
-        return self.currentBuild   
+        return self.current_build   
 
 
 
@@ -314,38 +313,44 @@ def run_nme( view, build ) :
 
 
 
-def collect_compiler_info (project_path):
-    haxe_exec = hxsettings.haxe_exec()
+def get_compiler_info_env (project_path):
     lib_path = hxsettings.haxe_library_path();
     env = os.environ.copy()
     if lib_path != None :
-        abs_lib_path = os.path.normpath(os.path.join(project_path, lib_path))
+        abs_lib_path = path_tools.join_norm(project_path, lib_path)
         env["HAXE_LIBRARY_PATH"] = abs_lib_path
         log("export HAXE_LIBRARY_PATH=" + abs_lib_path)
+    return env
+
+
+def collect_compiler_info (project_path):
+    haxe_exec = hxsettings.haxe_exec()
+    
+    env = get_compiler_info_env(project_path)
+
     if haxe_exec != "haxe":
         if project_path != None:
-            haxe_exec = os.path.normpath(os.path.join(project_path, haxe_exec))
+            haxe_exec = path_tools.join_norm(project_path, haxe_exec)
     
     out, err = run_cmd( [haxe_exec, "-main", "Nothing", "-v", "--no-output"], env=env )
-    log( out       )
-    m = classpathLine.match(out)
+    log( out )
+    m = classpath_line.match(out)
     
     classes = []
     packs = []
-    stdPaths = []
+    std_paths = []
 
     if m is not None :
-        stdPaths = set(m.group(1).split(";")) - set([".","./"])
+        std_paths = set(m.group(1).split(";")) - set([".","./"])
     
-    for p in stdPaths : 
-        #log(("std path : "+p))
+    for p in std_paths : 
         if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
             classes, packs = hxtypes.extract_types( p, [], [] )
             
 
-    ver = re.search( haxeVersion , out )
+    ver = re.search( haxe_version , out )
 
-    return (classes, packs, ver, stdPaths)
+    return (classes, packs, ver, std_paths)
 
 def _get_project_file(win_id = None):
     global _last_project
@@ -371,8 +376,7 @@ def _get_project_file(win_id = None):
 
     if (_last_modification_time is not None 
         and mtime == _last_modification_time
-        and _last_project != None
-        ):
+        and _last_project != None):
         _last_modification_time = mtime
         log( "cached project id")
         return _last_project
@@ -410,10 +414,10 @@ def select_nme_target( build, i, view ):
         hxpanel.slide_panel().status( "haxe-build" , build.to_string() )
 
 
-_ctx = hxtools.Cache()
+_projects = Cache()
 
 def current_project(view = None):
-    global _ctx
+    global _projects
     global _next_server_port
 
     file = _get_project_file()
@@ -431,6 +435,6 @@ def current_project(view = None):
         p = Project(id, file, _next_server_port)
         _next_server_port += 1
         return p
-    res = _ctx.get_or_insert(id, create )
+    res = _projects.get_or_insert(id, create )
     
     return res

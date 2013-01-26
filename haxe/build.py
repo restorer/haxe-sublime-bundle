@@ -1,6 +1,6 @@
 
 import os
-from haxe.config import Config
+import haxe.config as hxconfig
 import haxe.types as hxtypes
 import haxe.lib as hxlib
 import glob
@@ -9,6 +9,8 @@ import sublime
 import haxe.settings as hxsettings 
 import re
 
+import haxe.tools.path as path_tools
+
 from haxe.execute import run_cmd, run_cmd_async
 from haxe.log import log
 
@@ -16,15 +18,15 @@ from haxe.log import log
 hxml_cache = {}
 
 # one hxml can contain multiple builds separated by --next
-# should we really support or this, or how cam we handle this?
-# should the user select a part of the build for completion/build
+# should we really support this, or how can we handle this?
+# should the user be able to select a part of the build for completion/build
 
 def hxml_to_builds (build, folder):
 	builds = []
 
-	currentBuild = HaxeBuild()
-	currentBuild.hxml = build
-	buildPath = os.path.dirname(build);
+	current_build = HaxeBuild()
+	current_build.hxml = build
+	build_path = os.path.dirname(build);
 
 	# print("build file exists")
 	f = codecs.open( build , "r+" , "utf-8" , "ignore" )
@@ -33,16 +35,16 @@ def hxml_to_builds (build, folder):
 		if not l : 
 			break;
 		if l.startswith("--next") :
-			builds.append( currentBuild )
-			currentBuild = HaxeBuild()
-			currentBuild.hxml = build
+			builds.append( current_build )
+			current_build = HaxeBuild()
+			current_build.hxml = build
 			
 		l = l.strip()
 		
 		if l.startswith("-main") :
 			spl = l.split(" ")
 			if len( spl ) == 2 :
-				currentBuild.main = spl[1]
+				current_build.main = spl[1]
 			else :
 				sublime.status_message( "Invalid build.hxml : no Main class" )
 		
@@ -50,17 +52,21 @@ def hxml_to_builds (build, folder):
 			spl = l.split(" ")
 			if len( spl ) == 2 :
 				lib = hxlib.HaxeLib.get( spl[1] )
-				currentBuild.libs.append( lib )
+				current_build.libs.append( lib )
 			else :
 				sublime.status_message( "Invalid build.hxml : lib not found" )
 
 		if l.startswith("-cmd") :
 			spl = l.split(" ")
-			currentBuild.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
+			current_build.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
 		
-		for flag in [ "lib" , "D" , "swf-version" , "swf-header", "debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , "-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , "-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , "-remap" , "-php-front" , "-php-lib", "dce" , "-js-modern" ] :
+		for flag in [ "lib" , "D" , "swf-version" , "swf-header", 
+					"debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , 
+					"-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , 
+					"-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , 
+					"-remap" , "-php-front" , "-php-lib", "dce" , "-js-modern" ] :
 			if l.startswith( "-"+flag ) :
-				currentBuild.args.append( tuple(l.split(" ") ) )
+				current_build.args.append( tuple(l.split(" ") ) )
 				
 				break
 		
@@ -68,39 +74,39 @@ def hxml_to_builds (build, folder):
 			if l.startswith( "-"+flag ) :
 				spl = l.split(" ")
 				outp = os.path.join( folder , " ".join(spl[1:]) )
-				currentBuild.args.append( ("-"+flag, outp) )
-				
+				current_build.args.append( ("-"+flag, outp) )
+				if (flag == "x"):
+					current_build.target = "neko"
 				break
 
-		for flag in HaxeBuild.targets :
+		for flag in hxconfig.targets:
 			if l.startswith( "-" + flag + " " ) :
 				spl = l.split(" ")
 				#outp = os.path.join( folder , " ".join(spl[1:]) ) 
 				outp = " ".join(spl[1:]) 
-				currentBuild.args.append( ("-"+flag, outp) )
+				current_build.args.append( ("-"+flag, outp) )
 				
-				currentBuild.target = flag
-				currentBuild.output = outp
+				current_build.target = flag
+				current_build.output = outp
 				break
 
 		if l.startswith("-cp "):
 			cp = l.split(" ")
-			#view.set_status( "haxe-status" , "Building..." )
+			
 			cp.pop(0)
 			classpath = " ".join( cp )
 			
-			absClasspath = os.path.join( buildPath , classpath )
-			normAbsClasspath = os.path.normpath(absClasspath)
-			currentBuild.classpaths.append( normAbsClasspath )
-			currentBuild.args.append( ("-cp" , normAbsClasspath ) )
+			abs_classpath = path_tools.join_norm( build_path , classpath )
+			current_build.classpaths.append( abs_classpath )
+			current_build.args.append( ("-cp" , abs_classpath ) )
 	
-	if len(currentBuild.classpaths) == 0:
+	if len(current_build.classpaths) == 0:
 		log("no classpaths")
-		currentBuild.classpaths.append( buildPath )
-		currentBuild.args.append( ("-cp" , buildPath ) )
+		current_build.classpaths.append( build_path )
+		current_build.args.append( ("-cp" , build_path ) )
 	
-	if currentBuild.main is not None :
-		builds.append( currentBuild )
+	if current_build.main is not None :
+		builds.append( current_build )
 
 	return builds
 
@@ -126,7 +132,7 @@ def find_hxmls( folder ) :
 		
 	return builds
 
-extractTag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
+extract_tag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
 
 
 def find_nmmls( folder ) :
@@ -135,10 +141,10 @@ def find_nmmls( folder ) :
 	builds = []
 
 	for build in nmmls:
-		currentBuild = HaxeBuild()
-		currentBuild.hxml = build
-		currentBuild.nmml = build
-		buildPath = os.path.dirname(build)
+		current_build = HaxeBuild()
+		current_build.hxml = build
+		current_build.nmml = build
+		build_path = os.path.dirname(build)
 
 		# TODO delegate compiler options extractions to NME 3.2:
 		# runcmd("nme diplay project.nmml nme_target")
@@ -149,51 +155,45 @@ def find_nmmls( folder ) :
 			l = f.readline() 
 			if not l : 
 				break;
-			m = extractTag.search(l)
+			m = extract_tag.search(l)
 			if not m is None:
 				#print(m.groups())
 				tag = m.group(1)
 				name = m.group(3)
 				if (tag == "app"):
-					currentBuild.main = name
+					current_build.main = name
 					mFile = re.search("\\b(file|title)=\"([a-z0-9_-]+)\"", l, re.I)
 					if not mFile is None:
 						outp = mFile.group(2)
 				elif (tag == "haxelib"):
-					currentBuild.libs.append( hxlib.HaxeLib.get( name ) )
-					currentBuild.args.append( ("-lib" , name) )
+					current_build.libs.append( hxlib.HaxeLib.get( name ) )
+					current_build.args.append( ("-lib" , name) )
 				elif (tag == "classpath"):
-					currentBuild.classpaths.append( os.path.join( buildPath , name ) )
-					currentBuild.args.append( ("-cp" , os.path.join( buildPath , name ) ) )
+					current_build.classpaths.append( os.path.join( build_path , name ) )
+					current_build.args.append( ("-cp" , os.path.join( build_path , name ) ) )
 			else: # NME 3.2
 				mPath = re.search("\\bpath=\"([a-z0-9_-]+)\"", l, re.I)
 				if not mPath is None:
 					#print(mPath.groups())
 					path = mPath.group(1)
-					currentBuild.classpaths.append( os.path.join( buildPath , path ) )
-					currentBuild.args.append( ("-cp" , os.path.join( buildPath , path ) ) )
+					current_build.classpaths.append( os.path.join( build_path , path ) )
+					current_build.args.append( ("-cp" , os.path.join( build_path , path ) ) )
 		
 		outp = os.path.join( folder , outp )
-		currentBuild.target = "cpp"
-		currentBuild.args.append( ("--remap", "flash:nme") )
-		currentBuild.args.append( ("-cpp", outp) )
-		currentBuild.output = outp
+		current_build.target = "cpp"
+		current_build.args.append( ("--remap", "flash:nme") )
+		current_build.args.append( ("-cpp", outp) )
+		current_build.output = outp
 
-		if currentBuild.main is not None :
-			builds.append( currentBuild )
+		if current_build.main is not None :
+			builds.append( current_build )
 	return builds
+
 
 
 
 class HaxeBuild :
 
-	#auto = None
-
-	
-
-	targets = Config.targets
-	nme_targets = Config.nme_targets
-	nme_target = Config.nme_target
 
 	def __init__(self) :
 		self.std_classes = []
@@ -278,7 +278,7 @@ class HaxeBuild :
 	def to_string(self) :
 		out = os.path.basename(self.output)
 		if self.nmml is not None:
-			return "{out} ({target})".format(self=self, out=out, target=HaxeBuild.nme_target[0]);
+			return "{out} ({target})".format(self=self, out=out, target=hxconfig.nme_target[0]);
 		else:
 			return "{main} ({target}:{out})".format(self=self, out=out, main=self.main, target=self.target);
 		#return "{self.main} {self.target}:{out}".format(self=self, out=out);

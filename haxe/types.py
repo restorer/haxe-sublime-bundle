@@ -1,12 +1,12 @@
-import time,os, codecs, glob
+import os, codecs, glob
 
 
+from haxe.tools.cache import Cache
 import haxe.hxtools as hxtools
 
 
 
-cache_time_ms = 30000 # in milliseconds
-type_cache = {}
+
 
 def log (msg):
 	print msg
@@ -39,26 +39,26 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 	return classes,packs
 
 
+# 30 seconds cache
+type_cache = Cache(30000) 
+
+
 def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0 ) :
 
 	if filtered_classes is None: 
 		filtered_classes = []
 	if filtered_packages is None: 
 		filtered_packages = []
-	now = time.time()
+	
 
-	if path in type_cache:
-		old_time = type_cache[path][1]
-		
-		if (now - old_time) < cache_time_ms:
-			log("use-type-cache")
-			return type_cache[path][0]
-		else:
-			del type_cache[path]
+	cached = type_cache.get_or_default(path)
+	if cached != None:
+		return cached
+	
 
 	classes = []
 	packs = []
-	hasClasses = False
+	has_classes = False
 	
 	for fullpath in glob.glob( os.path.join(path,"*.hx") ) : 
 		f = os.path.basename(fullpath)
@@ -66,31 +66,14 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 		cl, ext = os.path.splitext( f )
 							
 		if cl not in filtered_classes:
-			s = codecs.open( os.path.join( path , f ) , "r" , "utf-8" , "ignore" )
-			src = hxtools.comments.sub( "" , s.read() )
-			
-			clPack = "";
-			for ps in hxtools.packageLine.findall( src ) :
-				clPack = ps
-			
-			if clPack == "" :
-				packDepth = 0
-			else:
-				packDepth = len(clPack.split("."))
+			module_classes = extract_types_from_file(os.path.join( path , f ), depth, cl)
 
-			for decl in hxtools.typeDecl.findall( src ):
-				t = decl[1]
+			has_classes = has_classes or len(module_classes) > 0
 
-				if( packDepth == depth ) : # and t == cl or cl == "StdTypes"
-					if t == cl or cl == "StdTypes":
-						classes.append( t )
-					else: 
-						classes.append( cl + "." + t )
-
-					hasClasses = True
+			classes.extend(module_classes)
 	
-
-	if hasClasses or depth == 0 : 
+	# what happens if has_classes == 0 and depth = 1, could still be a valid classpath or not??
+	if has_classes or depth == 0 : 
 		
 		for f in os.listdir( path ) :
 			
@@ -105,6 +88,38 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 	classes.sort()
 	packs.sort()
 
-	type_cache[path] = ((list(classes), list(packs)), now)
+	type_cache.insert(path, (list(classes), list(packs)))
+	
 
 	return classes, packs
+
+
+
+def extract_types_from_file (file, depth, module_name = None):
+
+	if module_name == None:
+		module_name = os.path.splitext( os.path.basename(file) )[0]
+
+	classes = []
+	s = codecs.open( file , "r" , "utf-8" , "ignore" )
+	src = hxtools.comments.sub( "" , s.read() )
+	
+	clPack = "";
+	for ps in hxtools.package_line.findall( src ) :
+		clPack = ps
+	
+	if clPack == "" :
+		pack_depth = 0
+	else:
+		pack_depth = len(clPack.split("."))
+
+	for decl in hxtools.type_decl.findall( src ):
+		t = decl[1]
+
+		if( pack_depth == depth ) :
+			if t == module_name or module_name == "StdTypes":
+				classes.append( t )
+			else: 
+				classes.append( module_name + "." + t )
+
+	return classes

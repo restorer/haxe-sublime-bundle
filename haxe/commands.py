@@ -23,7 +23,7 @@ import haxe.project as hxproject
 
 import haxe.codegen
 
-from haxe.tools import PathTools
+import haxe.tools.path as path_tools
 
 #class HaxelibExecCommand(stexec.ExecCommand):
 #
@@ -43,28 +43,28 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 		view = self.view
 		
-		fileName = view.file_name()
+		file_name = view.file_name()
 
-		if fileName == None:
+		if file_name == None:
 			return
 
-		fileName = os.path.basename(view.file_name())
+		file_name = os.path.basename(view.file_name())
 
 		window = view.window()
 		folders = window.folders()
  
 		projectDir = folders[0]
-		tmpFolder = folders[0] + "/tmp"
-		targetFile = folders[0] + "/tmp/" + fileName
+		tmp_folder = folders[0] + "/tmp"
+		target_file = folders[0] + "/tmp/" + file_name
 
-		if os.path.exists(tmpFolder):
-			PathTools.removeDir(tmpFolder)			
+		if os.path.exists(tmp_folder):
+			path_tools.remove_dir(tmp_folder)			
 		
 
-		os.makedirs(tmpFolder)
+		os.makedirs(tmp_folder)
 		
 
-		fd = open(targetFile, "w+")
+		fd = open(target_file, "w+")
 		sel = view.sel()
 
 		word = view.substr(sel[0])
@@ -80,8 +80,8 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 		view.replace(edit, newSel, word)
 
-		newContent = view.substr(sublime.Region(0, view.size()))
-		fd.write(newContent)
+		new_content = view.substr(sublime.Region(0, view.size()))
+		fd.write(new_content)
 
 		view.run_command("undo")
 
@@ -169,7 +169,7 @@ class HaxeHintCommand( sublime_plugin.TextCommand ):
 
 class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 
-	def run( self ) :
+	def run( self ) : 
 		log("run HaxeRestartServerCommand")
 		view = sublime.active_window().active_view()
 		

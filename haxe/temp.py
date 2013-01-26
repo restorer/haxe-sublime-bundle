@@ -1,5 +1,5 @@
 import os
-from haxe.tools import PathTools
+import haxe.tools.path as path_tools
 import codecs
 
 
@@ -24,7 +24,7 @@ def get_temp_path(build):
 def create_temp_path(build):
 
 	temp_path = get_temp_path(build)
-	PathTools.removeDir(temp_path)
+	path_tools.remove_dir(temp_path)
 	os.makedirs(temp_path)
 	return temp_path
 
@@ -53,6 +53,7 @@ def create_temp_path_and_file(build, orig_file, content):
 
 
 def remove_path (temp_path):
-	PathTools.removeDir(temp_path)
+	path_tools.remove_dir(temp_path)
 
 
+ 

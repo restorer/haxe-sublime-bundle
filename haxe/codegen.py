@@ -1,6 +1,6 @@
 
 import sublime
-from haxe.hxtools import wordChars, spaceChars, importLine, usingLine, packageLine
+from haxe.hxtools import word_chars, space_chars, import_line, using_line, package_line
 
 import haxe.panel as hxpanel
 
@@ -11,11 +11,11 @@ import re
 
 def generate_using (view, edit):
 	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
-	return p.generate_statement(edit, "using", usingLine)
+	return p.generate_statement(edit, "using", using_line)
 
 def generate_import (view, edit):
 	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
-	return p.generate_statement(edit, "import", importLine)
+	return p.generate_statement(edit, "import", import_line)
 
 class HaxeGenerateImportOrUsing:
 
@@ -38,7 +38,7 @@ class HaxeGenerateImportOrUsing:
 		while offset < end:
 			c = src[offset]
 			offset += 1
-			if not wordChars.match(c): break
+			if not word_chars.match(c): break
 		return offset - 1
 
 	def get_start( self, src, offset ) :
@@ -48,9 +48,9 @@ class HaxeGenerateImportOrUsing:
 			c = src[offset]
 			offset -= 1
 			if foundWord == 0:
-				if spaceChars.match(c): continue
+				if space_chars.match(c): continue
 				foundWord = 1
-			if not wordChars.match(c): break
+			if not word_chars.match(c): break
 
 		return offset + 2
 	
@@ -104,7 +104,7 @@ class HaxeGenerateImportOrUsing:
 			ins = ";\n{0}{1} {2}".format(last.group(1), statement, cname)
 			view.insert(edit, last.end(2), ins)
 		else:
-			pkg = packageLine.search(src)
+			pkg = package_line.search(src)
 			if not pkg is None:
 				ins = "\n\n{0} {1};".format(statement, cname)
 				view.insert(edit, pkg.end(0), ins)
@@ -113,10 +113,10 @@ class HaxeGenerateImportOrUsing:
 				view.insert(edit, 0, ins)
 
 	def generate_using( self , edit,  ) :
-		self.generate_statement(edit, "using", usingLine)
+		self.generate_statement(edit, "using", using_line)
 
 	def generate_import( self , edit ) :
-		self.generate_statement(edit, "import", importLine)
+		self.generate_statement(edit, "import", import_line)
 
 	def generate_statement( self , edit, statement, regex ) :
 		

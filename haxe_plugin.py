@@ -3,15 +3,28 @@ import sys
 import traceback
 
 import os
+import sublime
+import sublime_plugin
+
+import haxe
+import haxe.tools.cache
+import haxe.tools.path
+import haxe.tools.scope
+import haxe.tools.view
+import haxe.execute
+import haxe.hxtools
 
 
-# thx to wbond for this dynamic loading technique
+
+print "start haxe_plugin"
+
+# thx to wbond for the dynamic loading technique
 
 reloading = {
     'happening': False,
     'shown': False
 }
-
+ 
 
 reload_mods = []
 
@@ -21,7 +34,7 @@ for mod in sys.modules:
     if (mod[0:5] == 'haxe.' or mod == 'haxe') and sys.modules[mod] != None:
         reload_mods.append(mod)
         reloading['happening'] = True
-
+ 
 
 # Prevent popups during reload, saving the callbacks for re-adding later
 if reload_mods:
@@ -29,54 +42,78 @@ if reload_mods:
     hook_match = re.search("<class '(\w+).ExcepthookChain1'>", str(sys.excepthook))
     if hook_match: 
         _temp = __import__(hook_match.group(1), globals(), locals(),
-            ['ExcepthookChain1'], -1)
+            ['ExcepthookChain1'], -1) 
         ExcepthookChain1 = _temp.ExcepthookChain1
         old_callbacks = ExcepthookChain1.names
     sys.excepthook = sys.__excepthook__
  
 mods_load_order = [
-     'haxe'
-    ,'haxe.config'
-    ,'haxe.commands'
+     'haxe.config'
+    ,'haxe.project'
     ,'haxe.build'
     ,'haxe.complete'
     ,'haxe.typegen'
+    ,'haxe.commands'
     ,'haxe.execute'
     ,'haxe.codegen'
     ,'haxe.compiler.server'
     ,'haxe.compiler.output'
     ,'haxe.lib'
-    ,'haxe.tools'
+    ,'haxe.tools.path'
+    ,'haxe.tools.view'
+    ,'haxe.tools.scope'
+    ,'haxe.tools.cache'
     ,'haxe.panel'
     ,'haxe.log'
-    
     ,'haxe.settings'
     ,'haxe.startup'
-    ,'haxe.project'
+    
     ,'haxe.temp'
     ,'haxe.types'
     ,'haxe.hxtools'
-    ,'haxe.compiler.outputparser'
-]  
- 
-def my_import(name):
-    mod = __import__(name)
-    components = name.split('.')
-    for comp in components[1:]:
-        mod = getattr(mod, comp)
-    return mod
 
+]
+
+
+print "reload modules"
+print str(reload_mods)
 for mod in mods_load_order:
     if mod in reload_mods:
         reload(sys.modules[mod])
 
-        #sys.modules[mod]
-
-from haxe.panel import *
-from haxe.panel import PanelCloseListener
+        
+import haxe
+import haxe.config
+from haxe.compiler.server import Server
+from haxe.build import HaxeBuild
 from haxe.project import Project
-from haxe.complete import *
-from haxe.commands import *
+
+from haxe.complete import (
+     HaxeCompleteListener
+    ,CompletionContext
+) 
+from haxe.commands import  ( 
+     HaxeGetTypeOfExprCommand
+    ,HaxeDisplayCompletion
+    ,HaxeDisplayMacroCompletion
+    ,HaxeInsertCompletionCommand
+    ,HaxeSaveAllAndBuildCommand
+    ,HaxeRunBuildCommand
+    ,HaxeSelectBuildCommand 
+    ,HaxeHintCommand 
+    ,HaxeRestartServerCommand
+    ,HaxeGenerateUsingCommand
+    ,HaxeGenerateImportCommand
+)
+
+from haxe.panel import (
+     PanelCloseListener
+    ,TabPanel
+    ,SlidePanel
+)
+import haxe.temp
+
+
 
 if not hook_match:
     class ExcepthookChain1(object):
@@ -156,11 +193,18 @@ def unload_handler():
     
     ExcepthookChain1.remove('haxe_uncaught_except')
 
+ 
 
 
 
-#from haxe.temp import TempClasspath
 
 f = os.path.dirname(os.path.realpath(__file__))
 def plugin_dir():
     return f
+
+class HaxeDoNothingCommand( sublime_plugin.TextCommand ):
+    def run( self , edit ) :
+        self 
+ 
+
+print "fin haxe_plugin"   

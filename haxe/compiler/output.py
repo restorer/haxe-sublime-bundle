@@ -1,5 +1,7 @@
 
-import haxe.hxtools as hxtools, sublime, re
+import haxe.hxtools as hxtools
+import sublime
+import re
 import haxe.panel as hxpanel
 
 import haxe.settings as hxsettings
@@ -17,15 +19,15 @@ ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
 
 
-compilerOutput = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
-haxeFileRegex = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
+compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
+haxe_compiler_line = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
 
 
 
 def split_signature (signature):
-	openP = 0
-	openB = 0
-	openS = 0
+	open_pars = 0
+	open_braces = 0
+	open_brackets = 0
 
 	types = []
 	count = len(signature)
@@ -41,39 +43,39 @@ def split_signature (signature):
 		
 
 		if (c == "-" and next == ">"):
-			if (openP == 0 and openB == 0 and openS == 0):
+			if (open_pars == 0 and open_braces == 0 and open_brackets == 0):
 				types.append(cur)
 				cur = ""
 			else:
 				cur += "->"
 			
 			pos += 2
-		elif (c == " " and openP == 0 and openB == 0 and openS == 0):
+		elif (c == " " and open_pars == 0 and open_braces == 0 and open_brackets == 0):
 			pos += 1
 		elif (c == "{"):
 			pos += 1
-			openB += 1
+			open_braces += 1
 			cur += c
 		elif (c == "}"):
 			pos += 1
-			openB -= 1
+			open_braces -= 1
 			cur += c
 		elif (c == "("):
 			pos += 1
-			openP += 1
+			open_pars += 1
 			cur += c
 		elif (c == ")"):
 			pos += 1
-			openP -= 1
+			open_pars -= 1
 			cur += c
 		elif (c == "<"):
 			pos += 1
-			openS += 1
+			open_brackets += 1
 			cur += c
 		
 		elif (c == ">"):
 			pos += 1
-			openS -= 1
+			open_brackets -= 1
 			cur += c
 		else:
 			pos += 1
@@ -160,9 +162,9 @@ def collect_completion_fields (li):
 						
 						hint_smart = "" + name + smart_id +"( " + " , ".join( types ) + " )\t" + ret
 						if len(hint) > 40: # compact arguments
-							hint = hxtools.compactFunc.sub("(...)", hint);
+							hint = hxtools.compact_func.sub("(...)", hint);
 						if len(hint_smart) > 40: # compact arguments
-							hint_smart = hxtools.compactFunc.sub("(...)", hint_smart);
+							hint_smart = hxtools.compact_func.sub("(...)", hint_smart);
 						insert = cm
 						new_types = list(types)
 						for i in range(0, len(new_types)):
@@ -187,18 +189,18 @@ def collect_completion_fields (li):
 
 			
 			if len(hint) > 40: # compact return type
-				m = hxtools.compactProp.search(hint)
+				m = hxtools.compact_prop.search(hint)
 				if not m is None:
-					hint = hxtools.compactProp.sub(": " + m.group(1), hint)
+					hint = hxtools.compact_prop.sub(": " + m.group(1), hint)
 			
 			if (show_hints or hint_smart == None):
 				comps.append( ( hint, insert, doc ) )
 
 			if show_smart and hint_smart != None:
 				if len(hint_smart) > 40: # compact return type
-					m = hxtools.compactProp.search(hint_smart)
+					m = hxtools.compact_prop.search(hint_smart)
 					if not m is None:
-						hint_smart = hxtools.compactProp.sub(": " + m.group(1), hint_smart)
+						hint_smart = hxtools.compact_prop.sub(": " + m.group(1), hint_smart)
 				comps.append( ( hint_smart, insert_smart, doc ) )
 
 	return comps
@@ -207,7 +209,7 @@ def collect_completion_fields (li):
 def extract_errors( str ):
 	errors = []
 	
-	for infos in compilerOutput.findall(str) :
+	for infos in compiler_output.findall(str) :
 		infos = list(infos)
 		f = infos.pop(0)
 		l = int( infos.pop(0) )-1
@@ -290,14 +292,14 @@ def parse_completion_errors(output, temp_file, orig_file, status):
 	if len(l) > 0 :
 		if l == "<list>" :
 			status = "No autocompletion available"
-		elif not re.match( haxeFileRegex , l ):
+		elif not re.match( haxe_compiler_line , l ):
 			status = l
 		else :
 			status = ""
 
 	#regions = []
 	
-	# for infos in compilerOutput.findall(err) :
+	# for infos in compiler_output.findall(err) :
 	# 	infos = list(infos)
 	# 	f = infos.pop(0)
 	# 	l = int( infos.pop(0) )-1

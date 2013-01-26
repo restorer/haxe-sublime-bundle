@@ -32,11 +32,6 @@ class Server ():
 					self.start(haxe_path, cwd, env, retries-1)
 			
 	
-	
-		
-				
-
-
 
 	def stop( self ) :
 		
