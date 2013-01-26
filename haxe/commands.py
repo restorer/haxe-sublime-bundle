@@ -190,14 +190,17 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
 	
 	
 
-	def __init__ (self):
+	def __init__ (self, win):
+		
 		self.classpath = None
+		self.win = win
 
 
 	def run( self , paths = [] , t = "class" ) :
 		log("createtype")
 		
-		view = sublime.active_window().active_view()
+		win = self.win		
+		view = win.active_view()
 
 		project = hxproject.current_project(view)
 
@@ -241,7 +244,7 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
 		if len(pack) > 0 :
 			pack.append("")
 						
-		win = sublime.active_window()
+		
 		sublime.status_message( "Current classpath : " + self.classpath )
 		win.show_input_panel("Enter "+t+" name : " , ".".join(pack) , lambda inp: self.on_done(inp, t) , self.on_change , self.on_cancel )
 
