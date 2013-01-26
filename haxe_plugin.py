@@ -2,9 +2,6 @@ import sys
 
 print "init haxe_plugin"
 
- 
-
-
 plugin_modules = [
      'haxe.config'
     ,'haxe.project'
@@ -45,12 +42,12 @@ for mod in plugin_modules:
         imported.append(mod)
         __import__(mod)
 
-def modStr (mods):
+def mod_str (mods):
     return (str(len(mods)) + " modules ")  + ("\n" + ", ".join(mods) if len(mods) > 0 else "")
 
 print "-----------------"
-print "Reloaded modules: " + modStr(reloaded)
-print "\nImported modules: " + modStr(imported)
+print "Reloaded modules: " + mod_str(reloaded)
+print "\nImported modules: " + mod_str(imported)
 print "-----------------"
 
 
@@ -102,8 +99,6 @@ from haxe.panel import (
     ,SlidePanel
 )
 
-
-
 from haxe.codegen import (
 
      HaxeImportGenerator
@@ -112,6 +107,5 @@ from haxe.codegen import (
 from haxe.tools.cache import (
      Cache
 )
-
 
 print "init haxe_plugin finished"   
