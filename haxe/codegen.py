@@ -9,27 +9,23 @@ from haxe.log import log
 
 
 def generate_using (view, edit):
-	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
+	p = HaxeImportGenerator(hxpanel.default_panel(), view)
 	return p.generate_statement(edit, "using", hxsrctools.using_line)
 
 def generate_import (view, edit):
-	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
+	p = HaxeImportGenerator(hxpanel.default_panel(), view)
 	return p.generate_statement(edit, "import", hxsrctools.import_line)
 
-class HaxeGenerateImportOrUsing:
-
-
-	start = None
-	size = None
-	cname = None 
-
+class HaxeImportGenerator:
 
 	def __init__ (self, panel, view):
 		log( "construct")
 		self.view = view
 		log(str(self.view))
 		self.panel = panel
-		
+		self.start = None	
+		self.size = None
+		self.cname = None 
 		
 
 	def get_end( self, src, offset ) :

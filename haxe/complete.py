@@ -22,6 +22,8 @@ TRIGGER_SUBLIME = "auto_sublime"
 TRIGGER_MANUAL_MACRO = "manual_macro"
 TRIGGER_MANUAL_NORMAL = "manual_normal"
 
+print "initialize complete.py"
+
 class CompletionContext:
 
     def __init__(self):
@@ -708,6 +710,9 @@ def auto_complete (project, view, prefix, locations):
 # EventListener are created once by sublime at start
 class HaxeCompleteListener( sublime_plugin.EventListener ):
 
+    def __init__ (self):
+        print "init HaxeCompleteListener"
+        
     def on_load( self, view ) :
 
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
@@ -740,6 +745,3 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
         project = hxproject.current_project(view)
         return auto_complete(project, view, prefix, locations)
         
-
-
-#sublime.set_timeout(HaxeLib.scan, 200)
