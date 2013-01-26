@@ -1,14 +1,15 @@
 import sublime
 
-from haxe.log import log
 from subprocess import Popen
+
 from haxe.startup import STARTUP_INFO
+from haxe.log import log
 
 class Server ():
 	def __init__ (self, port):
 		self._server_proc = None
 		self._server_port = port
-
+		self._orig_server_port = port
 
 	def get_server_port (self):
 		return self._server_port
@@ -28,6 +29,10 @@ class Server ():
 					self._server_port += 1
 					log("retry starting server at port: " + str(self._server_port))
 					self.start(haxe_path, cwd, env, retries-1)
+				else:
+					msg = "Cannot start haxe compilation server on ports {0}-{1}"
+					msg = msg.format([self._orig_server_port, self._server_port])
+					sublime.error_message(msg)
 			
 	def stop( self ) :
 		

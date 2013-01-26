@@ -710,9 +710,6 @@ def auto_complete (project, view, prefix, locations):
 # EventListener are created once by sublime at start
 class HaxeCompleteListener( sublime_plugin.EventListener ):
 
-    def __init__ (self):
-        print "init HaxeCompleteListener"
-        
     def on_load( self, view ) :
 
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
@@ -735,7 +732,6 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
 
 
     def on_pre_save( self , view ) :
-
         if view_tools.is_haxe(view) :
             view_tools.create_missing_folders(view)
 
