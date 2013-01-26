@@ -17,7 +17,8 @@ Priority 1
 - improve toplevel algorithm (could be a lot faster)
 - syntax color bugfixing (functions, abstracts)
 - better error reporting (highlights in view)
-
+- toplevel completion info should distinguish between class, enum, abstract, interface, typedef
+- "new" completion should only provide classes and typedefs (possible classes)
 
 
 Priority 2
