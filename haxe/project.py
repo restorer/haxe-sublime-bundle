@@ -1,35 +1,23 @@
-
-
 import json
-
 import sublime
 import os
-import haxe.build as hxbuild
-
-import haxe.panel as hxpanel
-import haxe.hxtools as hxsrctools
-
-import haxe.types as hxtypes
-import haxe.settings as hxsettings
-
 import re
 
-
+import haxe.build as hxbuild
+import haxe.panel as hxpanel
+import haxe.hxtools as hxsrctools
+import haxe.types as hxtypes
+import haxe.settings as hxsettings
+import haxe.tools.path as path_tools
+import haxe.compiler.server as hxserver
 
 from haxe.execute import run_cmd
-
 from haxe.log import log
-
-import haxe.tools.path as path_tools
-
 from haxe.tools.cache import Cache
-
-import haxe.compiler.server as hxserver
 
 classpath_line = re.compile("Classpath : (.*)")
 
 haxe_version = re.compile("haxe_([0-9]{3})",re.M)
-
 
 
 class Project:

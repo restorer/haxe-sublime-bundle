@@ -2,10 +2,9 @@ import sublime, sublime_plugin
 import os
 
 import haxe.project as hxproject
+import haxe.hxtools as hxtools
 
 from haxe.log import log
-
-import haxe.hxtools as hxtools
 
 class HaxeCreateType( sublime_plugin.WindowCommand ):
 
@@ -15,9 +14,6 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 
 	def run( self , paths = [] , t = "class" ) :
 		log("createtype")
-		
-		
-		
 		
 		view = sublime.active_window().active_view()
 
@@ -98,8 +94,6 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 
 		sublime.active_window().open_file( fn )
  
-	
-
 
 	def on_change( self , inp ) :
 		#sublime.status_message( "Current classpath : " + HaxeCreateType.classpath )
@@ -109,7 +103,6 @@ class HaxeCreateType( sublime_plugin.WindowCommand ):
 		None
 
 class HaxeCreateTypeListener( sublime_plugin.EventListener ):
-	
 
 	def on_activated( self, view ) : 
 		self.create_file(view)		

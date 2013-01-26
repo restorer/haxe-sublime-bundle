@@ -1,24 +1,14 @@
+import re
+import os
+import sublime, sublime_plugin
+import functools
 
 import haxe.settings as hxsettings
-
 import haxe.types as hxtypes
-
-import functools
 
 from haxe.execute import run_cmd
 
-import re
- 
-import os
-import sublime, sublime_plugin
-
-
-
 libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
-
-
-
-
 
 class HaxeLib :
 
@@ -38,7 +28,6 @@ class HaxeLib :
 		else : 
 			self.path = os.path.join( HaxeLib.basePath , self.name , ",".join(self.version.split(".")) )
  
-		#print(self.name + " => " + self.path)
 
 	def extract_types( self ):
 
@@ -66,7 +55,6 @@ class HaxeLib :
 
 	@staticmethod
 	def scan() :
-		#print "do scan haxelib"
 		hlout, hlerr = run_cmd( [hxsettings.haxelib_exec() , "config" ] )
 		HaxeLib.basePath = hlout.strip()
 

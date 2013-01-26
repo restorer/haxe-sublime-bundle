@@ -1,7 +1,5 @@
-
-
-
 import sublime
+
 from haxe.log import log
 from subprocess import Popen
 from haxe.startup import STARTUP_INFO
@@ -31,8 +29,6 @@ class Server ():
 					log("retry starting server at port: " + str(self._server_port))
 					self.start(haxe_path, cwd, env, retries-1)
 			
-	
-
 	def stop( self ) :
 		
 		proc = self._server_proc

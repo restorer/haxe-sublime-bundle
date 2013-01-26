@@ -1,45 +1,30 @@
 import sublime, sublime_plugin
 import time
-
 import os
-
 import re
 
 import haxe.settings as hxsettings
-
 import haxe.lib as hxlib
 import haxe.panel as hxpanel
-
-from haxe.compiler.output import get_completion_output
-
 import haxe.config as hxconfig
-
-
-
 import haxe.types as hxtypes
-
-
 import haxe.project as hxproject
 import haxe.hxtools as hxsrctools
-
-from haxe.tools.cache import Cache
-
-
 import haxe.tools.view as view_tools
 import haxe.tools.scope as scope_tools
+import haxe.temp as hxtemp
 
-
+from haxe.tools.cache import Cache
+from haxe.compiler.output import get_completion_output
 from haxe.log import log
 
-import haxe.temp as temp
+
     
 TRIGGER_SUBLIME = "auto_sublime"
 TRIGGER_MANUAL_MACRO = "manual_macro"
 TRIGGER_MANUAL_NORMAL = "manual_normal"
 
 class CompletionContext:
-
-      
 
     def __init__(self):
         
@@ -70,7 +55,7 @@ class CompletionContext:
         self.errors = errors
 
     def get_and_delete_trigger(self, view):
-        self.trigger.get_and_delete(view.id(), TRIGGER_SUBLIME)
+        return self.trigger.get_and_delete(view.id(), TRIGGER_SUBLIME)
 
     def get_and_delete_delayed(self, view):
         return self.delayed.get_and_delete(view.id())
@@ -174,6 +159,8 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 
     log("is manual completion: " + str(manual_completion))
 
+    log("trigger: " + str(trigger))
+
     log("is macro completion: " + str(macro_completion))
 
     
@@ -230,7 +217,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     comps = []
 
     if is_new or toplevel_complete :
-        all_comps = get_toplevel_completion( project, src , src_dir , build.copy(), is_new )
+        all_comps = get_toplevel_completion( project, src , src_dir , build.copy(), macro_completion, is_new )
 
         comps = filter_top_level_completions(offset_char, all_comps)
     else:
@@ -273,7 +260,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     else :
         log("not use cache")
         if supported_compiler_completion_char(complete_char): 
-            temp_path, temp_file = temp.create_temp_path_and_file(build, orig_file, src)
+            temp_path, temp_file = hxtemp.create_temp_path_and_file(build, orig_file, src)
 
             if temp_path is None or temp_file is None:
                 # this should never happen, todo proper error message
@@ -300,7 +287,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
                 ret = ret0[0]
                 err = err0[0]
                 run_compiler_completion(cb, False)
-                temp.remove_path(temp_path)
+                hxtemp.remove_path(temp_path)
                 hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err)
                 comps1 = [(t[0], t[1]) for t in comps1]
                 highlight_errors( errors, view )
@@ -362,7 +349,7 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
         highlight_errors( errors, view )
 
         
-        temp.remove_path(temp_path)
+        hxtemp.remove_path(temp_path)
         comps.extend(comps_)
 
         
@@ -429,10 +416,12 @@ def is_package_available (target, pack):
     
     return res
 
-def get_toplevel_completion( project, src , src_dir , build, only_types = False ) :
+def get_toplevel_completion( project, src , src_dir , build, is_macro_completion = False, only_types = False ) :
     cl = []
     packs = []
     std_packages = []
+
+    build_target = "neko" if is_macro_completion else build.target
 
     if (only_types):
         comps = []
@@ -479,10 +468,10 @@ def get_toplevel_completion( project, src , src_dir , build, only_types = False 
     
     cl.sort();
 
-    log("target: " + str(build.target))
+    log("target: " + str(build_target))
 
     for p in project.std_packages :
-        if is_package_available(build.target, p):
+        if is_package_available(build_target, p):
             if p == "flash9" or p == "flash8" :
                 p = "flash"
             std_packages.append(p)
@@ -545,7 +534,7 @@ def get_toplevel_completion( project, src , src_dir , build, only_types = False 
             
             cm = ( display , ".".join(spl) )
 
-        if cm not in comps and is_package_available(build.target, top):
+        if cm not in comps and is_package_available(build_target, top):
             # add packages to completion
             z = [x for x in spl if x[0].lower() == x[0]]
             if (len(z) > 0):

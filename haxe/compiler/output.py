@@ -1,27 +1,20 @@
-
-import haxe.hxtools as hxtools
 import sublime
 import re
-import haxe.panel as hxpanel
-
-import haxe.settings as hxsettings
 
 from xml.etree import ElementTree
-
-
-from haxe.log import log
-
 from elementtree import SimpleXMLTreeBuilder # part of your codebase
 
 ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
+import haxe.panel as hxpanel
+import haxe.hxtools as hxtools
+import haxe.settings as hxsettings
 
-
+from haxe.log import log
 
 
 compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
 haxe_compiler_line = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
-
 
 
 def split_signature (signature):
@@ -143,7 +136,6 @@ def collect_completion_fields (li):
 				
 				def escape_type (x):
 					return x.replace("}", "\}").replace("{", "\{")
-				
 				
 				ret = types.pop()
 

@@ -1,29 +1,15 @@
-#import haxe.complete
-
-
-
-
 import sublime, sublime_plugin
+import os
 
+from sublime import Region
 
+import haxe.project as hxproject
+import haxe.codegen
+import haxe.tools.path as path_tools
 
 from haxe.log import log
 
 
-
-
-from sublime import Region
-
-import os
-
-
-
-import haxe.project as hxproject
-
-
-import haxe.codegen
-
-import haxe.tools.path as path_tools
 
 #class HaxelibExecCommand(stexec.ExecCommand):
 #
@@ -53,7 +39,7 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 		window = view.window()
 		folders = window.folders()
  
-		projectDir = folders[0]
+		project_dir = folders[0]
 		tmp_folder = folders[0] + "/tmp"
 		target_file = folders[0] + "/tmp/" + file_name
 
@@ -119,7 +105,8 @@ class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
 		view.run_command( "auto_complete" , {
 			"api_completions_only" : True,
 			"disable_auto_insert" : True,
-			"next_completion_if_showing" : True
+			"next_completion_if_showing" : False,
+			'auto_complete_commit_on_tab': True
 		} )
 
 		

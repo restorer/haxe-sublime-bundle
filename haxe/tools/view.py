@@ -1,5 +1,6 @@
 import sublime
 import os
+
 import haxe.config as hxconfig
 
 def find_view_by_name (name):
@@ -10,7 +11,6 @@ def find_view_by_name (name):
 			if (v.name() == name):
 				return v
 	return None
-
 
 def create_missing_folders(view):
 	fn = view.file_name()
@@ -51,8 +51,6 @@ def replace_content (view, new_content):
 	edit = view.begin_edit()
 	view.replace(edit, sublime.Region(0, view.size()), new_content)
 	view.end_edit(edit)
-
-
 
 def in_haxe_code (view, caret):
 	return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"string") == 0 and view.score_selector(caret,"comment") == 0

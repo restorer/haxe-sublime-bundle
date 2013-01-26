@@ -1,14 +1,13 @@
-
 import os
-import haxe.config as hxconfig
-import haxe.types as hxtypes
-import haxe.lib as hxlib
+import re
 import glob
 import codecs
 import sublime
-import haxe.settings as hxsettings 
-import re
 
+import haxe.config as hxconfig
+import haxe.types as hxtypes
+import haxe.lib as hxlib
+import haxe.settings as hxsettings 
 import haxe.tools.path as path_tools
 
 from haxe.execute import run_cmd, run_cmd_async

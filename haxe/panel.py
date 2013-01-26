@@ -2,9 +2,8 @@ import sublime, sublime_plugin
 
 from datetime import datetime
 
-#from haxe.tools import ViewTools, SublimeTools
-
 import haxe.tools.view as view_tools
+
 from haxe.tools.cache import Cache
 
 
@@ -162,7 +161,6 @@ class PanelCloseListener (sublime_plugin.EventListener):
 _tab_panel = Cache()
 
 def tab_panel(win = None):
-	
 	if (win is None):
 		win = sublime.active_window()
 	
@@ -171,7 +169,6 @@ def tab_panel(win = None):
 _debug_panel = Cache()
 
 def debug_panel(win = None):
-	
 	if (win is None):
 		win = sublime.active_window()
 	return _debug_panel.get_or_insert(win.id(), lambda: TabPanel(win, "Haxe Plugin Debug Panel"))

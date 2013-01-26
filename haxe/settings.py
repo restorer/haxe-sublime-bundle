@@ -1,7 +1,6 @@
 import sublime
 
 
-
 def get (id, view = None):
 	if view == None:
 		win = sublime.active_window()

@@ -1,16 +1,8 @@
 import os, codecs, glob
 
-
-from haxe.tools.cache import Cache
 import haxe.hxtools as hxtools
 
-
-
-
-
-def log (msg):
-	print msg
-
+from haxe.tools.cache import Cache
 
 
 def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None):

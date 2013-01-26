@@ -1,21 +1,20 @@
-
 import sublime
-from haxe.hxtools import word_chars, space_chars, import_line, using_line, package_line
+import re
 
 import haxe.panel as hxpanel
+import haxe.hxtools as hxsrctools
 
 from haxe.log import log
 
-import re
 
 
 def generate_using (view, edit):
 	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
-	return p.generate_statement(edit, "using", using_line)
+	return p.generate_statement(edit, "using", hxsrctools.using_line)
 
 def generate_import (view, edit):
 	p = HaxeGenerateImportOrUsing(hxpanel.slide_panel(), view)
-	return p.generate_statement(edit, "import", import_line)
+	return p.generate_statement(edit, "import", hxsrctools.import_line)
 
 class HaxeGenerateImportOrUsing:
 
@@ -38,19 +37,19 @@ class HaxeGenerateImportOrUsing:
 		while offset < end:
 			c = src[offset]
 			offset += 1
-			if not word_chars.match(c): break
+			if not hxsrctools.word_chars.match(c): break
 		return offset - 1
 
 	def get_start( self, src, offset ) :
-		foundWord = 0
+		found_word = 0
 		offset -= 1
 		while offset > 0:
 			c = src[offset]
 			offset -= 1
-			if foundWord == 0:
-				if space_chars.match(c): continue
-				foundWord = 1
-			if not word_chars.match(c): break
+			if found_word == 0:
+				if hxsrctools.space_chars.match(c): continue
+				found_word = 1
+			if not hxsrctools.word_chars.match(c): break
 
 		return offset + 2
 	
@@ -104,7 +103,7 @@ class HaxeGenerateImportOrUsing:
 			ins = ";\n{0}{1} {2}".format(last.group(1), statement, cname)
 			view.insert(edit, last.end(2), ins)
 		else:
-			pkg = package_line.search(src)
+			pkg = hxsrctools.package_line.search(src)
 			if not pkg is None:
 				ins = "\n\n{0} {1};".format(statement, cname)
 				view.insert(edit, pkg.end(0), ins)
@@ -112,11 +111,6 @@ class HaxeGenerateImportOrUsing:
 				ins = "{0} {1};\n\n".format(statement, cname)
 				view.insert(edit, 0, ins)
 
-	def generate_using( self , edit,  ) :
-		self.generate_statement(edit, "using", using_line)
-
-	def generate_import( self , edit ) :
-		self.generate_statement(edit, "import", import_line)
 
 	def generate_statement( self , edit, statement, regex ) :
 		
