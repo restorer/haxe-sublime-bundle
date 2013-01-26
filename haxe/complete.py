@@ -18,8 +18,6 @@ from haxe.tools.cache import Cache
 from haxe.compiler.output import get_completion_output
 from haxe.log import log
 
-
-    
 TRIGGER_SUBLIME = "auto_sublime"
 TRIGGER_MANUAL_MACRO = "manual_macro"
 TRIGGER_MANUAL_NORMAL = "manual_normal"
@@ -59,8 +57,6 @@ class CompletionContext:
 
     def get_and_delete_delayed(self, view):
         return self.delayed.get_and_delete(view.id())
-
-
 
 
 def slide_panel () : 
@@ -155,17 +151,6 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     manual_completion = trigger is not TRIGGER_SUBLIME
 
     macro_completion = trigger is TRIGGER_MANUAL_MACRO
-
-
-    log("is manual completion: " + str(manual_completion))
-
-    log("trigger: " + str(trigger))
-
-    log("is macro completion: " + str(macro_completion))
-
-    
-    
-        
 
 
     src = view_tools.get_content(view)
