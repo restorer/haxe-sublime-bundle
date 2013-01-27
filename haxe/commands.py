@@ -269,7 +269,8 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
 		
 		pack = [];
 
-		if len(builds) == 0 and view != None:
+		if len(builds) == 0 and view != None and view.file_name() != None:
+			print view.file_name()
 			project.extract_build_args(view)
 
 		if len(paths) == 0 and view != None:
