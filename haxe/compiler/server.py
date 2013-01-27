@@ -14,7 +14,7 @@ class Server ():
 	def get_server_port (self):
 		return self._server_port
 
-	def start( self , haxe_path, cwd = None, env = None, retries = 3 ) : 
+	def start( self , haxe_path, cwd = None, env = None, retries = 10 ) : 
 		if self._server_proc is None : 
 			try:
 				cmd = [haxe_path , "--wait" , str(self._server_port) ]
@@ -31,7 +31,7 @@ class Server ():
 					self.start(haxe_path, cwd, env, retries-1)
 				else:
 					msg = "Cannot start haxe compilation server on ports {0}-{1}"
-					msg = msg.format([self._orig_server_port, self._server_port])
+					msg = msg.format((self._orig_server_port, self._server_port))
 					sublime.error_message(msg)
 			
 	def stop( self ) :

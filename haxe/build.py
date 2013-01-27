@@ -258,7 +258,10 @@ class HaxeBuild :
 		self.args.append(("-cp", cp))
 	
 	def get_classpath (self, file):
-		for cp in self.classpaths:
+		cps = list(self.classpaths)
+		build_folder = self.get_build_folder()
+		cps.append(build_folder)
+		for cp in cps:
 			if file.startswith(cp):
 				return cp
 

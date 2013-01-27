@@ -58,7 +58,6 @@ class SlidePanel ():
 
 
 def make_tab_panel (win, name, syntax):
-	print "make " + name
 	active = win.active_view()
 	v = win.new_file()
 	v.set_name(name)

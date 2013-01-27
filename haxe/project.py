@@ -21,12 +21,13 @@ haxe_version = re.compile("haxe_([0-9]{3})",re.M)
 
 
 class Project:
-    def __init__(self, id, file, server_port):
+    def __init__(self, id, file, win_id, server_port):
         from haxe.complete import CompletionContext
         self.completion_context = CompletionContext()
         self.current_build = None
         self.selecting_build = False
         self.builds = []
+        self.win_id = win_id
         
         self.server = hxserver.Server(server_port)
 
@@ -62,7 +63,8 @@ class Project:
     
         cwd = self.project_dir(".")
         log( "server cwd: " + cwd)
-        log( "server env: " + merged_env["HAXE_LIBRARY_PATH"])
+        if "HAXE_LIBRARY_PATH" in merged_env:
+            log( "server env: " + merged_env["HAXE_LIBRARY_PATH"])
 
         self.server.start(haxepath, cwd, merged_env)
         
@@ -108,7 +110,7 @@ class Project:
 
         settings = view.settings()
 
-        log("filename: " + fn)
+        #log("filename: " + fn)
 
         folder = os.path.dirname(fn)
         
@@ -179,7 +181,7 @@ class Project:
 
         if len(self.builds) > 0 :
             self.current_build = self.builds[id]
-            log( "set_current_build - 2")
+            #log( "set_current_build - 2")
             hxpanel.slide_panel().status( "haxe-build" , self.current_build.to_string() )
         else:
             hxpanel.slide_panel().status( "haxe-build" , "No build" )
@@ -282,7 +284,7 @@ _last_modification_time = None
 _last_project = None
 # hash to store all active projects, files without project file use the "global" context
 
-_next_server_port = 6000
+
 
 
 def run_nme( view, build ) :
@@ -312,6 +314,7 @@ def get_compiler_info_env (project_path):
 
 
 def collect_compiler_info (project_path):
+    log("collect compiler info")
     haxe_exec = hxsettings.haxe_exec()
     
     env = get_compiler_info_env(project_path)
@@ -337,7 +340,7 @@ def collect_compiler_info (project_path):
             
 
     ver = re.search( haxe_version , out )
-
+    log("collected classes: " + str(len(classes)))
     return (classes, packs, ver, std_paths)
 
 def _get_project_file(win_id = None):
@@ -402,26 +405,51 @@ def select_nme_target( build, i, view ):
         hxpanel.slide_panel().status( "haxe-build" , build.to_string() )
 
 
-_projects = Cache()
 
+_projects = Cache()
+_next_server_port = [6000]
 def current_project(view = None):
-    global _projects
-    global _next_server_port
+
+
+    log("next server port: " + str(_next_server_port[0]))
+
+    win_ids = [w.id() for w in sublime.windows()]
+
+    remove = []
+    for p in _projects.data.iterkeys():
+        proj = _projects.get_or_default(p, None)
+        if proj != None and proj.win_id not in win_ids:
+            remove.append(p)
+            # project should be closed
+    
+    log(remove)
+    for pid in remove:
+        log(pid)
+        project = _projects.data[pid]
+        log("delete project from memory")
+        del _projects.data[pid]
+        del project
+
+
+    
 
     file = _get_project_file()
-    if (file == None): 
-        if (view != None):
-            win = view.window();
-        else:
+    
+    if (view != None):
+        win = view.window();
+        if win == None:
             win = sublime.active_window()
-
+    else:
+        win = sublime.active_window()
+    if (file == None):
         id = "global" + str(win.id())
     else:
         id = file
+    log("project id:" + id)
     def create ():
-        global _next_server_port        
-        p = Project(id, file, _next_server_port)
-        _next_server_port += 1
+                
+        p = Project(id, file, win.id(), _next_server_port[0])
+        _next_server_port[0] = _next_server_port[0] + 1
         return p
     res = _projects.get_or_insert(id, create )
     

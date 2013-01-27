@@ -19,7 +19,7 @@ Priority 1
 - better error reporting (highlights in view)
 - toplevel completion info should distinguish between class, enum, abstract, interface, typedef
 - "new" completion should only provide classes and typedefs (possible classes)
-
+- move temp and log to tools
 
 Priority 2
 

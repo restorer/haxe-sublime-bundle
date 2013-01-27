@@ -9,6 +9,9 @@ import haxe.tools.path as path_tools
 import haxe.hxtools as hxsrctools
 from haxe.log import log
 
+import haxe.tools.view as view_tools
+import haxe.temp as hxtemp
+
 
 
 #class HaxelibExecCommand(stexec.ExecCommand):
@@ -22,6 +25,56 @@ from haxe.log import log
 #		super(HaxelibExecCommand, self).finish(*args, **kwargs)  
 #		print "haxelibExec"
 #		hxlib.HaxeLib.scan()
+
+class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
+	def run( self , edit ) :
+		print "HaxeFindDeclarationCommand"
+		view = self.view
+		file_name = view.file_name()
+
+		if file_name == None:
+			return
+
+		project = hxproject.current_project(view)
+		build = project.get_build(view).copy()
+		build.args.append(("-D", "no-inline"))
+
+		src = view_tools.get_content(view)
+
+		file_name = os.path.basename(view.file_name())
+
+		temp_path, temp_file = hxtemp.create_temp_path_and_file(build, file_name, src)
+
+		build.add_classpath(temp_path)
+
+		pos = view.sel()[0].a
+
+		word = view.word(pos)
+
+		word_start = word.a
+		word_end = word.b
+
+		prev = src[word_start-1]
+
+		word_str = src[word_start:word_end]
+
+		field_access = False
+		if prev == ".":
+			field_access = True
+
+		log(field_access)
+
+		log(word_str)
+		log(pos)
+		log(word)
+
+
+
+		# remove temp path and file
+		hxtemp.remove_path(temp_path)
+
+
+
 
 class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 	def run( self , edit ) :
@@ -79,7 +132,7 @@ class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
 		log("run HaxeDisplayCompletion")
 		
 		view = self.view
-		project = hxproject.current_project(self.view)
+		project = hxproject.current_project(view)
 		project.completion_context.set_manual_trigger(view, False)
 		
 
@@ -133,7 +186,13 @@ class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
 		view = self.view
 		log("run HaxeRunBuildCommand")
-		hxproject.current_project(self.view).run_build( view )
+		project = hxproject.current_project(self.view)
+
+		if len(project.builds) == 0:
+			log("no builds available")
+			project.extract_build_args(view, True);
+		else:
+			project.run_build( view )
 
 
 class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
@@ -206,14 +265,14 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
 
 		builds = project.builds
 
-		scopes = view.scope_name(view.sel()[0].end()).split()
+		#scopes = view.scope_name(view.sel()[0].end()).split()
 		
 		pack = [];
 
-		if len(builds) == 0 :
+		if len(builds) == 0 and view != None:
 			project.extract_build_args(view)
 
-		if len(paths) == 0 :
+		if len(paths) == 0 and view != None:
 			fn = view.file_name()
 			paths.append(fn)
 
@@ -307,3 +366,6 @@ class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 			sel.clear()
 			pt = view.text_point(5,1)
 			sel.add( sublime.Region(pt,pt) )
+
+
+

@@ -202,7 +202,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     
 
     comps = []
-
+    log("toplevel_complete:" + str(toplevel_complete))
     if is_new or toplevel_complete :
         all_comps = get_toplevel_completion( project, src , src_dir , build.copy(), macro_completion, is_new )
 
@@ -243,14 +243,16 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 
     if use_cache :
         log("use completions from cache")
-        ret, comps, status, hints = cache["output"]
+        ret, comps1, status, hints = cache["output"]
     else :
         log("not use cache")
         if supported_compiler_completion_char(complete_char): 
+            log(build)
             temp_path, temp_file = hxtemp.create_temp_path_and_file(build, orig_file, src)
 
             if temp_path is None or temp_file is None:
                 # this should never happen, todo proper error message
+                log("completion error")
                 return []
 
             build.add_classpath(temp_path)
@@ -268,12 +270,12 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
                 ret0 = []
                 err0 = []
                 def cb(out1, err1):
-                    ret0[0] = out1
-                    err0[0] = err1
-
+                    ret0.append(out1)
+                    err0.append(err1)
+                run_compiler_completion(cb, False)
                 ret = ret0[0]
                 err = err0[0]
-                run_compiler_completion(cb, False)
+                
                 hxtemp.remove_path(temp_path)
                 hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err)
                 comps1 = [(t[0], t[1]) for t in comps1]
@@ -282,7 +284,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
             log("not supported completion char")
             ret, comps1, status, hints = "",[], "", []
 
-        comps.extend(comps1)
+    comps.extend(comps1)
 
         
     
@@ -341,7 +343,7 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
 
         
         if completion_id == project.completion_context.current_id:
-            cache["output"] = (ret_,comps,status_, hints)
+            cache["output"] = (ret_,comps_,status_, hints)
             cache["input"] = current_input
         else:
             log("ignored completion")
@@ -446,6 +448,8 @@ def get_toplevel_completion( project, src , src_dir , build, is_macro_completion
 
     build_classes = filter(filter_build, build_classes)
     
+
+
     cl.extend( project.std_classes )
     
     cl.extend( build_classes )
@@ -726,7 +730,8 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
     def on_activated( self , view ) :
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
             project = hxproject.current_project(view)
-            project.get_build(view)
+            
+            build = project.get_build(view)
             project.extract_build_args( view )
             project.generate_build(view)    
 
