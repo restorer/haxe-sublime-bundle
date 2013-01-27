@@ -1,8 +1,6 @@
 [
-    {
-        "keys": ["ctrl+shift+ö", "ctrl+shift+t"],
-        "command": "haxe_get_type_of_expr",
-        "context":
+    { "keys": ["ctrl+space"], "command": "haxe_display_completion",
+      "context":
         [
             {
                 "key": "selector",
@@ -11,6 +9,28 @@
             }
         ]
     },
+    { "keys": ["ctrl+shift+space"], "command": "haxe_display_macro_completion",
+      "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
+            }
+        ]
+    },
+    // {
+    //     "keys": ["ctrl+shift+ö", "ctrl+shift+t"],
+    //     "command": "haxe_get_type_of_expr",
+    //     "context":
+    //     [
+    //         {
+    //             "key": "selector",
+    //             "operator": "equal",
+    //             "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
+    //         }
+    //     ]
+    // },
     {
         "keys": ["ctrl+shift+b"],
         "command": "haxe_select_build",
