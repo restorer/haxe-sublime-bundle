@@ -10,11 +10,8 @@ def get (id, view = None):
 	res = None 
 	if (view != None):
 		settings = view.settings()
-		if settings.has("haxe"):
-			s = settings.get("haxe")
-			if id in s:
-				v = s[id]
-				res = v
+		if settings.has(id):
+			res = settings.get(id)
 
 	return res;
 
@@ -61,7 +58,7 @@ def no_fuzzy_completion (view = None):
 	return get_bool("haxe_completion_no_fuzzy", False, view)
 
 def top_level_completions_on_demand (view = None):
-	return get_bool("haxe_completions_top_level_on_demand", False, view)
+	return get_bool("haxe_completions_top_level_only_on_demand", False, view)
 
 def only_delayed_completions (view = None):
 	return get_bool("haxe_completions_only_delayed", False, view)
@@ -71,8 +68,8 @@ def is_delayed_completion (view = None):
 
 def get_completion_delays (view = None):
 	return (
-		get_int("haxe_completion_delayed_timing_hide", 50, view),
-		get_int("haxe_completion_delayed_timing_show", 170, view)
+		get_int("haxe_completion_delayed_timing_hide", 30, view),
+		get_int("haxe_completion_delayed_timing_show", 100, view)
 	)
 
 
