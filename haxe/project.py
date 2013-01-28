@@ -200,7 +200,7 @@ class Project:
     def run_build( self, view ) :
         
         haxeExec = hxsettings.haxe_exec(view)
-        self.extract_build_args(view, True)
+        self.extract_build_args(view)
         build = self.get_build(view)
 
         out, err = build.run(haxeExec, self.serverMode, view, self)
