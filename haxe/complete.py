@@ -61,11 +61,7 @@ class CompletionContext:
         return self.delayed.get_and_delete(view.id())
 
 
-def slide_panel () : 
-    return hxpanel.slide_panel()
 
-def tab_panel () : 
-    return hxpanel.tab_panel()
 
 lib_flag = re.compile("-lib\s+(.*?)")
 
@@ -570,7 +566,7 @@ def highlight_errors( errors , view ) :
             regions.append( sublime.Region(a,b))
 
             
-            slide_panel().status( "Error" , e["message"] + " @ " + e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right))
+            hxpanel.default_panel().status( "Error" , e["message"] + " @ " + e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right))
             
     view.add_regions("haxe-error" , regions , "invalid" , "dot" )
 

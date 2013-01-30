@@ -152,6 +152,7 @@ class PanelCloseListener (sublime_plugin.EventListener):
 			for p in [_tab_panel, _debug_panel]:
 				panel = p.get_or_default(panel_win_id, None)
 				if panel != None and panel.output_view != None and view_id == panel.output_view_id:
+					print "panel safely removed"
 					panel.output_view = None
 					panel.output_view_id = None
 
@@ -166,6 +167,7 @@ def tab_panel(win = None):
 	return _tab_panel.get_or_insert(win.id(), lambda: TabPanel(win, panel_name="Haxe Output"))
 
 _debug_panel = Cache()
+
 
 def debug_panel(win = None):
 	if (win is None):
@@ -190,5 +192,6 @@ def slide_panel(win = None):
 	if (win_id not in _slide_panel):
 		_slide_panel[win_id] = SlidePanel(win)
 	return _slide_panel[win_id]
+
 
 

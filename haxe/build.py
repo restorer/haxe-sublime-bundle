@@ -339,7 +339,7 @@ class HaxeBuild :
 
 	
 
-	def set_auto_completion (self, display, macro_completion = False):
+	def set_auto_completion (self, display, macro_completion = False, no_output = True):
 		
 		args = self.args
 		self.main = None
@@ -356,9 +356,10 @@ class HaxeBuild :
 		if (macro_completion) :
 			args.append(("-neko", "__temp.n"))
 
-
+		
 		args.append( ("--display", display ) )
-		args.append( ("--no-output" , "") )
+		if (no_output):
+			args.append( ("--no-output" , "") )
 
 		self.args = args
 

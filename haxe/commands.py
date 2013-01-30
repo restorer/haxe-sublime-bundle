@@ -1,12 +1,14 @@
 import sublime, sublime_plugin
 import os
-
+import re
+import json
 from sublime import Region
 
 import haxe.project as hxproject
 import haxe.codegen
 import haxe.tools.path as path_tools
 import haxe.hxtools as hxsrctools
+import haxe.settings as hxsettings
 from haxe.log import log
 
 import haxe.tools.view as view_tools
@@ -26,10 +28,16 @@ import haxe.temp as hxtemp
 #		print "haxelibExec"
 #		hxlib.HaxeLib.scan()
 
+word_chars = re.compile("[a-z0-9_]", re.I)
+
 class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 	def run( self , edit ) :
+		self.run1(True, False)
+
+	def run1 (self, use_display, inline_workaround = False):
 		print "HaxeFindDeclarationCommand"
 		view = self.view
+
 		file_name = view.file_name()
 
 		if file_name == None:
@@ -43,9 +51,9 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
 		file_name = os.path.basename(view.file_name())
 
-		temp_path, temp_file = hxtemp.create_temp_path_and_file(build, file_name, src)
+		
 
-		build.add_classpath(temp_path)
+		using_line = "\nusing hxsublime.FindDeclaration;\n"
 
 		pos = view.sel()[0].a
 
@@ -54,24 +62,171 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 		word_start = word.a
 		word_end = word.b
 
+		log(src[word_end:len(src)])
+		
+		word_str = src[word_start:word_end]
+		log(word_str)
+
+		
+
+		
+
 		prev = src[word_start-1]
 
-		word_str = src[word_start:word_end]
-
+		
 		field_access = False
 		if prev == ".":
 			field_access = True
 
 		log(field_access)
 
-		log(word_str)
+
 		log(pos)
 		log(word)
+		add = ".sublime_find_decl()"
 
+		if use_display:
+			add += ".|"
 
+		start = src[0:word_start]
 
-		# remove temp path and file
+		end = src[word_end:]
+
+		if inline_workaround:
+			add_x = "sublime_find_decl"			
+			add_y = ""
+			if use_display:
+				add_y = ".|"
+			new_src = start + add_x + "(" + word_str + ")" + add_y + end;
+		else:
+			new_src = start + word_str + add + end;
+
+		package_decl = re.search(hxsrctools.package_line, new_src)
+
+		if (package_decl == None):
+			new_src = using_line + new_src
+			log("new_src: " + new_src)
+		else:
+			new_src = new_src[0:package_decl.end(0)]+using_line+new_src[package_decl.end(0):len(new_src)]
+			log("new_src: " + new_src)
+
+		temp_path, temp_file = hxtemp.create_temp_path_and_file(build, view.file_name(), new_src)
+
+		log("here we go")
+		build.add_classpath(temp_path)
+		
+		if use_display:
+			build.set_auto_completion(temp_file + "@0", False, False)
+
+		server_mode = project.is_server_mode()
+
+		log("run")
+		out, err = build.run(hxsettings.haxe_exec(), server_mode, view, project)
+		log("run complete")
 		hxtemp.remove_path(temp_path)
+		
+
+		file_pos = re.compile("\|\|\|\|\|([^|]+)\|\|\|\|\|", re.I)
+
+		res = re.search(file_pos, out)
+		if res != None:
+
+			log("found position")
+
+			
+
+			json_str = res.group(1)
+
+			json_res = json.loads(json_str)
+
+			log(json_res)
+
+			if "file" in json_res:
+				file = json_res["file"]
+				min = json_res["min"]
+				max = json_res["max"]
+
+				
+
+
+
+
+				log(file)
+				log(min)
+				log(max)
+
+
+
+				#abs_path = abs_path.replace(build.get_relative_path(temp_file), build.get_relative_path(view.file_name())
+				
+				log("temp_path: " + temp_path)
+				log("temp_file: " + temp_file)
+				abs_path = path_tools.join_norm(build.get_build_folder(), file)
+				abs_path_temp = path_tools.join_norm(build.get_build_folder(), build.get_relative_path(os.path.join(temp_path, temp_file)))
+
+				log("build_rel: " + build.get_relative_path(os.path.join(temp_path, temp_file)))
+				log("abs_path: " + abs_path)
+				log("abs_path_temp: " + abs_path_temp)
+
+				
+
+				if (abs_path == temp_file):
+					
+					abs_path = view.file_name()
+					target_view = view
+					m = min
+					log("word_end: " + str(word_end))
+					log("min: " + str(min))
+					if min > word_end:
+						m -= len(add)
+					m -= len(using_line)
+					target_view.sel().clear()
+					target_view.sel().add(sublime.Region(m))
+					target_view.show(sublime.Region(m))
+					#target_view.sel().clear()
+					#target_view.sel().add(sublime.Region(min))
+				else:
+					target_view = view.window().open_file(abs_path)
+					
+					def f():
+						if target_view.is_loading() == False:
+							
+							
+							
+							target_view.sel().clear()
+							target_view.sel().add(sublime.Region(min))
+							target_view.show(sublime.Region(min))
+							
+						else:
+							sublime.set_timeout(f, 100)
+
+					sublime.set_timeout(f, 100)
+
+				
+
+
+			elif "error" in json_res:
+				error = json_res["error"]
+				log(error)
+				if (error =="inlined" and not inline_workaround):
+					self.run1(use_display, True)
+			else:
+				log("nothing found try again")
+				if use_display:
+
+					self.run1(False)
+		else:
+			log("nothing found, try again")
+			if use_display:
+				self.run1(False)
+
+			
+			
+
+			#log(new_src.find_all(hxsrctools.type_decl))
+
+			# remove temp path and file
+			#
 
 
 

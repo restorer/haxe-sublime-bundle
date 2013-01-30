@@ -90,3 +90,6 @@ def haxelib_exec (view = None):
 	
 def smart_snippets (view = None):
 	return get_string("haxe_completion_smart_snippets", "only", view)	
+
+def use_debug_panel (view = None):
+	return get_bool("haxe_use_debug_panel", False, view)	

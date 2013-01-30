@@ -182,9 +182,9 @@ class Project:
         if len(self.builds) > 0 :
             self.current_build = self.builds[id]
             #log( "set_current_build - 2")
-            hxpanel.slide_panel().status( "haxe-build" , self.current_build.to_string() )
+            hxpanel.default_panel().status( "haxe-build" , self.current_build.to_string() )
         else:
-            hxpanel.slide_panel().status( "haxe-build" , "No build" )
+            hxpanel.default_panel().status( "haxe-build" , "No build" )
             
         self.selecting_build = False
 
@@ -207,7 +207,7 @@ class Project:
         log( out)
         log( err)
         log( "run_build_complete")
-        hxpanel.slide_panel().writeln(err)
+        hxpanel.default_panel().writeln(err)
         view.set_status( "haxe-status" , "build finished" )
 
     def clear_build( self ) :
@@ -402,7 +402,7 @@ def select_nme_target( build, i, view ):
     if build.nmml is not None:
         hxbuild.HaxeBuild.nme_target = target
         view.set_status( "haxe-build" , build.to_string() )
-        hxpanel.slide_panel().status( "haxe-build" , build.to_string() )
+        hxpanel.default_panel().status( "haxe-build" , build.to_string() )
 
 
 
