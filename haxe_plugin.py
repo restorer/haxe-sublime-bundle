@@ -91,6 +91,7 @@ from haxe.commands import (
     ,HaxeCreateTypeCommand
     ,HaxeCreateTypeListener
     ,HaxeFindDeclarationCommand 
+    ,HaxeExecCommand
 ) 
 
 from haxe.panel import (
