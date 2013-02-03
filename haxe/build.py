@@ -310,7 +310,7 @@ class HaxeBuild :
 	def update_types(self):
 
 		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
-
+		log("update types for " + str(self.classpaths))		
 		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ), [], [] )
 
 		self.classes = classes;
@@ -381,9 +381,6 @@ class HaxeBuild :
 				nekox_file_name = b.args[i][1] + ".n"
 				b.args[i] = ("-neko", nekox_file_name)
 
-
-		# ignore servermode when -x
-		
 		if server_mode:
 			project.start_server( view )
 			b.set_server_mode(project.server.get_server_port())
@@ -394,22 +391,11 @@ class HaxeBuild :
 
 		log("cmd : " + " ".join(cmd))
 
-		lib_path = hxsettings.haxe_library_path();
-		env = os.environ.copy()
-		if lib_path != None :
-			abs_lib_path = os.path.normpath(os.path.join(self.get_build_folder(), lib_path))
-			env["HAXE_LIBRARY_PATH"] = abs_lib_path
-			log("export HAXE_LIBRARY_PATH=" + abs_lib_path)
-
-
-		log("cwd:" + self.get_build_folder())
-		log("hxml:" + self.hxml)
 		
+		return (cmd, self.get_build_folder(), nekox_file_name)
 
-		return (cmd, self.get_build_folder(), env, nekox_file_name)
-
-	def run_async (self, haxe_exec, server_mode, view, project, callback):
-		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
+	def run_async (self, haxe_exec, env, server_mode, view, project, callback):
+		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
 		def cb (out, err):
 			log("-------------------------------------")
@@ -424,8 +410,8 @@ class HaxeBuild :
 		
 		
 
-	def run (self, haxe_exec, server_mode, view, project):
-		cmd, build_folder, env, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
+	def run (self, haxe_exec, env, server_mode, view, project):
+		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
 		out, err = run_cmd( args=cmd, input="", cwd=build_folder, env=env )
 		log("-------------------------------------")

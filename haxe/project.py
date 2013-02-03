@@ -2,7 +2,7 @@ import json
 import sublime
 import os
 import re
-
+import sys
 import haxe.build as hxbuild
 import haxe.panel as hxpanel
 import haxe.hxtools as hxsrctools
@@ -19,6 +19,8 @@ classpath_line = re.compile("Classpath : (.*)")
 
 haxe_version = re.compile("haxe_([0-9]{3})",re.M)
 
+# allow windows drives
+haxe_file_regex = "^((?:[A-Za-z][:])?(?:[^:]*)):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
 
 class Project:
     def __init__(self, id, file, win_id, server_port):
@@ -33,6 +35,9 @@ class Project:
 
         
         self.project_file = file
+
+        print "project_file: " + self.project_file
+
         self.project_id = id
         if (self.project_file != None):
             self.project_path = os.path.normpath(os.path.dirname(self.project_file))
@@ -48,25 +53,47 @@ class Project:
             
         return p
 
-    def start_server(self, view):
-        haxepath = hxsettings.haxe_exec(view)
-                 
-        merged_env = os.environ.copy()
-        
+    def haxe_exec (self, view = None):
+        haxe_exec = hxsettings.haxe_exec(view)
+        if (haxe_exec != "haxe"):
+            cwd = self.project_dir(".")
+            haxe_exec = os.sep.join(os.path.join(cwd, hxsettings.haxe_exec(view)).split("/"))
+        return haxe_exec
+
+    def haxe_env (self,view = None):
+        env = os.environ.copy()
+       
+       # should be project env not view env
         if view is not None :
             user_env = view.settings().get('build_env')
             if user_env:
-                merged_env.update(user_env)
-            libPath = hxsettings.haxe_library_path()
-            if libPath != None :
-                merged_env["HAXE_LIBRARY_PATH"] = libPath
-    
-        cwd = self.project_dir(".")
-        log( "server cwd: " + cwd)
-        if "HAXE_LIBRARY_PATH" in merged_env:
-            log( "server env: " + merged_env["HAXE_LIBRARY_PATH"])
+                env.update(user_env)
 
-        self.server.start(haxepath, cwd, merged_env)
+        cwd = self.project_dir(".")
+        libPath = os.path.join(cwd, hxsettings.haxe_library_path())
+        if libPath != None :
+            env["HAXE_LIBRARY_PATH"] = os.sep.join(libPath.split("/")).encode(sys.getfilesystemencoding())
+
+        return env
+
+    def haxe_build_env (self,view = None):
+        
+        cwd = self.project_dir(".")
+        libPath = os.path.join(cwd, hxsettings.haxe_library_path())
+       
+        env = {
+            "HAXE_LIBRARY_PATH" : os.sep.join(libPath.split("/")).encode(sys.getfilesystemencoding())
+        }
+
+        return env
+    
+    def start_server(self, view):
+        cwd = self.project_dir(".")
+        haxe_exec = self.haxe_exec(view)
+        
+        env = self.haxe_env(view)
+        
+        self.server.start(haxe_exec, cwd, env)
         
 
     def update_compiler_info (self):
@@ -111,7 +138,7 @@ class Project:
         settings = view.settings()
 
         #log("filename: " + fn)
-
+        
         folder = os.path.dirname(fn)
         
 
@@ -182,9 +209,9 @@ class Project:
         if len(self.builds) > 0 :
             self.current_build = self.builds[id]
             #log( "set_current_build - 2")
-            hxpanel.default_panel().status( "haxe-build" , self.current_build.to_string() )
+            hxpanel.default_panel().writeln( "building " + self.current_build.to_string() )
         else:
-            hxpanel.default_panel().status( "haxe-build" , "No build" )
+            hxpanel.default_panel().writeln( "No build found/selected" )
             
         self.selecting_build = False
 
@@ -199,16 +226,50 @@ class Project:
 
     def run_build( self, view ) :
         
-        haxeExec = hxsettings.haxe_exec(view)
+        haxe_exec = self.haxe_exec(view)
+        env = self.haxe_env(view)
         self.extract_build_args(view)
         build = self.get_build(view)
 
-        out, err = build.run(haxeExec, self.serverMode, view, self)
-        log( out)
-        log( err)
-        log( "run_build_complete")
-        hxpanel.default_panel().writeln(err)
-        view.set_status( "haxe-status" , "build finished" )
+        out, err = build.run(haxe_exec, env, self.serverMode, view, self)
+        
+        if (err != None and err != ""):
+            msg = "build finished with errors"
+            hxpanel.default_panel().writeln( msg)
+            view.set_status( "haxe-status" , msg )
+            hxpanel.default_panel().writeln(err)
+            
+        else:
+            msg = "build finished successfull"
+            view.set_status( "haxe-status" , msg )
+            hxpanel.default_panel().writeln( msg )
+        
+    def run_sublime_build( self, view ) :
+        
+
+        log("start sublime build")
+
+        haxe_exec = self.haxe_exec(view)
+        env = self.haxe_build_env(view)
+        self.extract_build_args(view)
+        build = self.get_build(view).copy()
+
+        cmd, build_folder, nekox_file_name = build.prepare_run(haxe_exec, self.serverMode, view, self)
+        
+        
+        log(env)
+
+        log(cmd)
+        
+        
+
+        view.window().run_command("haxe_exec", {
+            "cmd": cmd,
+            "working_dir": build_folder,
+            "file_regex": haxe_file_regex,
+            "env" : env
+        })
+
 
     def clear_build( self ) :
         self.current_build = None
@@ -294,7 +355,7 @@ def run_nme( view, build ) :
     cmd.extend(target)
     cmd.append("-debug")
 
-    view.window().run_command("exec", {
+    view.window().run_command("haxe_exec", {
         "cmd": cmd,
         "working_dir": os.path.dirname(build.nmml),
         "file_regex": "^([^:]*):([0-9]+): characters [0-9]+-([0-9]+) :.*$"
@@ -323,8 +384,11 @@ def collect_compiler_info (project_path):
         if project_path != None:
             haxe_exec = path_tools.join_norm(project_path, haxe_exec)
     
+    
+    log("cmd" + " ".join([haxe_exec, "-main", "Nothing", "-v", "--no-output"]))
     out, err = run_cmd( [haxe_exec, "-main", "Nothing", "-v", "--no-output"], env=env )
     log( out )
+    log( err )
     m = classpath_line.match(out)
     
     classes = []
@@ -334,8 +398,25 @@ def collect_compiler_info (project_path):
     if m is not None :
         std_paths = set(m.group(1).split(";")) - set([".","./"])
     
+
+
     for p in std_paths : 
+        
+        p = os.path.normpath(p)
+
+        # last_pos - 2 on windows ????? 
+
+        last_pos = len(p)-2
+        
+        if (len(p) > 0 and (p[last_pos] == "/" or  p[last_pos] == "\\" or p[last_pos] == os.path.sep)):
+            log("remove")
+            p = p[0:last_pos]
+        log("path: " + p)
+        log(os.path.exists(p))
+        log(os.path.isdir(p))
+
         if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
+            log("do extract")
             classes, packs = hxtypes.extract_types( p, [], [] )
             
 
@@ -446,8 +527,10 @@ def current_project(view = None):
     else:
         id = file
     log("project id:" + id)
+    log("project file:" + str(file))
+    log("win.id:" + str(win.id()))
+
     def create ():
-                
         p = Project(id, file, win.id(), _next_server_port[0])
         _next_server_port[0] = _next_server_port[0] + 1
         return p

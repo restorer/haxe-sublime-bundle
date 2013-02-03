@@ -200,7 +200,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     comps = []
     log("toplevel_complete:" + str(toplevel_complete))
     if is_new or toplevel_complete :
-        all_comps = get_toplevel_completion( project, src , src_dir , build.copy(), macro_completion, is_new )
+        all_comps = get_toplevel_completion( project, src , build.copy(), macro_completion, is_new )
 
         comps = filter_top_level_completions(offset_char, all_comps)
     else:
@@ -394,15 +394,14 @@ def is_package_available (target, pack):
             if pack not in cls.target_std_packages[target]:
                 res = False;
 
-
-    
     return res
 
-def get_toplevel_completion( project, src , src_dir , build, is_macro_completion = False, only_types = False ) :
+def get_toplevel_completion( project, src , build, is_macro_completion = False, only_types = False ) :
     cl = []
     packs = []
     std_packages = []
 
+    
     build_target = "neko" if is_macro_completion else build.target
 
     if (only_types):
@@ -418,22 +417,15 @@ def get_toplevel_completion( project, src , src_dir , build, is_macro_completion
             cl.append( t[1] )
 
 
-    package_classes, sub_packs = hxtypes.extract_types( src_dir, project.std_classes, project.std_packages )
-    for c in package_classes :
-        if c not in cl:
-            cl.append( c )
-
     imports = hxsrctools.import_line.findall( src )
     imported = []
     for i in imports :
         imp = i[1]
         imported.append(imp)
 
-    #log(str(build.classpaths))
-
     build_classes , build_packs = build.get_types()
 
-
+    log("number of build classes: " + str(len(build_classes)))
 
     # filter duplicates
     def filter_build (x):
@@ -461,7 +453,7 @@ def get_toplevel_completion( project, src , src_dir , build, is_macro_completion
             std_packages.append(p)
 
     packs.extend( std_packages )
-    
+    packs.extend( build_packs ) 
     if not only_types:
         for v in hxsrctools.variables.findall(src) :
             comps.append(( v + "\tvar" , v ))
@@ -566,7 +558,7 @@ def highlight_errors( errors , view ) :
             regions.append( sublime.Region(a,b))
 
             
-            hxpanel.default_panel().status( "Error" , e["message"] + " @ " + e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right))
+            hxpanel.default_panel().status( "Error" , e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right) + ": " + e["message"])
             
     view.add_regions("haxe-error" , regions , "invalid" , "dot" )
 
@@ -659,16 +651,18 @@ def get_compiler_completion( project, build, view , display, temp_file, orig_fil
 
     build.set_build_cwd()
 
+    pdir = project.project_dir(".")
 
-    haxe_exec = hxsettings.haxe_exec(view)
+    haxe_exec = project.haxe_exec(view)
+    env = project.haxe_env(view)
 
 
 
     if (async):
         
-        build.run_async(haxe_exec, server_mode, view, project, cb)
+        build.run_async(haxe_exec, env, server_mode, view, project, cb)
     else:
-        out, err = build.run(haxe_exec, server_mode, view, project)
+        out, err = build.run(haxe_exec, env, server_mode, view, project)
         cb(out, err)
 
 
