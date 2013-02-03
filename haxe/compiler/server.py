@@ -1,6 +1,7 @@
 import sublime
-
-from subprocess import Popen
+import sys
+import os
+from subprocess import Popen, PIPE
 
 from haxe.startup import STARTUP_INFO
 from haxe.log import log
@@ -18,9 +19,15 @@ class Server ():
 		if self._server_proc is None : 
 			try:
 				cmd = [haxe_path , "--wait" , str(self._server_port) ]
-				self._server_proc = Popen(cmd, cwd=cwd, env = env, startupinfo=STARTUP_INFO)
-				self._server_proc.poll()
+
+				if env == None:
+					env = os.environ.copy()
+
+				self._server_proc = Popen(cmd, cwd=cwd, env = env, stdout=PIPE, stderr=PIPE, startupinfo=STARTUP_INFO)
+				poll_res = self._server_proc.poll()
+				
 				log("server started at port: " + str(self._server_port))
+				
 			except(OSError, ValueError) as e:
 				err = u'Error starting server %s: %s' % (" ".join(cmd), e)
 				sublime.error_message(err)
@@ -32,6 +39,8 @@ class Server ():
 				else:
 					msg = "Cannot start haxe compilation server on ports {0}-{1}"
 					msg = msg.format((self._orig_server_port, self._server_port))
+					log("Server starting error")
+					hxpanel.default_panel().writeln(msg)
 					sublime.error_message(msg)
 			
 	def stop( self ) :
