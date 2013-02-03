@@ -12,11 +12,11 @@ def get_temp_path(build):
 		return None
 
 
-	temp_path = os.path.join(path, ".hxsublime_tmp/tmp" + str(id))
+	temp_path = os.path.join(path, os.path.join(".hxsublime_tmp","tmp" + str(id)))
 
 	while os.path.exists(temp_path):
 		id += 1
-		temp_path = os.path.join(path, ".hxsublime_tmp/tmp" + str(id))
+		temp_path = os.path.join(path, os.path.join(".hxsublime_tmp","tmp" + str(id)))
 	
 	
 	return temp_path
