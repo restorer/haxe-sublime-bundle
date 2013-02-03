@@ -27,11 +27,19 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		if env == None:
 			env = os.environ.copy()
 
+		for k in env:
+			try:
+				val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
+			except:
+				val = env[k].encode(sys.getfilesystemencoding())
+			
+			env[k] = os.path.expandvars(val)
+
 		# safely remove empty strings from args
 		args = filter(lambda s: s != "", args)
 		
 		encoded_args = [a.encode(sys.getfilesystemencoding()) for a in args]
-		
+
 		p = Popen(encoded_args, cwd=cwd, stdout=PIPE, stderr=PIPE, stdin=PIPE, 
 				startupinfo=STARTUP_INFO, env=env)
 		
