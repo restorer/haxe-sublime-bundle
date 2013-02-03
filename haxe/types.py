@@ -1,5 +1,5 @@
 import os, codecs, glob
-
+import haxe.config as hxconfig
 import haxe.hxtools as hxtools
 from haxe.log import log
 from haxe.tools.cache import Cache
@@ -19,10 +19,9 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 
 	for path in cp :
+
 		c, p = extract_types( os.path.join( base_path, path ), filtered_classes, filtered_packages )
 
-		log("search in " + str(os.path.join( base_path, path )))
-		log("found: " + str(c))
 		classes.extend( c )
 		packs.extend( p )
 
@@ -38,7 +37,7 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 type_cache = Cache(-1) 
 
 
-def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0 ) :
+def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [] ) :
 
 	if filtered_classes is None: 
 		filtered_classes = []
@@ -53,7 +52,6 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 
 	classes = []
 	packs = []
-	has_classes = False
 	
 	for fullpath in glob.glob( os.path.join(path,"*.hx") ) : 
 		f = os.path.basename(fullpath)
@@ -63,25 +61,27 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 		if cl not in filtered_classes:
 			module_classes = extract_types_from_file(os.path.join( path , f ), depth, cl)
 
-			has_classes = has_classes or len(module_classes) > 0
-
 			classes.extend(module_classes)
 	
 			
 	for f in os.listdir( path ) :
-		
-		cl, ext = os.path.splitext( f )
-										
-		if os.path.isdir( os.path.join( path , f ) ) and f not in filtered_packages :
-			packs.append( f )
-			subclasses,subpacks = extract_types( os.path.join( path , f ) , filtered_classes, filtered_packages, depth + 1 )
-			for cl in subclasses :
-				classes.append( f + "." + cl )
+		if f not in hxconfig.ignored_folders:
+			cl, ext = os.path.splitext( f )
+			
+			cur_pack = ".".join(pack) + "." + f
+
+			if os.path.isdir( os.path.join( path , f ) ) and cur_pack not in filtered_packages and cur_pack not in hxconfig.ignored_packages:
+				next_pack = list(pack)
+				next_pack.append(f)
+				packs.append( cur_pack )
+				subclasses,subpacks = extract_types( os.path.join( path , f ) , filtered_classes, filtered_packages, depth + 1, next_pack )
+				for cl in subclasses :
+					classes.append( f + "." + cl )
 				
 	classes.sort()
 	packs.sort()
 
-	type_cache.insert(path, (list(classes), list(packs)))
+	type_cache.insert(path, (classes, packs))
 	
 
 	return classes, packs

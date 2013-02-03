@@ -14,6 +14,18 @@ target_std_packages = {
 	"nme" : ["nme"]
 }
 
+ignored_folders_list =  [".git", ".svn"]
+ignored_folders = {}
+for p in ignored_folders_list:
+	ignored_folders[p] = True
+
+ignored_packages_list = ["neko._std", "cpp._std", "php._std", "js._std", "flash._std"]
+
+ignored_packages = {}
+for p in ignored_packages_list:
+	ignored_packages[p] = True
+
+
 nme_targets = [("Flash","flash","test"),("HTML5","html5","test"),("C++","cpp","test"),("Linux 64","linux -64","test"),("iOS - iPhone Simulator","ios -simulator","test"),("iOS - iPad Simulator","ios -simulator -ipad","test"),("iOS - Update XCode Project","ios","update"),( "Android","android","test"),("WebOS", "webos","test"),("Neko","neko","test"),("BlackBerry","blackberry","test")]
 
 nme_target = ("Flash","flash","test")
