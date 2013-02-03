@@ -43,13 +43,21 @@ class SlidePanel ():
 			regions = panel.get_regions( key );
 			regions.append(region)
 			panel.add_regions( key , regions , scope , icon )
-		#print( err )
+		
 		win.run_command("show_panel",{"panel":"output.haxe"})
+
+
+		
+		def f ():
+			panel.show(sublime.Region(panel.size()+1000, panel.size()+1000))
+
+		sublime.set_timeout(f, 800)
 
 		return panel
 
 	def writeln (self, msg, scope = None):
-		self.write(msg + "\n", scope)
+		if valid_message(msg):
+			self.write(msg + "\n", scope)
 
 	def status (self, title, msg):
 		if valid_message(msg):
