@@ -1,20 +1,17 @@
 import sublime
 
-
 def get (id, view = None):
 	if view == None:
 		win = sublime.active_window()
 		if (win != None):
 			view = sublime.active_window().active_view();
 
-	res = None 
+	res = None
 	if (view != None):
 		settings = view.settings()
 		if settings.has(id):
 			res = settings.get(id)
-
 	return res;
-
 
 def get_bool (id, default, view = None):
 	r = get(id, view)
