@@ -1,7 +1,7 @@
 import os, codecs, glob
 
 import haxe.hxtools as hxtools
-
+from haxe.log import log
 from haxe.tools.cache import Cache
 
 
@@ -20,6 +20,9 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 	for path in cp :
 		c, p = extract_types( os.path.join( base_path, path ), filtered_classes, filtered_packages )
+
+		log("search in " + str(os.path.join( base_path, path )))
+		log("found: " + str(c))
 		classes.extend( c )
 		packs.extend( p )
 
@@ -32,7 +35,7 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 
 # 30 seconds cache
-type_cache = Cache(30000) 
+type_cache = Cache(-1) 
 
 
 def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0 ) :
@@ -64,18 +67,16 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 
 			classes.extend(module_classes)
 	
-	# what happens if has_classes == 0 and depth = 1, could still be a valid classpath or not??
-	if has_classes or depth == 0 : 
-		
-		for f in os.listdir( path ) :
 			
-			cl, ext = os.path.splitext( f )
-											
-			if os.path.isdir( os.path.join( path , f ) ) and f not in filtered_packages :
-				packs.append( f )
-				subclasses,subpacks = extract_types( os.path.join( path , f ) , filtered_classes, filtered_packages, depth + 1 )
-				for cl in subclasses :
-					classes.append( f + "." + cl )
+	for f in os.listdir( path ) :
+		
+		cl, ext = os.path.splitext( f )
+										
+		if os.path.isdir( os.path.join( path , f ) ) and f not in filtered_packages :
+			packs.append( f )
+			subclasses,subpacks = extract_types( os.path.join( path , f ) , filtered_classes, filtered_packages, depth + 1 )
+			for cl in subclasses :
+				classes.append( f + "." + cl )
 				
 	classes.sort()
 	packs.sort()
@@ -105,13 +106,19 @@ def extract_types_from_file (file, depth, module_name = None):
 	else:
 		pack_depth = len(clPack.split("."))
 
+	module_class_included = False
+
 	for decl in hxtools.type_decl.findall( src ):
 		t = decl[1]
 
 		if( pack_depth == depth ) :
 			if t == module_name or module_name == "StdTypes":
 				classes.append( t )
+				module_class_included = True
 			else: 
 				classes.append( module_name + "." + t )
+
+	if (not module_class_included):
+		classes.append( module_name )
 
 	return classes
