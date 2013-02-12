@@ -20,7 +20,7 @@ classpath_line = re.compile("Classpath : (.*)")
 haxe_version = re.compile("haxe_([0-9]{3})",re.M)
 
 # allow windows drives
-haxe_file_regex = "^((?:[A-Za-z][:])?(?:[^:]*)):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
+haxe_file_regex = "^((?:[A-Za-z][:])?(?:[^:]*)):([0-9]+): (?:characters|lines)? ([0-9]+)-?[0-9]* :(.*)$"
 
 class Project:
     def __init__(self, id, file, win_id, server_port):
@@ -36,7 +36,7 @@ class Project:
         
         self.project_file = file
 
-        print "project_file: " + self.project_file
+        
 
         self.project_id = id
         if (self.project_file != None):
@@ -50,7 +50,6 @@ class Project:
         p = default
         if self.project_path != None:
             p = self.project_path
-            
         return p
 
     def haxe_exec (self, view = None):
@@ -132,17 +131,25 @@ class Project:
     
         self.builds = []
 
+        if view is None:
+            view = sublime.active_window().active_view()
+
         fn = view.file_name()
 
+        if fn == None:
+            return
 
         settings = view.settings()
 
         #log("filename: " + fn)
         
         folder = os.path.dirname(fn)
+        win = view.window()
+        if win is None:
+            win = sublime.active_window()
         
 
-        folders = view.window().folders()
+        folders = win.folders()
         
         for f in folders:
             self.builds.extend(hxbuild.find_hxmls(f))
@@ -177,7 +184,7 @@ class Project:
             self.current_build.hxml = f
 
             #for whatever reason generate_build doesn't work without transient
-            view.window().open_file(f,sublime.TRANSIENT)
+            win.open_file(f,sublime.TRANSIENT)
 
             self.set_current_build( view , int(0), force_panel )
 
@@ -190,7 +197,7 @@ class Project:
 
             self.selecting_build = True
             sublime.status_message("Please select your build")
-            view.window().show_quick_panel( buildsView , lambda i : self.set_current_build(view, int(i), force_panel) , sublime.MONOSPACE_FONT )
+            win.show_quick_panel( buildsView , lambda i : self.set_current_build(view, int(i), force_panel) , sublime.MONOSPACE_FONT )
 
         elif settings.has("haxe-build-id"):
             self.set_current_build( view , int(settings.get("haxe-build-id")), force_panel )
@@ -224,6 +231,9 @@ class Project:
 
                 view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.current_build, i, view))
 
+    def has_build (self):
+        return self.current_build != None
+
     def run_build( self, view ) :
         
         haxe_exec = self.haxe_exec(view)
@@ -247,12 +257,20 @@ class Project:
     def run_sublime_build( self, view ) :
         
 
+        if view is None: 
+            view = sublime.active_window().active_view()
+
         log("start sublime build")
+
 
         haxe_exec = self.haxe_exec(view)
         env = self.haxe_build_env(view)
-        self.extract_build_args(view)
-        build = self.get_build(view).copy()
+        
+        if (self.has_build()):
+            build = self.get_build(view)
+        else:
+            self.extract_build_args(view)
+            build = self.get_build(view)
 
         cmd, build_folder, nekox_file_name = build.prepare_run(haxe_exec, self.serverMode, view, self)
         
@@ -260,10 +278,13 @@ class Project:
         log(env)
 
         log(cmd)
-        
-        
 
-        view.window().run_command("haxe_exec", {
+        win = view.window()
+
+        if win is None:
+            win = sublime.active_window()
+        
+        win.run_command("haxe_exec", {
             "cmd": cmd,
             "working_dir": build_folder,
             "file_regex": haxe_file_regex,
@@ -335,7 +356,7 @@ class Project:
             #build.hxml = os.path.join( src_dir , "build.hxml")
             self.current_build = build
             
-        return self.current_build   
+        return self.current_build.copy()  
 
 
 
@@ -358,7 +379,7 @@ def run_nme( view, build ) :
     view.window().run_command("haxe_exec", {
         "cmd": cmd,
         "working_dir": os.path.dirname(build.nmml),
-        "file_regex": "^([^:]*):([0-9]+): characters [0-9]+-([0-9]+) :.*$"
+        "file_regex": "^([^:]*):([0-9]+): (?:characters|lines): [0-9]+-([0-9]+) :.*$"
     })
     return ("" , [], "" )
 
