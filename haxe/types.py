@@ -34,7 +34,7 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 
 # 30 seconds cache
-type_cache = Cache(-1) 
+type_cache = Cache(1)
 
 
 def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [] ) :
