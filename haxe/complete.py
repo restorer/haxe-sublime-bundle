@@ -294,7 +294,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
                 err = err0[0]
                 
                 hxtemp.remove_path(temp_path)
-                hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err)
+                hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err, commas)
                 comps1 = [(t[0], t[1]) for t in comps1]
                 highlight_errors( errors, view )
         else:
@@ -341,13 +341,9 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
 
     def in_main (ret_, err_):
         
-        hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_)
+        hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_, commas)
 
-        new_hints = []
-        for h in hints:
-            if len(h) > commas:
-                new_hints.append(h[commas:])
-        hints = new_hints
+        
         comps_ = [(t[0], t[1]) for t in comps_]
                 
         log("background completion time: " + str(time.time() - timer))
@@ -525,6 +521,8 @@ def get_toplevel_completion( project, src , build, is_macro_completion = False, 
         
         if pack in imported or c in imported :
             cm = ( display , clname )
+            # at this point we could search for enum constructors and
+            # add them to toplevel completion
         else :
             #add an option for full packages in completion, something like this:
             #cm = ( ".".join(spl) , ".".join(spl) )

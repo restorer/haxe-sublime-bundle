@@ -197,6 +197,7 @@ class HaxeBuild :
 
 	def __init__(self) :
 		self.std_classes = []
+		self.show_times = False
 		self.std_packs = []
 		self.args = []
 		self.main = None
@@ -225,7 +226,8 @@ class HaxeBuild :
 			and self.hxml == other.hxml
 			and self.nmml == other.nmml
 			and self.classpaths == other.classpaths
-			and self.libs == other.libs)
+			and self.libs == other.libs
+			and self.show_times == other.show_times)
 		   
 		
 
@@ -241,6 +243,7 @@ class HaxeBuild :
 		hb.libs = list(self.libs)
 		hb.classes = list(self.classes) if self.classes is not None else None
 		hb.packages = list(self.packages) if self.packages is not None else None
+		hb.show_times = self.show_times
 		return hb
 
 	def get_build_folder (self):
@@ -323,6 +326,7 @@ class HaxeBuild :
 		self.args.append(("--cwd" , cwd ))
 
 	def set_times (self):
+		self.show_times = True
 		self.args.append(("--times", ""))
 		self.args.append(("-D", "macro-times"))
 		self.args.append(("-D", "macro_times"))
@@ -355,10 +359,17 @@ class HaxeBuild :
 		else:
 			args = map(lambda x : ("-neko", x[1]) if x[0] == "-x" else x, args)
 
-		def filterCommandsAndDce (x):
+		def filter_commands_and_dce (x):
 			return x[0] != "-cmd" and x[0] != "-dce"
 
-		args = filter(filterCommandsAndDce, args )	
+
+
+		args = filter(filter_commands_and_dce, args )	
+
+		if not self.show_times:
+			def filter_times (x):
+				return x[0] != "--times"
+			args = filter(filter_times, args)
 
 		print args
 

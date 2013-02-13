@@ -206,8 +206,15 @@ def extract_errors( str ):
 	return errors
 
 
-def get_completion_output(temp_file, orig_file, output):
+def get_completion_output(temp_file, orig_file, output, commas):
 	hints, comps = parse_completion_output(temp_file, orig_file, output)
+
+	new_hints = []
+	for h in hints:
+		if len(h) > commas:
+			new_hints.append(h[commas:])
+	hints = new_hints
+
 	status, errors = get_completion_status_and_errors(hints, comps, output, temp_file, orig_file)
 
 	return (hints, comps, status, errors)
