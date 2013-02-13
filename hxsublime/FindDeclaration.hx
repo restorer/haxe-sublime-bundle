@@ -1,5 +1,7 @@
 package hxsublime;
 
+
+#if macro
 using haxe.macro.ExprTools;
 using haxe.macro.TypeTools;
 
@@ -8,7 +10,7 @@ import haxe.macro.Expr;
 import haxe.macro.Expr.ExprOf;
 import haxe.macro.Type;
 import neko.Lib;
-
+#end
 
 class FindDeclaration {
 
@@ -27,7 +29,8 @@ class FindDeclaration {
 
 		function formatPos (pos:Position) {
 			var p = Context.getPosInfos( pos );
-			return '|||||{ "file": "${p.file}", "min" : ${p.min}, "max" : ${p.max} }|||||';
+			var file = p.file.split("\\").join("/");
+			return '|||||{ "file": "$file", "min" : ${p.min}, "max" : ${p.max} }|||||';
 		}
 
 		function error (info:String = "impossible") {
@@ -132,7 +135,7 @@ class FindDeclaration {
 			case _:
 				out("hey");
 				switch (e.expr) {
-					case EConst(CIdent(x)):
+					case EConst(CIdent(_)):
 						var p = fromIdent(e);
 						if (p != null) {
 							out( formatPos(p) );
