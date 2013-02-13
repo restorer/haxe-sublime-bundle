@@ -4,8 +4,14 @@ from datetime import datetime
 
 import haxe.tools.view as view_tools
 
+from project import haxe_file_regex
+
+import haxe.settings as hxsettings
+
 from haxe.tools.cache import Cache
 
+ 
+_haxe_file_regex = "^[0-9]{2}:[0-9]{2}:[0-9]{2} " + haxe_file_regex[1:]
 
 
 def timestamp_msg (msg):
@@ -27,9 +33,12 @@ class SlidePanel ():
 
 		if self.output_view is None :
 			self.output_view = win.get_output_panel("haxe")
+			
+			self.output_view.settings().set("result_file_regex", _haxe_file_regex)
+			
 
 		panel = self.output_view
-
+		
 		text = timestamp_msg(text);
 		
 		edit = panel.begin_edit()
@@ -71,7 +80,7 @@ def make_tab_panel (win, name, syntax):
 	v.set_name(name)
 	v.set_read_only(True)
 	v.settings().set('word_wrap', True)
-
+	v.settings().set("result_file_regex", _haxe_file_regex)
 	v.settings().set("haxe_panel_win_id", win.id())
 	v.set_scratch(True)
 	v.set_syntax_file(syntax)
@@ -188,7 +197,10 @@ def __slide_panel(win = None):
 	return tab_panel(win)
 
 def default_panel(win = None):
-	return slide_panel(win)
+	if hxsettings.use_slide_panel():
+		return slide_panel(win)
+	else:
+		return tab_panel(win)
 
 def slide_panel(win = None):
 	

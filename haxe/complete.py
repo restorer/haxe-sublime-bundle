@@ -107,6 +107,31 @@ def filter_top_level_completions (offset_char, all_comps):
     log("number of top level completions filtered" + str(len(comps)))
     return comps
 
+def combine_hints_and_comps (comps, hints):
+    def make_hint_comp (h):
+        is_only_type = len(h) == 1
+        res = None
+        if is_only_type:
+            res = (h[0] + " - No Completion", "${}")
+        else:
+            only_next = hxsettings.smarts_hints_only_next()
+
+            params = h[0:len(h)-1];
+            params2 = params if not only_next else h[0:1]
+            ret = h[len(h)-1];
+            show = "(" + ",".join([param for param in params]) + "):" + ret
+            insert = ",".join(["${" + str(index+1) + ":" + param + "}" for index, param in enumerate(params2)])
+            log(insert)
+            res = (show, insert)
+        return res
+
+    all_comps = [make_hint_comp(h) for h in hints]
+
+    if (len(hints) > 0 and len(comps) > 0): 
+        all_comps.append(("------------------------------------------------", "${}"))
+    all_comps.extend(comps)
+    return all_comps
+
 def hx_auto_complete(project, view, offset):
 
     
@@ -124,16 +149,12 @@ def hx_auto_complete(project, view, offset):
         if (not has_comps and not has_hints and hxsettings.no_fuzzy_completion()):
             comps = cancel_completion(view)
         else:
-            if (not has_comps and has_hints):
-                comps = [("No Completion for " + delayed_hints[0], "${}")]
-            else:
-                comps = delayed_comps
+            comps = combine_hints_and_comps(delayed_comps, delayed_hints)
+
     else:
         # get build and maybe use cache
         build = project.get_build( view ).copy()
         cache = project.completion_context.current
-                
-        
         
         comps = hx_normal_auto_complete(project, view, offset, build, cache)
     return comps
@@ -235,7 +256,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 
     use_cache = use_completion_cache(last_input, current_input)
 
-    hints = None
+    hints = []
 
     if use_cache :
         log("use completions from cache")
@@ -282,31 +303,23 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 
     comps.extend(comps1)
 
-        
+    log("hints1:" + str(hints))
     
     if not delayed:
         cache["output"] = (ret,comps1,status, hints)
         cache["input"] = current_input
     
 
-    log( "haxe-status: " + status )
+    if status != "":
+        hxpanel.default_panel().writeln( status )
+
 
     
     if not use_cache and delayed and hxsettings.only_delayed_completions():
         log("delayed is running: completion cancelled")
         return cancel_completion(view, True)
     
-    
-    if len(comps) == 0:
-        log("no completions, show hint")
-        info = "No Completion"
-        log("hints: " + str(hints))
-        if (hints != None and len(hints) == 1): 
-            info += " for " + hints[0]
-        else:
-            info += " available"
-        comps = [(info, "${}")]
-        
+    comps = combine_hints_and_comps(comps, hints)
 
     log("completion end")
     return comps
@@ -314,6 +327,8 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 def background_completion(project, completion_id, basic_comps, temp_file, orig_file, temp_path, 
         view, cache, current_input, complete_offset, run_compiler_completion):
     hide_delay, show_delay = hxsettings.get_completion_delays()
+
+    commas = current_input[2]
 
     
     view_id = view.id()
@@ -327,6 +342,12 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
     def in_main (ret_, err_):
         
         hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_)
+
+        new_hints = []
+        for h in hints:
+            if len(h) > commas:
+                new_hints.append(h[commas:])
+        hints = new_hints
         comps_ = [(t[0], t[1]) for t in comps_]
                 
         log("background completion time: " + str(time.time() - timer))
@@ -512,12 +533,14 @@ def get_toplevel_completion( project, src , build, is_macro_completion = False, 
 
         if cm not in comps and is_package_available(build_target, top):
             # add packages to completion
-            z = [x for x in spl if x[0].lower() == x[0]]
+            
+            z = [x for x in spl if len(x) > 0 and x[0].lower() == x[0]]
             if (len(z) > 0):
                 p = ".".join(z)
                 packs.append(p) 
 
             comps.append( cm )
+        
     
     for p in packs :
         cm = (p + "\tpackage",p)
@@ -548,17 +571,18 @@ def highlight_errors( errors , view ) :
     regions = []
     
     for e in errors :
-        if fn.endswith(e["file"]) :
-            l = e["line"]
-            left = e["from"]
-            right = e["to"]
-            a = view.text_point(l,left)
-            b = view.text_point(l,right)
+        
+        l = e["line"]
+        left = e["from"]
+        right = e["to"]
+        a = view.text_point(l,left)
+        b = view.text_point(l,right)
 
-            regions.append( sublime.Region(a,b))
+        regions.append( sublime.Region(a,b))
 
-            
-            hxpanel.default_panel().status( "Error" , e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right) + ": " + e["message"])
+        
+        hxpanel.default_panel().status( "Error" , e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right) + ": " + e["message"])
+
             
     view.add_regions("haxe-error" , regions , "invalid" , "dot" )
 
@@ -567,6 +591,7 @@ def count_commas_and_complete_offset (src, prev_comma, complete_offset):
     commas = 0;
     closed_pars = 0
     closed_braces = 0
+    closed_brackets = 0
 
     for i in range( prev_comma , 0 , -1 ) :
         c = src[i]
@@ -579,22 +604,29 @@ def count_commas_and_complete_offset (src, prev_comma, complete_offset):
             else :
                 closed_pars -= 1
         elif c == "," :
-            if closed_pars == 0 :
+            if closed_pars == 0 and closed_braces == 0 and closed_brackets == 0 :
                 commas += 1
-        elif c == "{" : # TODO : check for { ... , ... , ... } to have the right comma count
-            commas = 0
+        elif c == "{" :
+            #commas = 0
             closed_braces -= 1
+
         elif c == "}" :
             closed_braces += 1
+        elif c == "[" :
+            #commas = 0
+            closed_brackets -= 1
+        elif c == "]" :
+            closed_brackets += 1
 
     return (commas, complete_offset)
+
 
 def get_completion_info (view, offset, src, prev):
     commas = 0
     toplevel_complete = False
     complete_offset = offset
     is_new = False
-    if (prev == " " and src[offset-4:offset-1] == "new"):
+    if (prev == " " and (offset-4 >= 0) and src[offset-4:offset-1] == "new"):
         is_new = True
     elif prev not in "(." :
         fragment = view.substr(sublime.Region(0,offset))
@@ -603,10 +635,12 @@ def get_completion_info (view, offset, src, prev):
         prev_comma = fragment.rfind(",")
         prev_colon = fragment.rfind(":")
         prev_brace = fragment.rfind("{")
+        
         prev_symbol = max(prev_dot,prev_par,prev_comma,prev_brace,prev_colon)
         
         if prev_symbol == prev_comma:
             commas, complete_offset = count_commas_and_complete_offset(src, prev_comma, complete_offset)
+            log("commas: " + str(commas))
             #print("closedBrackets : " + str(closedBrackets))
             
         else :
@@ -649,9 +683,9 @@ def get_compiler_completion( project, build, view , display, temp_file, orig_fil
     if hxsettings.show_completion_times(view):
         build.set_times()
 
-    build.set_build_cwd()
+    #build.set_build_cwd()
 
-    pdir = project.project_dir(".")
+    #pdir = project.project_dir(".")
 
     haxe_exec = project.haxe_exec(view)
     env = project.haxe_env(view)
@@ -707,11 +741,12 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
     def on_load( self, view ) :
 
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
-            hxproject.current_project(view).generate_build( view )
+            if not hxproject.current_project(view).has_build():
+                hxproject.current_project(view).generate_build( view )
 
 
     def on_post_save( self , view ) :
-        if view_tools.is_hxml(view):
+        if view is not None and view.file_name() is not None and view_tools.is_hxml(view):
             project = hxproject.current_project(view)
             project.clear_build()
             
@@ -721,9 +756,11 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
             project = hxproject.current_project(view)
             
-            build = project.get_build(view)
-            project.extract_build_args( view )
-            project.generate_build(view)    
+
+            #if (project.)
+            #build = project.get_build(view)
+            #project.extract_build_args( view )
+            #project.generate_build(view)    
 
 
     def on_pre_save( self , view ) :

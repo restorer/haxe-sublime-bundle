@@ -1,6 +1,7 @@
 import os
 import re
 import glob
+import time
 import codecs
 import sublime
 
@@ -63,7 +64,7 @@ def hxml_to_builds (build, folder):
 					"debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , 
 					"-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , 
 					"-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , 
-					"-remap" , "-php-front" , "-php-lib", "dce" , "-js-modern" ] :
+					"-remap" , "-php-front" , "-php-lib", "dce" , "-js-modern", "-times" ] :
 			if l.startswith( "-"+flag ) :
 				current_build.args.append( tuple(l.split(" ") ) )
 				
@@ -207,6 +208,7 @@ class HaxeBuild :
 		self.libs = []
 		self.classes = None
 		self.packages = None
+		self.update_time = None
  
 	def set_std_classes(self, std_classes):
 		self.std_classes = std_classes
@@ -254,6 +256,7 @@ class HaxeBuild :
 	def set_build_cwd (self):
 		self.set_cwd(self.get_build_folder())
 	def add_classpath (self, cp):
+		
 		self.classpaths.append(cp)
 		self.args.append(("-cp", cp))
 	
@@ -342,6 +345,7 @@ class HaxeBuild :
 	def set_auto_completion (self, display, macro_completion = False, no_output = True):
 		
 		args = self.args
+		print args
 		self.main = None
 		def filterTargets (x):
 			return x[0] != "-cs" and x[0] != "-x" and x[0] != "-js" and x[0] != "-php" and x[0] != "-cpp" and x[0] != "-swf" and x[0] != "-java"
@@ -351,7 +355,12 @@ class HaxeBuild :
 		else:
 			args = map(lambda x : ("-neko", x[1]) if x[0] == "-x" else x, args)
 
-		args = args
+		def filterCommandsAndDce (x):
+			return x[0] != "-cmd" and x[0] != "-dce"
+
+		args = filter(filterCommandsAndDce, args )	
+
+		print args
 
 		if (macro_completion) :
 			args.append(("-neko", "__temp.n"))
@@ -365,7 +374,12 @@ class HaxeBuild :
 
 
 	def get_types( self ) :
-		if self.classes is None or self.packages is None :
+		now = time.time()
+		log("get_types" + str(now))
+		log("get_types" + str(self.update_time))
+		if self.classes is None or self.packages is None or self.update_time is None or (now - self.update_time) > 10:
+			log("update types")
+			self.update_time = now
 			self.update_types()
 
 		return self.classes, self.packages

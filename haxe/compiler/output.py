@@ -1,6 +1,6 @@
 import sublime
 import re
-
+import os
 from xml.etree import ElementTree
 from elementtree import SimpleXMLTreeBuilder # part of your codebase
 
@@ -85,32 +85,8 @@ def get_type_hint (types):
 	hints = []
 	for i in types :
 		hint = i.text.strip()
-		
-		#print(hint)
-
-		# show complete signature, unless better splitter (-> is not enough) is implemented
-
-		#types = hint.split(" -> ")
-		#
-		#print(str(types))
-#
-#				#ret = types.pop()
-#				#msg = "";
-#				#
-#				#if commas >= len(types) :
-#				#	if commas == 0 :
-#				#		msg = hint + ": No autocompletion available"
-#				#		#view.window().run_command("hide_auto_complete")
-#				#		#comps.append((")",""))
-#				#	else:
-#				#		msg =  "Too many arguments."
-		#else :
-		msg = hint
-			#msg = ", ".join(types[commas:]) 
-		log("hint: " + msg)
-		if msg :
-			#msg =  " ( " + " , ".join( types ) + " ) : " + ret + "      " + msg
-			hints.append( msg )
+		hint_types = split_signature(hint)
+		hints.append( hint_types )
 	return hints
 
 def collect_completion_fields (li):
@@ -266,7 +242,9 @@ def get_completion_status_and_errors(hints, comps, output, temp_file, orig_file)
 	errors = []
 
 	if len(hints) > 0 :
-		status = " | ".join(hints)
+		pass
+		#log("status: " + str(hints))
+		#status = " | ".join([h.replace( temp_file , orig_file ) for h in hints])
 
 	elif len(hints) == 0 and len(comps) == 0:
 		status, errors = parse_completion_errors(output, temp_file, orig_file, status)
@@ -275,7 +253,25 @@ def get_completion_status_and_errors(hints, comps, output, temp_file, orig_file)
 	return status, errors
 
 def parse_completion_errors(output, temp_file, orig_file, status):
+	log("output:" + output)
+	log("status:" + status)
+	log("orig_file:" + orig_file)
+	log("temp_file:" + temp_file)
+
+	# get rid of slashes in paths inside of error messages on windows
+	# to replace temp_file with orig_file afterwards
+	sep = os.sep
+	log("sep: " + sep)
+	if sep == "\\":
+		def slash_replace(match_obj):
+			log("matched")
+			return sep.join(match_obj.group(0).split("/"))
+
+		output = re.sub(u"[A-Za-z]:(.*)[.]hx", slash_replace, output);
+
 	output = output.replace( temp_file , orig_file )
+	
+	log("output after replace: " + output)
 	output = re.sub( u"\(display(.*)\)" ,"",output)
 	
 	lines = output.split("\n")
@@ -319,6 +315,8 @@ def parse_completion_errors(output, temp_file, orig_file, status):
 	# 		if not w is None :
 	# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
 	# 	#if not autocomplete
+
+
 
 	errors = extract_errors( output )
 

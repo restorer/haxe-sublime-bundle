@@ -90,3 +90,12 @@ def smart_snippets (view = None):
 
 def use_debug_panel (view = None):
 	return get_bool("haxe_use_debug_panel", False, view)	
+
+def build_on_save (view = None):
+	return get_bool("haxe_build_on_save", True, view)
+
+def use_slide_panel (view = None):
+	return get_bool("haxe_use_slide_panel", True, view)	
+
+def smarts_hints_only_next (view = None):
+	return get_bool("haxe_smarts_hints_only_next", False, view)	
