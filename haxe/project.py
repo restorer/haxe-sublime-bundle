@@ -238,7 +238,9 @@ class Project:
         
         haxe_exec = self.haxe_exec(view)
         env = self.haxe_env(view)
-        self.extract_build_args(view)
+        if not self.has_build():
+            self.extract_build_args(view)
+        
         build = self.get_build(view)
 
         out, err = build.run(haxe_exec, env, self.serverMode, view, self)
