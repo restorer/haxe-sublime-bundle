@@ -135,6 +135,7 @@ def combine_hints_and_comps (comps, hints):
 def hx_auto_complete(project, view, offset):
 
     
+
     
     # if completion is triggered by a background
     # completion return the result
@@ -153,6 +154,8 @@ def hx_auto_complete(project, view, offset):
 
     else:
         # get build and maybe use cache
+        if not project.has_build():
+            project.extract_build_args()
         build = project.get_build( view ).copy()
         cache = project.completion_context.current
         

@@ -69,20 +69,27 @@ class Project:
                 env.update(user_env)
 
         cwd = self.project_dir(".")
-        libPath = os.path.join(cwd, hxsettings.haxe_library_path())
+        libPath = hxsettings.haxe_library_path()
         if libPath != None :
-            env["HAXE_LIBRARY_PATH"] = os.sep.join(libPath.split("/")).encode(sys.getfilesystemencoding())
+            path = os.path.join(cwd, libPath)
+            env["HAXE_LIBRARY_PATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
 
         return env
 
     def haxe_build_env (self,view = None):
         
         cwd = self.project_dir(".")
-        libPath = os.path.join(cwd, hxsettings.haxe_library_path())
-       
-        env = {
-            "HAXE_LIBRARY_PATH" : os.sep.join(libPath.split("/")).encode(sys.getfilesystemencoding())
-        }
+
+        libPath = hxsettings.haxe_library_path()
+
+        
+        if libPath != None:
+            path = os.path.join(cwd, )
+            env = {
+                "HAXE_LIBRARY_PATH" : os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
+            }
+        else:
+            env = {}
 
         return env
     
@@ -127,7 +134,7 @@ class Project:
         self.extract_build_args( view , True )
 
 
-    def extract_build_args( self, view , force_panel = False ) :
+    def extract_build_args( self, view = None , force_panel = False ) :
     
         self.builds = []
 
@@ -426,13 +433,12 @@ def collect_compiler_info (project_path):
     for p in std_paths : 
         
         p = os.path.normpath(p)
-
-        # last_pos - 2 on windows ????? 
-
+        
+        # last_pos - 2 on windows (why -2) ????? 
+        # TODO check this, seems to work, but dirty
         last_pos = len(p)-2
         
         if (len(p) > 0 and (p[last_pos] == "/" or  p[last_pos] == "\\" or p[last_pos] == os.path.sep)):
-            log("remove")
             p = p[0:last_pos]
         log("path: " + p)
         log(os.path.exists(p))
