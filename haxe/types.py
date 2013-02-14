@@ -90,6 +90,8 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 
 def extract_types_from_file (file, depth, module_name = None):
 
+	# use cache based on last file modification
+
 	if module_name == None:
 		module_name = os.path.splitext( os.path.basename(file) )[0]
 
@@ -100,6 +102,8 @@ def extract_types_from_file (file, depth, module_name = None):
 	clPack = "";
 	for ps in hxtools.package_line.findall( src ) :
 		clPack = ps
+
+	
 	
 	if clPack == "" :
 		pack_depth = 0
@@ -118,7 +122,127 @@ def extract_types_from_file (file, depth, module_name = None):
 			else: 
 				classes.append( module_name + "." + t )
 
+	constructors = extract_enum_constructors_from_src(src, module_name, False)
+	
+	for c in constructors:
+
+		if( pack_depth == depth ) :
+			if c[0] == module_name or module_name == "StdTypes":
+				classes.append( c[0] + "." + c[1] )
+			else: 
+				classes.append( module_name + "." + c[0] + "." + c[1] )	
+
 	if (not module_class_included):
 		classes.append( module_name )
 
 	return classes
+
+
+import re
+enum_constructor_start_decl = re.compile("\s+([a-zA-Z0-9_]+)" , re.M )
+enum_start_decl = re.compile("(private\s+)?enum\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
+
+def extract_enum_constructors_from_src (src, module_name, include_private = False):
+
+	all = []
+	for e in enum_start_decl.finditer(src):
+		if e.group(1) != None and not include_private:
+			continue
+		else:
+			enum_name = e.group(2)
+			start = search_next_char_on_same_level(src, "{", e.start(2))
+			if start != None:
+				end = search_next_char_on_same_level(src, "}", start[0]+1)
+				if end != None:
+					constructors = extract_enum_constructors_from_enum(src[start[0]+1: end[0]-1])
+					all.extend([(enum_name,c) for c in constructors])
+	return all
+
+
+
+
+def extract_enum_constructors_from_enum (enumStr):
+	
+	constructors = []
+	start = 0;
+	while True:
+		m = enum_constructor_start_decl.match(enumStr, start)
+		if m != None:
+			constructor = m.group(1)
+			constructors.append(constructor)
+			end = search_next_char_on_same_level(enumStr, ";", m.end(1))
+			if end != None:
+				start = end[0]+1
+			else:
+				break
+		else:
+			break
+	return constructors
+
+def search_next_char_on_same_level (str, char, start_pos):
+	open_pars = 0
+	open_braces = 0
+	open_brackets = 0
+	open_angle_brackets = 0
+
+	count = len(str)
+	cur = ""
+	pos = start_pos
+	while (True):
+		if pos > count-1:
+			break
+
+		c = str[pos]
+
+		next = str[pos+1] if pos < count-1 else None
+
+		if (c == char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
+			return (pos,cur)
+						
+		if (c == "-" and next == ">"):
+			cur += "->"
+			pos += 2
+		elif (c == "{"):
+			pos += 1
+			open_braces += 1
+			cur += c
+		elif (c == "}"):
+			pos += 1
+			open_braces -= 1
+			cur += c
+		elif (c == "("):
+			pos += 1
+			open_pars += 1
+			cur += c
+		elif (c == ")"):
+			pos += 1
+			open_pars -= 1
+			cur += c
+		elif (c == "["):
+			pos += 1
+			open_brackets += 1
+			cur += c
+		elif (c == "]"):
+			pos += 1
+			open_brackets -= 1
+			cur += c
+		elif (c == "<"):
+			pos += 1
+			open_angle_brackets += 1
+			cur += c
+		elif (c == ">"):
+			pos += 1
+			open_angle_brackets -= 1
+			cur += c
+		else:
+			pos += 1
+			cur += c
+	return None
+
+
+
+
+print str(extract_enum_constructors_from_src("enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
+print str(extract_enum_constructors_from_src("  enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
+print str(extract_enum_constructors_from_src("enum XY{ Left; Right; }", "my.Module"))
+
