@@ -20,7 +20,7 @@ classpath_line = re.compile("Classpath : (.*)")
 haxe_version = re.compile("haxe_([0-9]{3})",re.M)
 
 # allow windows drives
-haxe_file_regex = "^((?:[A-Za-z][:])?(?:[^:]*)):([0-9]+): (?:characters|lines)? ([0-9]+)-?[0-9]* :(.*)$"
+haxe_file_regex = "^((?:[A-Za-z][:])|/(?:[^:]*)):([0-9]+): (?:characters?|lines?|)? ([0-9]+)-?[0-9]* :(.*)$"
 
 class Project:
     def __init__(self, id, file, win_id, server_port):
