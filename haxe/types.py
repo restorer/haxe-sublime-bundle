@@ -116,9 +116,10 @@ def extract_types_from_file (file, depth, module_name = None, include_private_ty
 
 	module_class_included = False
 
-	for decl in hxtools.type_decl_with_scope.findall( src ):
-		is_private = decl[0] != None
-		t = decl[2]
+	for decl in hxtools.type_decl_with_scope.finditer( src ):
+		is_private = decl.group(1) != None
+		
+		t = decl.group(3)
 		
 		if (not is_private or include_private_types):
 
@@ -251,7 +252,7 @@ def search_next_char_on_same_level (str, char, start_pos):
 
 
 
-print str(extract_enum_constructors_from_src("enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
-print str(extract_enum_constructors_from_src("  enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
-print str(extract_enum_constructors_from_src("enum XY{ Left; Right; }", "my.Module"))
+#print str(extract_enum_constructors_from_src("enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
+#print str(extract_enum_constructors_from_src("  enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
+#print str(extract_enum_constructors_from_src("enum XY{ Left; Right; }", "my.Module"))
 
