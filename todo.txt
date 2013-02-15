@@ -7,19 +7,21 @@ Priority 1
 
 - split hx_normal_auto_complete in smaller functions
 - split get_toplevel_completion in smaller functions
-- show compiler hints in a nice way
-- configurable logging
+- show compiler hints in a nice way (done, but not perfect)
+- configurable logging (done)
 - rename hxtools to tools.hx or tools.source.hx
 - make sure that event listeners are only working/responding when necessary (haxe files)
-- rename haxe.build.HaxeBuild to haxe.build.Build
+- rename haxe.build.HaxeBuild to haxe.build.Build (done)
 - splitting completion in multiple modules (complete.hx, complete.hxsl, complete.erazor, complete.nmml), maybe better in the long term. Add eventlisteners for each syntax, or is this very expensive?
 - get nme compilation/completion working
-- improve toplevel algorithm (could be a lot faster)
+- improve toplevel algorithm (could be a lot faster) (partially done, caching of file types based on modification time)
 - syntax color bugfixing (functions, abstracts)
 - better error reporting (highlights in view)
 - toplevel completion info should distinguish between class, enum, abstract, interface, typedef
 - "new" completion should only provide classes and typedefs (possible classes)
 - move temp and log to tools
+- add all public static function to separetly triggered top level completion 
+- collect more valuable information inside of types.py because it's cached (type descriptions, private, static functions)
 
 Priority 2
 
