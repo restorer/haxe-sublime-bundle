@@ -289,6 +289,7 @@ def parse_completion_errors(output, temp_file, orig_file, status):
 			status = "No autocompletion available"
 		elif not re.match( haxe_compiler_line , l ):
 			status = l
+			log(l)
 		else :
 			status = ""
 
