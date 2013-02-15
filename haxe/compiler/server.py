@@ -44,12 +44,14 @@ class Server ():
 					sublime.error_message(msg)
 			
 	def stop( self ) :
-		
-		proc = self._server_proc
+		try:
+			proc = self._server_proc
 
-		if proc is not None :
-			proc.terminate()
-			proc.kill()
-			proc.wait()
+			if proc is not None :
+				proc.terminate()
+				proc.kill()
+				proc.wait()
+		except:
+			pass
 		
 		self._server_proc = None
