@@ -2,6 +2,7 @@ import sublime, sublime_plugin
 import os
 import re
 import json
+import codecs
 from sublime import Region
 
 import haxe.project as hxproject
@@ -35,7 +36,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         self.run1(True, False)
 
     def run1 (self, use_display, inline_workaround = False):
-        print "HaxeFindDeclarationCommand"
+        print "run HaxeFindDeclarationCommand"
         view = self.view
 
         file_name = view.file_name()
@@ -51,8 +52,6 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
         file_name = os.path.basename(view.file_name())
 
-        
-
         using_line = "\nusing hxsublime.FindDeclaration;\n"
 
         pos = view.sel()[0].a
@@ -62,27 +61,14 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         word_start = word.a
         word_end = word.b
 
-        log(src[word_end:len(src)])
-        
         word_str = src[word_start:word_end]
-        log(word_str)
-
-        
-
-        
 
         prev = src[word_start-1]
-
         
         field_access = False
         if prev == ".":
             field_access = True
 
-        log(field_access)
-
-
-        log(pos)
-        log(word)
         add = ".sublime_find_decl()"
 
         if use_display:
@@ -105,18 +91,13 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
         if (package_decl == None):
             new_src = using_line + new_src
-            log("new_src: " + new_src)
         else:
             new_src = new_src[0:package_decl.end(0)]+using_line+new_src[package_decl.end(0):len(new_src)]
-            log("new_src: " + new_src)
 
         temp_path, temp_file = hxtemp.create_temp_path_and_file(build, view.file_name(), new_src)
 
-        log("here we go")
         build.add_classpath(temp_path)
 
-        
-        log("plugin_path: " + plugin_path);
         build.add_classpath(plugin_path)
         
         if use_display:
@@ -124,9 +105,9 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
         server_mode = project.is_server_mode()
 
-        log("run")
+
         out, err = build.run(project.haxe_exec(), project.haxe_env(), server_mode, view, project)
-        log("run complete")
+
         hxtemp.remove_path(temp_path)
         
 
@@ -134,118 +115,113 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
         res = re.search(file_pos, out)
         if res != None:
-
-            log("found position")
-
-            
-
+            #we've got a proper response
             json_str = res.group(1)
-
             json_res = json.loads(json_str)
 
-            log(json_res)
-
-            if "file" in json_res:
-                file = json_res["file"]
-                min = json_res["min"]
-                max = json_res["max"]
-
-                
-
-
-
-
-                log(file)
-                log(min)
-                log(max)
-
-
-
-                #abs_path = abs_path.replace(build.get_relative_path(temp_file), build.get_relative_path(view.file_name())
-                
-                log("temp_path: " + temp_path)
-                log("temp_file: " + temp_file)
-                abs_path = path_tools.join_norm(build.get_build_folder(), file)
-                abs_path_temp = path_tools.join_norm(build.get_build_folder(), build.get_relative_path(os.path.join(temp_path, temp_file)))
-
-                log("build_rel: " + build.get_relative_path(os.path.join(temp_path, temp_file)))
-                log("abs_path: " + abs_path)
-                log("abs_path_temp: " + abs_path_temp)
-
-                
-
-                if (abs_path == temp_file):
-                    
-                    abs_path = view.file_name()
-                    target_view = view
-                    m = min
-                    log("word_end: " + str(word_end))
-                    log("min: " + str(min))
-                    if min > word_end:
-                        m -= len(add)
-                    m -= len(using_line)
-                    target_view.sel().clear()
-                    target_view.sel().add(sublime.Region(m))
-                    target_view.show(sublime.Region(m))
-                    #target_view.sel().clear()
-                    #target_view.sel().add(sublime.Region(min))
-                else:
-                    global find_decl_pos, find_decl_file
-                    find_decl_file = abs_path
-                    find_decl_pos = min
-                    target_view = view.window().open_file(abs_path)
-                    
-
-                
-
-
-            elif "error" in json_res:
-                error = json_res["error"]
-                log(error)
-                if (error =="inlined" and not inline_workaround):
-                    self.run1(use_display, True)
-                else:
-                    log("nothing found, no chance")
-            else:
-                log("nothing found try again")
-                if use_display:
-
-                    self.run1(False)
-                else:
-                    log("nothing found, no chance")
+            self.handle_json_response(json_res, add, using_line, word_end, build, temp_path, temp_file, use_display, inline_workaround)
         else:
-            log("nothing found, try again")
+
             if use_display:
+                log("nothing found yet (2), try again without display (workaround)")
                 self.run1(False)
             else:
-                log("nothing found, no chance")
+                log("nothing found (3), cannot find declaration")
 
+    def handle_json_response(self, json_res, add, using_line, word_end, build, temp_path, temp_file, use_display, inline_workaround):
+        view = self.view
+        if "file" in json_res:
+            file = json_res["file"]
+            min = json_res["min"]
+            max = json_res["max"]
 
+            #abs_path = abs_path.replace(build.get_relative_path(temp_file), build.get_relative_path(view.file_name())
             
-            
-
-            #log(new_src.find_all(hxsrctools.type_decl))
-
-            # remove temp path and file
-            #
+            abs_path = path_tools.join_norm(build.get_build_folder(), file)
+            abs_path_temp = path_tools.join_norm(build.get_build_folder(), build.get_relative_path(os.path.join(temp_path, temp_file)))
 
 
+            if (abs_path == temp_file):
+                if min > word_end:
+                    min -= len(add)
+                min -= len(using_line)
+                # we have manually stored a temp file with only \n line endings
+                # so we don't have to adjust the real file position and the sublime
+                # text position
+            else:
+                f = codecs.open(abs_path, "r", "utf-8")
+                real_source = f.read()
+                f.close()
+                # line endings could be \r\n, but sublime text has only \n after
+                # opening a file, so we have to calculate the offset betweet the
+                # returned position and the real position by counting all \r before min
+                # should be moved to a utility function
+                offset = 0
+                for i in range(0,min):
+                    
+                    if real_source[i] == u"\r":
+                        offset += 1
+                log("offset: " + str(offset))
+
+                min -= offset
+
+            if (abs_path == temp_file):
+                # file is active view
+                abs_path = view.file_name()
+                target_view = view
+   
+
+                log("line ending: " + str(view.settings().get("line_ending")))
+
+                target_view.sel().clear()
+                target_view.sel().add(sublime.Region(min))
+
+                target_view.show(sublime.Region(min))
+            else:
+                global find_decl_pos, find_decl_file
+                find_decl_file = abs_path
+                find_decl_pos = min
+                # open file and listen => HaxeFindDeclarationListener
+                target_view = view.window().open_file(abs_path)
+
+        elif "error" in json_res:
+            error = json_res["error"]
+            if (error =="inlined" and not inline_workaround):
+                # try workaround when the current method was inlined (extern inlines are forced) by the compiler
+                self.run1(use_display, True)
+            else:
+                log("nothing found (1), cannot find declaration")
+        else:
+            # can we really get here??????
+            if use_display:
+                log("nothing found yet (1), try again without display (takes longer, workaround for a compiler bug)")
+                self.run1(False)
+            else:
+                log("nothing found (2), cannot find declaration")
+
+#shared between FindDelaration Command and Listener
 find_decl_file = None
 find_decl_pos = None
 
 class HaxeFindDeclarationListener(sublime_plugin.EventListener):
 
     def on_activated(self, view):
-        log("on activated")
         global find_decl_pos, find_decl_file
+
 
         min = find_decl_pos
 
         if (view != None and view.file_name() != None):
-            if (view.file_name() ==  find_decl_file):
+            if (view.file_name() == find_decl_file):
+
                 view.sel().clear()
+
                 view.sel().add(sublime.Region(min))
-                view.show_at_center(sublime.Region(min))
+                # move to line is delayed, seems to work better
+                # without delay the animation to the region does not work properly sometimes
+                def show ():
+                    view.show_at_center(sublime.Region(min))
+                sublime.set_timeout(show, 70)
             find_decl_file = None
             find_decl_pos = None
 

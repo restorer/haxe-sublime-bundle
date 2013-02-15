@@ -9,6 +9,16 @@
             }
         ]
     },
+    { "keys": ["ctrl+shift+h", "ctrl+shift+f"], "command": "haxe_find_declaration",
+      "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
     { "keys": ["ctrl+shift+space"], "command": "haxe_display_macro_completion",
       "context":
         [
@@ -243,23 +253,28 @@
         ]
     },
     {
-        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+c"],
+        "keys": ["ctrl+shift+h","ctrl+shift+c"],
         "command": "haxe_create_type",
         "args" : {"t" : "class"}
     },
     {
-        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+i"],
+        "keys": ["ctrl+shift+h","ctrl+shift+i"],
         "command": "haxe_create_type",
         "args" : {"t" : "interface"}
     },
     {
-        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+t"],
+        "keys": ["ctrl+shift+h","ctrl+shift+t"],
         "command": "haxe_create_type",
         "args" : {"t" : "typedef"}
     },
     {
-        "keys": ["ctrl+shift+alt+h","ctrl+shift+alt+e"],
+        "keys": ["ctrl+shift+h","ctrl+shift+e"],
         "command": "haxe_create_type",
         "args" : {"t" : "enum"}
+    },
+    {
+        "keys": ["ctrl+shift+h","ctrl+shift+r"],
+        "command": "haxe_restart_server",
+        "args" : {}
     }
 ]
