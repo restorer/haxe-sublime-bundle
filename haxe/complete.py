@@ -87,7 +87,7 @@ def filter_top_level_completions (offset_char, all_comps):
     is_lower = offset_char in "abcdefghijklmnopqrstuvwxyz"
     is_upper = offset_char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     is_digit = offset_char in "0123456789"
-    is_special = offset_char in "$_"
+    is_special = offset_char in "$_#"
     offset_upper = offset_char.upper()
     offset_lower = offset_char.lower()
     if is_lower or is_upper or is_digit or is_special:
@@ -119,7 +119,7 @@ def combine_hints_and_comps (comps, hints):
             params = h[0:len(h)-1];
             params2 = params if not only_next else h[0:1]
             ret = h[len(h)-1];
-            show = "(" + ",".join([param for param in params]) + "):" + ret
+            show = "__(" + ",".join([param for param in params]) + "):" + ret
             insert = ",".join(["${" + str(index+1) + ":" + param + "}" for index, param in enumerate(params2)])
             log(insert)
             res = (show, insert)
@@ -127,8 +127,7 @@ def combine_hints_and_comps (comps, hints):
 
     all_comps = [make_hint_comp(h) for h in hints]
 
-    if (len(hints) > 0 and len(comps) > 0): 
-        all_comps.append(("------------------------------------------------", "${}"))
+
     all_comps.extend(comps)
     return all_comps
 
@@ -200,6 +199,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     
 
     complete_char = src[complete_offset-1]
+
     in_control_struct = control_struct.search( src[0:complete_offset] ) is not None
 
     on_demand = hxsettings.top_level_completions_on_demand()
@@ -208,7 +208,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 
     if (hxsettings.no_fuzzy_completion() and not manual_completion and not toplevel_complete):
         log("trigger manual -> cancel completion")
-        trigger_manual_completion(project, view, macro_completion)
+        trigger_manual_completion(view, macro_completion)
         
         return cancel_completion(view)
 
@@ -314,7 +314,10 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     
 
     if status != "":
-        hxpanel.default_panel().writeln( status )
+        if len(comps) > 0 or len(hints > 0):
+            log(status)
+        else:
+            hxpanel.default_panel().writeln( status )
 
 
     
@@ -332,6 +335,7 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
     hide_delay, show_delay = hxsettings.get_completion_delays()
 
     commas = current_input[2]
+    macro_completion = current_input[4]
 
     
     view_id = view.id()
@@ -372,11 +376,12 @@ def background_completion(project, completion_id, basic_comps, temp_file, orig_f
             project.completion_context.delayed.insert(view_id, (comps, hints))
             if only_delayed:
                 log("trigger_auto_complete")
-                view.run_command('auto_complete', {'disable_auto_insert': True})
+                trigger_manual_completion(view,macro_completion)
+                #view.run_command('auto_complete', {'disable_auto_insert': True})
             else:
                 view.run_command('hide_auto_complete')
-                log("trigger_auto_complete")
-                sublime.set_timeout(lambda : view.run_command('auto_complete', {'disable_auto_insert': True}), show_delay)
+                sublime.set_timeout(lambda : trigger_manual_completion(view,macro_completion), show_delay)
+                #sublime.set_timeout(lambda : view.run_command('auto_complete', {'disable_auto_insert': True}), show_delay)
         else:
             log("ignore background completion")
         
@@ -508,24 +513,46 @@ def get_toplevel_completion( project, src , build, is_macro_completion = False, 
         if spl[0] == "flash9" or spl[0] == "flash8" :
             spl[0] = "flash"
 
+        if c in hxconfig.ignored_types:
+            continue
+
         top = spl[0]
         
         clname = spl.pop()
+        enum_name = None;
+        if len(spl) >= 2:
+            last1 = spl[len(spl)-2]
+            last2 = spl[len(spl)-1]
+
+            if last1[0].isupper():
+                enum_name = last2
+                spl.pop()
+
         pack = ".".join(spl)
         display = clname
 
+        if enum_name is not None:
+            spl.append(enum_name) 
+            display = enum_name + "." + display
 
         if pack != "" :
             display += "\t" + pack
         else :
             display += "\tclass"
         
+        
+        
         spl.append(clname)
         
-        if pack in imported or c in imported :
+        is_imported = (pack in imported or c in imported 
+                 or (enum_name != None and (pack + "." + enum_name) in imported))
+
+        if is_imported:
+           
             cm = ( display , clname )
             # at this point we could search for enum constructors and
             # add them to toplevel completion
+        
         else :
             #add an option for full packages in completion, something like this:
             #cm = ( ".".join(spl) , ".".join(spl) )
@@ -661,7 +688,7 @@ def cancel_completion(view, hide_complete = True):
         view.run_command('hide_auto_complete')
     return [("  ...  ", "")]
 
-def trigger_manual_completion(project, view, macro_completion):
+def trigger_manual_completion(view, macro_completion):
     
     def run_complete():
         if (macro_completion):

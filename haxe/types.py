@@ -5,7 +5,7 @@ from haxe.log import log
 from haxe.tools.cache import Cache
 
 
-def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None):
+def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None, include_private_types = True):
 
 	classes = []
 	packs = []
@@ -20,7 +20,7 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 	for path in cp :
 
-		c, p = extract_types( os.path.join( base_path, path ), filtered_classes, filtered_packages )
+		c, p = extract_types( os.path.join( base_path, path ), filtered_classes, filtered_packages, 0, [], include_private_types )
 
 		classes.extend( c )
 		packs.extend( p )
@@ -33,21 +33,15 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 	return classes,packs
 
 
-# 30 seconds cache
-type_cache = Cache(1)
 
 
-def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [] ) :
+
+def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [], include_private_types = True) :
 
 	if filtered_classes is None: 
 		filtered_classes = []
 	if filtered_packages is None: 
 		filtered_packages = []
-	
-
-	cached = type_cache.get_or_default(path)
-	if cached != None:
-		return cached
 	
 
 	classes = []
@@ -59,7 +53,7 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 		cl, ext = os.path.splitext( f )
 							
 		if cl not in filtered_classes:
-			module_classes = extract_types_from_file(os.path.join( path , f ), depth, cl)
+			module_classes = extract_types_from_file(os.path.join( path , f ), depth, cl, include_private_types)
 
 			classes.extend(module_classes)
 	
@@ -74,21 +68,27 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 				next_pack = list(pack)
 				next_pack.append(f)
 				packs.append( cur_pack )
-				subclasses,subpacks = extract_types( os.path.join( path , f ) , filtered_classes, filtered_packages, depth + 1, next_pack )
+				subclasses,subpacks = extract_types( os.path.join( path , f ) , filtered_classes, filtered_packages, depth + 1, next_pack, include_private_types )
 				for cl in subclasses :
 					classes.append( f + "." + cl )
 				
 	classes.sort()
 	packs.sort()
 
-	type_cache.insert(path, (classes, packs))
+
 	
 
 	return classes, packs
 
 
+file_type_cache = {}
 
-def extract_types_from_file (file, depth, module_name = None):
+def extract_types_from_file (file, depth, module_name = None, include_private_types = True):
+
+	
+	mtime = os.path.getmtime(file)
+	if file in file_type_cache and file_type_cache[file][0] == mtime:
+		return file_type_cache[file][1]
 
 	# use cache based on last file modification
 
@@ -112,17 +112,19 @@ def extract_types_from_file (file, depth, module_name = None):
 
 	module_class_included = False
 
-	for decl in hxtools.type_decl.findall( src ):
-		t = decl[1]
+	for decl in hxtools.type_decl_with_scope.findall( src ):
+		is_private = decl[1] != None
+		t = decl[2]
 
-		if( pack_depth == depth ) :
-			if t == module_name or module_name == "StdTypes":
-				classes.append( t )
-				module_class_included = True
-			else: 
-				classes.append( module_name + "." + t )
+		if (not is_private or include_private_types):
+			if( pack_depth == depth ) :
+				if t == module_name or module_name == "StdTypes":
+					classes.append( t )
+					module_class_included = True
+				else: 
+					classes.append( module_name + "." + t )
 
-	constructors = extract_enum_constructors_from_src(src, module_name, False)
+	constructors = extract_enum_constructors_from_src(src, module_name, include_private_types)
 	
 	for c in constructors:
 
@@ -135,6 +137,8 @@ def extract_types_from_file (file, depth, module_name = None):
 	if (not module_class_included):
 		classes.append( module_name )
 
+
+	file_type_cache[file] = (mtime, classes)
 	return classes
 
 

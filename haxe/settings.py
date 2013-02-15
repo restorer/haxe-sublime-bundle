@@ -65,8 +65,8 @@ def is_delayed_completion (view = None):
 
 def get_completion_delays (view = None):
 	return (
-		get_int("haxe_completion_delayed_timing_hide", 30, view),
-		get_int("haxe_completion_delayed_timing_show", 100, view)
+		get_int("haxe_completion_delayed_timing_hide", 60, view),
+		get_int("haxe_completion_delayed_timing_show", 150, view)
 	)
 
 
@@ -86,7 +86,7 @@ def haxelib_exec (view = None):
 	return get_string("haxe_haxelib_exec", "haxelib", view)
 	
 def smart_snippets (view = None):
-	return get_string("haxe_completion_smart_snippets", "only", view)	
+	return get_string("haxe_completion_smart_snippets", "no", view)	
 
 def use_debug_panel (view = None):
 	return get_bool("haxe_use_debug_panel", False, view)	
@@ -98,4 +98,4 @@ def use_slide_panel (view = None):
 	return get_bool("haxe_use_slide_panel", True, view)	
 
 def smarts_hints_only_next (view = None):
-	return get_bool("haxe_smarts_hints_only_next", False, view)	
+	return get_bool("haxe_smarts_hints_only_next", True, view)	

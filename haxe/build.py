@@ -317,7 +317,7 @@ class HaxeBuild :
 
 		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
 		log("update types for " + str(self.classpaths))		
-		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ), [], [] )
+		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ), [], [], include_private_types = False )
 
 		self.classes = classes;
 		self.packages = packages;

@@ -25,6 +25,7 @@ ignored_packages = {}
 for p in ignored_packages_list:
 	ignored_packages[p] = True
 
+ignored_types = ["haxe.io.BytesData.Unsigned_char__"]
 
 nme_targets = [("Flash","flash","test"),("HTML5","html5","test"),("C++","cpp","test"),("Linux 64","linux -64","test"),("iOS - iPhone Simulator","ios -simulator","test"),("iOS - iPad Simulator","ios -simulator -ipad","test"),("iOS - Update XCode Project","ios","update"),( "Android","android","test"),("WebOS", "webos","test"),("Neko","neko","test"),("BlackBerry","blackberry","test")]
 
