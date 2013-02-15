@@ -7,6 +7,10 @@ from haxe.tools.cache import Cache
 
 def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None, include_private_types = True):
 
+
+
+	
+
 	classes = []
 	packs = []
 
@@ -37,6 +41,7 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 
 def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [], include_private_types = True) :
+
 
 	if filtered_classes is None: 
 		filtered_classes = []
@@ -85,7 +90,6 @@ file_type_cache = {}
 
 def extract_types_from_file (file, depth, module_name = None, include_private_types = True):
 
-	
 	mtime = os.path.getmtime(file)
 	if file in file_type_cache and file_type_cache[file][0] == mtime:
 		return file_type_cache[file][1]
@@ -113,10 +117,11 @@ def extract_types_from_file (file, depth, module_name = None, include_private_ty
 	module_class_included = False
 
 	for decl in hxtools.type_decl_with_scope.findall( src ):
-		is_private = decl[1] != None
+		is_private = decl[0] != None
 		t = decl[2]
-
+		
 		if (not is_private or include_private_types):
+
 			if( pack_depth == depth ) :
 				if t == module_name or module_name == "StdTypes":
 					classes.append( t )
