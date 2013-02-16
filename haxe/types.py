@@ -135,7 +135,7 @@ def extract_types_from_file (file, depth, module_name = None, include_private_ty
 	for c in constructors:
 
 		if( pack_depth == depth ) :
-			if c[0] == module_name or module_name == "StdTypes":
+			if module_name == "StdTypes":
 				classes.append( c[0] + "." + c[1] )
 			else: 
 				classes.append( module_name + "." + c[0] + "." + c[1] )	

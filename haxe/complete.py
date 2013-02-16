@@ -520,6 +520,7 @@ def get_toplevel_completion( project, src , build, is_macro_completion = False, 
         
         clname = spl.pop()
         enum_name = None;
+
         if len(spl) >= 2:
             last1 = spl[len(spl)-2]
             last2 = spl[len(spl)-1]
@@ -527,8 +528,11 @@ def get_toplevel_completion( project, src , build, is_macro_completion = False, 
             if last1[0].isupper():
                 enum_name = last2
                 spl.pop()
-
+                if enum_name == last1:
+                    spl.pop();
+                     
         pack = ".".join(spl)
+
         display = clname
 
         if enum_name is not None:
