@@ -105,7 +105,11 @@ class Project:
     def update_compiler_info (self):
         classes, packs, ver, std_paths = collect_compiler_info(self.project_path)
 
-        self.serverMode = int(ver.group(1)) >= 209
+        #assume it's supported if no version available
+        if ver is None:
+            self.serverMode = True
+        else:
+            self.serverMode = int(ver.group(1)) >= 209
 
         self.std_paths = std_paths
         self.std_packages = packs
