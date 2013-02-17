@@ -58,10 +58,10 @@ def top_level_completions_on_demand (view = None):
 	return get_bool("haxe_completions_top_level_only_on_demand", False, view)
 
 def only_delayed_completions (view = None):
-	return get_bool("haxe_completions_only_delayed", False, view)
+	return get_bool("haxe_completions_only_delayed", True, view)
 
 def is_delayed_completion (view = None):
-	return get_bool("haxe_completion_delayed", False, view)
+	return get_bool("haxe_completion_delayed", True, view)
 
 def get_completion_delays (view = None):
 	return (
