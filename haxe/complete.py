@@ -314,7 +314,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     
 
     if status != "":
-        if len(comps) > 0 or len(hints > 0):
+        if len(comps) > 0 or len(hints) > 0:
             log(status)
         else:
             hxpanel.default_panel().writeln( status )
