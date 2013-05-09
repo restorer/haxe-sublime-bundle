@@ -276,7 +276,7 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
         view.run_command("undo")
 
 
-class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
+class HaxeDisplayCompletionCommand( sublime_plugin.TextCommand ):
 
     def run( self , edit ) :
 
@@ -285,7 +285,7 @@ class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
         view = self.view
         project = hxproject.current_project(view)
         project.completion_context.set_manual_trigger(view, False)
-        
+        project.completion_context.set_type(view, "normal")
 
         self.view.run_command( "auto_complete" , {
             "api_completions_only" : True,
@@ -295,7 +295,7 @@ class HaxeDisplayCompletion( sublime_plugin.TextCommand ):
         })
 
 
-class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
+class HaxeDisplayMacroCompletionCommand( sublime_plugin.TextCommand ):
     
     def run( self , edit ) :
         
@@ -304,6 +304,26 @@ class HaxeDisplayMacroCompletion( sublime_plugin.TextCommand ):
         view = self.view
         project = hxproject.current_project(view)
         project.completion_context.set_manual_trigger(view, True)
+        project.completion_context.set_type(view, "macro")
+        
+        view.run_command( "auto_complete" , {
+            "api_completions_only" : True,
+            "disable_auto_insert" : True,
+            "next_completion_if_showing" : True,
+            'auto_complete_commit_on_tab': True
+        } )
+
+class HaxeHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
+    
+    def run( self , edit ) :
+        
+        log("run HaxeHintDisplayCompletion")
+        
+        view = self.view
+        project = hxproject.current_project(view)
+        
+        project.completion_context.set_manual_trigger(view, True)
+        project.completion_context.set_type(view, "hint")
         
         
         view.run_command( "auto_complete" , {
@@ -345,6 +365,17 @@ class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
         else:
             project.run_sublime_build( view )
 
+class HaxeRunBuildAltCommand( sublime_plugin.TextCommand ):
+    def run( self , edit ) :
+        view = self.view
+        log("run HaxeRunBuildCommand")
+        project = hxproject.current_project(self.view)
+
+        if len(project.builds) == 0:
+            log("no builds available")
+            project.extract_build_args(view, True);
+        else:
+            project.run_build( view )
 
 class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :

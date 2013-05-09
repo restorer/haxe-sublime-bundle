@@ -10,7 +10,7 @@ import haxe.types as hxtypes
 import haxe.lib as hxlib
 import haxe.settings as hxsettings 
 import haxe.tools.path as path_tools
-
+import haxe.panel as hxpanel
 from haxe.execute import run_cmd, run_cmd_async
 from haxe.log import log
 
@@ -60,11 +60,15 @@ def hxml_to_builds (build, folder):
 			spl = l.split(" ")
 			current_build.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
 		
+		if l.startswith("--macro"):
+			spl = l.split(" ")
+			current_build.args.append( ( "--macro" , '"' +  "\"".join( " ".join(spl[1:]).split("\"")  ) + '"' ))	
+
 		for flag in [ "lib" , "D" , "swf-version" , "swf-header", 
 					"debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , 
 					"-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , 
-					"-js-namespace" , "-interp" , "-macro" , "-dead-code-elimination" , 
-					"-remap" , "-php-front" , "-php-lib", "dce" , "-js-modern", "-times" ] :
+					"-js-namespace" , "-interp" , "-dead-code-elimination" , 
+					"-php-front" , "-php-lib", "dce" , "-js-modern", "-times" ] :
 			if l.startswith( "-"+flag ) :
 				current_build.args.append( tuple(l.split(" ") ) )
 				
@@ -414,7 +418,7 @@ class HaxeBuild :
 		b.set_build_cwd()
 		cmd = b.get_command_args(haxe_exec)
 
-		log("cmd : " + " ".join(cmd))
+
 
 		
 		return (cmd, self.get_build_folder(), nekox_file_name)
@@ -423,7 +427,16 @@ class HaxeBuild :
 		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
 		def cb (out, err):
+
+			
+			cmd_and_env = " "
+			for k in env:
+				cmd_and_env = cmd_and_env + "\nset " + k + "=" + env[k]
+			cmd_and_env = cmd_and_env + "\n" + " ".join(cmd);
+			log(cmd_and_env)
+			log("---------cmd------------")
 			log("-------------------------------------")
+			
 			log("out:" + out)
 			log("err:" + err)
 			log("---------compiler-output-------------")
@@ -438,6 +451,13 @@ class HaxeBuild :
 	def run (self, haxe_exec, env, server_mode, view, project):
 		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
+		
+		log("" + " ".join(cmd))
+		for k in env:
+			log("set " + k + "=" + env[k])
+		log("---------cmd------------")
+		
+		
 		out, err = run_cmd( args=cmd, input="", cwd=build_folder, env=env )
 		log("-------------------------------------")
 		log("out:" + out)
@@ -450,9 +470,10 @@ class HaxeBuild :
 
 	def run_neko_x(self, build_folder, neko_file_name):
 		neko_file = os.path.join(build_folder, neko_file_name)
-		log(neko_file) 
+		log("run nekox: " + neko_file) 
 		out1, err1 = run_cmd(["neko", neko_file])
-		log(out1)
+		hxpanel.default_panel().writeln(out1)
+		hxpanel.default_panel().writeln(err1)
 		#print err1
 
 

@@ -22,6 +22,46 @@ haxe_version = re.compile("haxe_([0-9]{3})",re.M)
 # allow windows drives
 haxe_file_regex = "^((?:(?:[A-Za-z][:])|/)(?:[^:]*)):([0-9]+): (?:character(?:s?)|line(?:s?)|)? ([0-9]+)-?[0-9]* :(.*)$"
 
+def haxe_build_env (project_dir):
+        
+    
+
+    libPath = hxsettings.haxe_library_path()
+    haxe_inst_path = hxsettings.haxe_inst_path()
+    neko_inst_path = hxsettings.neko_inst_path()
+
+    envPath = os.environ.copy()["PATH"]
+    
+    env = {}
+
+    paths = list()
+
+    if libPath != None:
+        path = os.path.normpath(os.path.join(project_dir, libPath))
+        env["HAXE_LIBRARY_PATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
+        env["HAXE_STD_PATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
+    
+    
+
+    if haxe_inst_path != None:
+        path = os.path.normpath(os.path.join(project_dir, haxe_inst_path))
+        env["HAXEPATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
+        paths.append(os.sep.join(path.split("/")).encode(sys.getfilesystemencoding()))
+
+    if neko_inst_path != None:
+        path = os.path.normpath(os.path.join(project_dir, neko_inst_path))
+        env["NEKO_INSTPATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
+        paths.append(os.sep.join(path.split("/")).encode(sys.getfilesystemencoding()))
+
+    
+    if len(paths) > 0:
+        env["PATH"] = os.pathsep.join(paths) + os.pathsep + envPath
+
+    
+   
+    print str(env)
+    return env
+
 class Project:
     def __init__(self, id, file, win_id, server_port):
         from haxe.complete import CompletionContext
@@ -56,48 +96,19 @@ class Project:
         haxe_exec = hxsettings.haxe_exec(view)
         if (haxe_exec != "haxe"):
             cwd = self.project_dir(".")
-            haxe_exec = os.sep.join(os.path.join(cwd, hxsettings.haxe_exec(view)).split("/"))
+            haxe_exec = os.path.normpath(os.sep.join(os.path.join(cwd, hxsettings.haxe_exec(view)).split("/")))
         return haxe_exec
 
-    def haxe_env (self,view = None):
-        env = os.environ.copy()
-       
-       # should be project env not view env
-        if view is not None :
-            user_env = view.settings().get('build_env')
-            if user_env:
-                env.update(user_env)
-
-        cwd = self.project_dir(".")
-        libPath = hxsettings.haxe_library_path()
-        if libPath != None :
-            path = os.path.join(cwd, libPath)
-            env["HAXE_LIBRARY_PATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
-
-        return env
-
-    def haxe_build_env (self,view = None):
-        
-        cwd = self.project_dir(".")
-
-        libPath = hxsettings.haxe_library_path()
-
-        
-        if libPath != None:
-            path = os.path.join(cwd, )
-            env = {
-                "HAXE_LIBRARY_PATH" : os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
-            }
-        else:
-            env = {}
-
-        return env
+    
+    def haxe_env (self, view = None):
+        return haxe_build_env(self.project_dir("."))
+    
     
     def start_server(self, view):
         cwd = self.project_dir(".")
         haxe_exec = self.haxe_exec(view)
         
-        env = self.haxe_env(view)
+        env = haxe_build_env(self.project_dir("."))
         
         self.server.start(haxe_exec, cwd, env)
         
@@ -110,7 +121,7 @@ class Project:
             self.serverMode = True
         else:
             self.serverMode = int(ver.group(1)) >= 209
-
+        print ver
         self.std_paths = std_paths
         self.std_packages = packs
         self.std_classes = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
@@ -247,17 +258,23 @@ class Project:
 
     def run_build( self, view ) :
         
-        haxe_exec = self.haxe_exec(view)
-        env = self.haxe_env(view)
-        if not self.has_build():
-            self.extract_build_args(view)
-        
-        build = self.get_build(view)
+        if view is None: 
+            view = sublime.active_window().active_view()
 
-        out, err = build.run(haxe_exec, env, self.serverMode, view, self)
+        haxe_exec = self.haxe_exec(view)
+        env = haxe_build_env(self.project_dir("."))
+        if (self.has_build()):
+            build = self.get_build(view)
+        else:
+            self.extract_build_args(view)
+            build = self.get_build(view)
+
+        out, err = build.run(haxe_exec, env, False, view, self)
         
         if (err != None and err != ""):
             msg = "build finished with errors"
+            cmd = " ".join(build.get_command_args(haxe_exec))
+            hxpanel.default_panel().writeln( "cmd: " + cmd)
             hxpanel.default_panel().writeln( msg)
             view.set_status( "haxe-status" , msg )
             hxpanel.default_panel().writeln(err)
@@ -266,6 +283,11 @@ class Project:
             msg = "build finished successfull"
             view.set_status( "haxe-status" , msg )
             hxpanel.default_panel().writeln( msg )
+
+        if (out != None):
+            hxpanel.default_panel().writeln("---output----")
+            hxpanel.default_panel().writeln( out )
+            hxpanel.default_panel().writeln("-------------")
         
     def run_sublime_build( self, view ) :
         
@@ -277,7 +299,7 @@ class Project:
 
 
         haxe_exec = self.haxe_exec(view)
-        env = self.haxe_build_env(view)
+        env = haxe_build_env(self.project_dir("."))
         
         if (self.has_build()):
             build = self.get_build(view)
@@ -399,13 +421,7 @@ def run_nme( view, build ) :
 
 
 def get_compiler_info_env (project_path):
-    lib_path = hxsettings.haxe_library_path();
-    env = os.environ.copy()
-    if lib_path != None :
-        abs_lib_path = path_tools.join_norm(project_path, lib_path)
-        env["HAXE_LIBRARY_PATH"] = abs_lib_path
-        log("export HAXE_LIBRARY_PATH=" + abs_lib_path)
-    return env
+    return haxe_build_env(project_path)
 
 
 def collect_compiler_info (project_path):
@@ -467,11 +483,13 @@ def _get_project_file(win_id = None):
         win_id = sublime.active_window().id()
 
     project = None
-    reg_session = os.path.join(sublime.packages_path(), "..", "Settings", "Session.sublime_session")
-    auto_save = os.path.join(sublime.packages_path(), "..", "Settings", "Auto Save Session.sublime_session")
+    reg_session = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Session.sublime_session"))
+    auto_save = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Auto Save Session.sublime_session"))
     session = auto_save if os.path.exists(auto_save) else reg_session
 
-
+    print auto_save
+    print reg_session
+    print session
 
     if not os.path.exists(session) or win_id == None:
         return project

@@ -78,11 +78,13 @@ from haxe.complete import (
 from haxe.commands import (
 
      HaxeGetTypeOfExprCommand
-    ,HaxeDisplayCompletion
-    ,HaxeDisplayMacroCompletion
+    ,HaxeDisplayCompletionCommand
+    ,HaxeDisplayMacroCompletionCommand
+    ,HaxeHintDisplayCompletionCommand
     ,HaxeInsertCompletionCommand
     ,HaxeSaveAllAndBuildCommand
     ,HaxeRunBuildCommand
+    ,HaxeRunBuildAltCommand
     ,HaxeSelectBuildCommand 
     ,HaxeHintCommand 
     ,HaxeRestartServerCommand
@@ -94,6 +96,7 @@ from haxe.commands import (
     ,HaxeExecCommand
     ,HaxeBuildOnSaveListener
     ,HaxeFindDeclarationListener
+
 ) 
 
 from haxe.panel import (

@@ -9,7 +9,10 @@ def get (id, view = None):
 	res = None
 	if (view != None):
 		settings = view.settings()
-		if settings.has(id):
+		pf = sublime.platform()
+		if (settings.has(id + "_" + pf)):
+			res = settings.get(id + "_" + pf)
+		if res == None and settings.has(id):
 			res = settings.get(id)
 	return res;
 
@@ -77,6 +80,19 @@ def show_completion_times (view = None):
 def haxe_exec (view = None):
 	return get_string("haxe_exec", "haxe", view)
 
+def haxe_sdk_path (view = None):
+	return get_string("haxe_sdk_path", None, view)
+
+def haxe_inst_path (view = None):
+	tmp = haxe_sdk_path(view)
+	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "haxe") if tmp != None else None
+	return get_string("haxe_inst_path", default, view)
+
+def neko_inst_path (view = None):
+	tmp = haxe_sdk_path(view)
+	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "default") if tmp != None else None
+	return get_string("neko_inst_path", default, view)
+
 def haxe_library_path (view = None):
 	res = get_string("haxe_library_path", None, view)
 	return res
@@ -86,7 +102,7 @@ def haxelib_exec (view = None):
 	return get_string("haxe_haxelib_exec", "haxelib", view)
 	
 def smart_snippets (view = None):
-	return get_string("haxe_completion_smart_snippets", "no", view)	
+	return get_string("haxe_completion_smart_snippets", "none", view)	
 
 def use_debug_panel (view = None):
 	return get_bool("haxe_use_debug_panel", False, view)	

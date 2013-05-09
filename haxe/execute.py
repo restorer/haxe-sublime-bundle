@@ -24,16 +24,20 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		cwd = "."
 
 	try: 
-		if env == None:
-			env = os.environ.copy()
-
+		base_env =os.environ.copy() 
+		# if env == None:
+		# 	env = os.environ.copy()
+		base_env.update(env)
+		env = base_env
 		for k in env:
+			
 			try:
 				val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
 			except:
 				val = env[k].encode(sys.getfilesystemencoding())
-			
+		
 			env[k] = os.path.expandvars(val)
+
 
 
 

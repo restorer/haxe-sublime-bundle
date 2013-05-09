@@ -20,10 +20,19 @@ class Server ():
 			try:
 				cmd = [haxe_path , "--wait" , str(self._server_port) ]
 
-				if env == None:
-					env = os.environ.copy()
+				full_env = os.environ.copy()
 
-				self._server_proc = Popen(cmd, cwd=cwd, env = env, stdout=PIPE, stderr=PIPE, startupinfo=STARTUP_INFO)
+				if env != None:
+					for k in env:
+						try:
+							val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
+						except:
+							val = env[k].encode(sys.getfilesystemencoding())
+						
+						full_env[k] = os.path.expandvars(val)
+				
+
+				self._server_proc = Popen(cmd, cwd=cwd, env = full_env, stdout=PIPE, stderr=PIPE, startupinfo=STARTUP_INFO)
 				poll_res = self._server_proc.poll()
 				
 				log("server started at port: " + str(self._server_port))

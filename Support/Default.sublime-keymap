@@ -29,6 +29,16 @@
             }
         ]
     },
+    { "keys": ["ctrl+shift+h","ctrl+shift+h"], "command": "haxe_hint_display_completion",
+      "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
+            }
+        ]
+    },
     // {
     //     "keys": ["ctrl+shift+ö", "ctrl+shift+t"],
     //     "command": "haxe_get_type_of_expr",
@@ -60,6 +70,18 @@
         {
             "file": "Packages/Haxe/Macros/SaveAllAndBuild.sublime-macro"
         },
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
+            }
+        ]
+    },
+    {
+        "keys": ["ctrl+shift+enter"],
+        "command": "haxe_run_build_alt",
         "context":
         [
             {

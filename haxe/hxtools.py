@@ -19,6 +19,7 @@ in_anonymous = re.compile("[{,]\s*([a-zA-Z0-9_\"\']+)\s*:\s*$" , re.M | re.U )
 
 variables = re.compile("var\s+([^:;\s]*)", re.I)
 functions = re.compile("function\s+([^;\.\(\)\s]*)", re.I)
+named_functions = re.compile("function\s+([a-zA-Z0-9_]+)\s*\(", re.I)
 function_params = re.compile("function\s+[a-zA-Z0-9_]+\s*\(([^\)]*)", re.M)
 param_default = re.compile("(=\s*\"*[^\"]*\")", re.M)
 is_type = re.compile("^[A-Z][a-zA-Z0-9_]*$")
