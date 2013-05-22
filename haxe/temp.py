@@ -53,7 +53,8 @@ def create_temp_path_and_file(build, orig_file, content):
 
 
 def remove_path (temp_path):
-	path_tools.remove_dir(temp_path)
+	pass
+	#path_tools.remove_dir(temp_path)
 
 
  
