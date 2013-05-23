@@ -66,13 +66,14 @@ from haxe.build import (
 
 from haxe.project import (
 
-    Project
+     Project
+    ,ProjectCompletionContext
 )
 
 from haxe.complete import (
 
-      HaxeCompleteListener
-     ,CompletionContext
+     HaxeCompleteListener
+     
 ) 
 
 from haxe.commands import (

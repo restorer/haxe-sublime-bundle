@@ -15,6 +15,58 @@ from haxe.execute import run_cmd
 from haxe.log import log
 from haxe.tools.cache import Cache
 
+
+
+
+TRIGGER_SUBLIME = "auto_sublime"
+TRIGGER_MANUAL_MACRO = "manual_macro"
+TRIGGER_MANUAL_NORMAL = "manual_normal"
+
+
+class ProjectCompletionContext:
+
+    def __init__(self):
+        
+        self.running = Cache()
+        self.trigger = Cache(1000)
+        self.trigger_comp = Cache(1000)
+        self.current_id = None   
+        self.errors = []
+        self.delayed = Cache(1000)
+        self.current = {
+            "input" : None,
+            "output" : None
+        }
+
+
+    def set_manual_trigger(self, view, macro):
+        
+        t = TRIGGER_MANUAL_MACRO if macro else TRIGGER_MANUAL_NORMAL
+        self.trigger.insert(view.id(), t)
+
+    def set_type(self, view, type):
+        
+        self.trigger_comp.insert(view.id(), type)
+
+    def clear_completion (self):
+        self.current = {
+            "input" : None,
+            "output" : None
+        }
+
+    def set_errors (self, errors):
+        self.errors = errors
+
+    def get_and_delete_trigger_comp(self, view):
+        return self.trigger_comp.get_and_delete(view.id(), "normal")
+
+    def get_and_delete_trigger(self, view):
+        return self.trigger.get_and_delete(view.id(), TRIGGER_SUBLIME)
+
+    def get_and_delete_delayed(self, view):
+        return self.delayed.get_and_delete(view.id())
+
+
 classpath_line = re.compile("Classpath : (.*)")
 
 haxe_version = re.compile("haxe_([0-9]{3})",re.M)
@@ -62,10 +114,13 @@ def haxe_build_env (project_dir):
     print str(env)
     return env
 
+
+
+
+
 class Project:
     def __init__(self, id, file, win_id, server_port):
-        from haxe.complete import CompletionContext
-        self.completion_context = CompletionContext()
+        self.completion_context = ProjectCompletionContext()
         self.current_build = None
         self.selecting_build = False
         self.builds = []

@@ -2,12 +2,12 @@ import sublime
 import sys
 import os
 import atexit
-import time
-from subprocess import Popen, PIPE
+from subprocess import Popen
 
 from haxe.startup import STARTUP_INFO
 from haxe.log import log
 import haxe.panel as hxpanel
+
 class Server ():
 	def __init__ (self, port):
 
