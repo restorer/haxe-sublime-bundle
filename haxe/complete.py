@@ -822,7 +822,8 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
             project = hxproject.current_project(view)
             project.clear_build()
             
-
+    
+        
     # if view is None it's a preview
     def on_activated( self , view ) :
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 

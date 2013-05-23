@@ -539,16 +539,18 @@ def select_nme_target( build, i, view ):
         hxpanel.default_panel().status( "haxe-build" , build.to_string() )
 
 
-def destroy ():
 
-    for p in _projects.data:
-        project = _projects.data[p]
-        project.destroy()
-        del _projects.data[p]
-        del project
 
 
 _projects = Cache()
+
+def destroy ():
+    global _projects
+    for p in _projects.data:
+        project = _projects.data[p][1]
+        project.destroy()
+    _projects = Cache()
+
 _next_server_port = [6000]
 def current_project(view = None):
 
@@ -567,7 +569,7 @@ def current_project(view = None):
     log(remove)
     for pid in remove:
         log(pid)
-        project = _projects.data[pid]
+        project = _projects.data[pid][1]
         project.destroy()
         log("delete project from memory")
         del _projects.data[pid]

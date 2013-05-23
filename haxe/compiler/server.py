@@ -1,6 +1,7 @@
 import sublime
 import sys
 import os
+import atexit
 import time
 from subprocess import Popen, PIPE
 
@@ -9,9 +10,12 @@ from haxe.log import log
 import haxe.panel as hxpanel
 class Server ():
 	def __init__ (self, port):
+
 		self._server_proc = None
 		self._server_port = port
 		self._orig_server_port = port
+
+		atexit.register(lambda: self.stop())
 
 	def get_server_port (self):
 		return self._server_port
@@ -57,8 +61,10 @@ class Server ():
 					log("Server starting error")
 					hxpanel.default_panel().writeln(msg)
 					#sublime.error_message(msg)
+			except e:
+				log(str(e))
 			
-	def stop( self, completeCallback) :
+	def stop( self, completeCallback = None) :
 		try:
 			proc = self._server_proc
 
@@ -73,10 +79,13 @@ class Server ():
 				# running the process on the same port causes zombie processes
 				# increment the server port to avoid this
 				self._server_port = self._server_port + 1
+			
+			if completeCallback != None:
 				completeCallback()
-			else:
-				completeCallback()
+			
 		except:
 			pass
+	def __del__(self):
+		self.stop()
 		
 		
