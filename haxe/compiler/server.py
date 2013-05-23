@@ -1,11 +1,12 @@
 import sublime
 import sys
 import os
+import time
 from subprocess import Popen, PIPE
 
 from haxe.startup import STARTUP_INFO
 from haxe.log import log
-
+import haxe.panel as hxpanel
 class Server ():
 	def __init__ (self, port):
 		self._server_proc = None
@@ -16,6 +17,9 @@ class Server ():
 		return self._server_port
 
 	def start( self , haxe_path, cwd = None, env = None, retries = 10 ) : 
+		if not hasattr(self, "_server_proc"):
+			self._server_proc = None
+		
 		if self._server_proc is None : 
 			try:
 				cmd = [haxe_path , "--wait" , str(self._server_port) ]
@@ -32,8 +36,10 @@ class Server ():
 						full_env[k] = os.path.expandvars(val)
 				
 
-				self._server_proc = Popen(cmd, cwd=cwd, env = full_env, stdout=PIPE, stderr=PIPE, startupinfo=STARTUP_INFO)
-				poll_res = self._server_proc.poll()
+				self._server_proc = Popen(cmd, cwd=cwd, env = full_env, startupinfo=STARTUP_INFO)
+				self._server_proc.poll()
+				#self._server_proc.stderr.close()
+				#self._server_proc.stdout.close()
 				
 				log("server started at port: " + str(self._server_port))
 				
@@ -50,17 +56,27 @@ class Server ():
 					msg = msg.format((self._orig_server_port, self._server_port))
 					log("Server starting error")
 					hxpanel.default_panel().writeln(msg)
-					sublime.error_message(msg)
+					#sublime.error_message(msg)
 			
-	def stop( self ) :
+	def stop( self, completeCallback) :
 		try:
 			proc = self._server_proc
 
 			if proc is not None :
+				self._server_proc = None
+				del self._server_proc
 				proc.terminate()
 				proc.kill()
 				proc.wait()
+				proc = None
+				del proc
+				# running the process on the same port causes zombie processes
+				# increment the server port to avoid this
+				self._server_port = self._server_port + 1
+				completeCallback()
+			else:
+				completeCallback()
 		except:
 			pass
 		
-		self._server_proc = None
+		

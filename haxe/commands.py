@@ -408,8 +408,8 @@ class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
         
         project = hxproject.current_project(view)
 
-        project.server.stop()
-        project.start_server( view )
+        project.server.stop(lambda: project.start_server( view ) )
+        
 
 
 
