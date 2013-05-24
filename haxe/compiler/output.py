@@ -76,11 +76,6 @@ def split_signature (signature):
 	return types
 
 
-
-
-
-
-
 def get_type_hint (types):
 	hints = []
 	for i in types :
@@ -89,6 +84,55 @@ def get_type_hint (types):
 		hints.append( hint_types )
 	return hints
 
+def completion_field_to_entry(name, sig, doc):
+	insert = name
+	label = name
+	
+	smart_snippets = hxsettings.smart_snippets()
+	not_smart = not smart_snippets
+
+	if sig is not None :
+		types = split_signature(sig) 
+		
+		
+		
+		ret = types.pop()
+
+		if( len(types) > 0 ) :
+			
+			if len(types) == 1 and types[0] == "Void" :
+				label = name + "()\t"+ ret if not_smart else name + "()\t"+ ret
+				insert = name if not_smart else "" + name + "${1:()}"
+			else:
+				def escape_type (x):
+					return x.replace("}", "\}").replace("{", "\{")
+
+				label = name + "( " + " , ".join( types ) + " )\t" + ret if not_smart else "" + name + "( " + " , ".join( types ) + " )\t" + ret
+				
+				if len(label) > 40: # compact arguments
+					label = hxtools.compact_func.sub("(...)", label);
+				
+				new_types = list(types)
+				for i in range(0, len(new_types)):
+					new_types[i] = "${" + str(i+2) + ":" + escape_type(new_types[i]) + "}"
+
+				insert = name if not_smart else name + "${1:( " + " , ".join( new_types ) + " )}"
+		else :
+			label = name + "\t" + ret
+	else :
+		label = name + "\tclass" if re.match("^[A-Z]",name ) else name + "\tpackage"
+			
+	
+	if len(label) > 40: # compact return type
+		m = hxtools.compact_prop.search(label)
+		if m is not None:
+			label = hxtools.compact_prop.sub(": " + m.group(1), label)
+	
+	res = CompletionEntry( label, insert, doc )
+
+	return res
+		
+
 def collect_completion_fields (li):
 	comps = []
 	if li is not None : 
@@ -96,82 +140,18 @@ def collect_completion_fields (li):
 			name = i.get("n")
 			sig = i.find("t").text
 			doc = i.find("d").text #nothing to do
-			insert = name
-			insert_smart = None
-			hint = name
-			hint_smart = None
-
-			smart_snippets = hxsettings.smart_snippets()
-			show_smart = smart_snippets != "none"
-			show_hints = smart_snippets != "only"
-
-			smart_id = "-" if show_hints else ""
-
-			if sig is not None :
-				types = split_signature(sig) 
-				
-				def escape_type (x):
-					return x.replace("}", "\}").replace("{", "\{")
-				
-				ret = types.pop()
-
-				if( len(types) > 0 ) :
-					#cm = name + "("
-					cm = name
-					if len(types) == 1 and types[0] == "Void" :
-						types = []
-						#cm += ")"
-						hint = name + "()\t"+ ret
-						hint_smart = name + smart_id +"()\t"+ ret
-						insert = cm
-						insert_smart = "" + name + "${1:()}"
-					else:
-						hint = name + "( " + " , ".join( types ) + " )\t" + ret
-						
-						hint_smart = "" + name + smart_id +"( " + " , ".join( types ) + " )\t" + ret
-						if len(hint) > 40: # compact arguments
-							hint = hxtools.compact_func.sub("(...)", hint);
-						if len(hint_smart) > 40: # compact arguments
-							hint_smart = hxtools.compact_func.sub("(...)", hint_smart);
-						insert = cm
-						new_types = list(types)
-						for i in range(0, len(new_types)):
-							new_types[i] = "${" + str(i+2) + ":" + escape_type(new_types[i]) + "}"
-
-						insert_smart = name + "${1:( " + " , ".join( new_types ) + " )}"
-				else :
-					hint = name + "\t" + ret
-					
-			else :
-				if re.match("^[A-Z]",name ) :
-					hint = name + "\tclass"
-					
-				else :
-					hint = name + "\tpackage"
-					
-
-			#	hint += "\t" + doc
-				#print(doc)
+			entry = completion_field_to_entry(name, sig, doc)
 			
-			# store docs and after selection show them in panel (on_modified)
-
-			
-			if len(hint) > 40: # compact return type
-				m = hxtools.compact_prop.search(hint)
-				if not m is None:
-					hint = hxtools.compact_prop.sub(": " + m.group(1), hint)
-			
-			if (show_hints or hint_smart == None):
-				comps.append( ( hint, insert, doc ) )
-
-			if show_smart and hint_smart != None:
-				if len(hint_smart) > 40: # compact return type
-					m = hxtools.compact_prop.search(hint_smart)
-					if not m is None:
-						hint_smart = hxtools.compact_prop.sub(": " + m.group(1), hint_smart)
-				comps.append( ( hint_smart, insert_smart, doc ) )
+			comps.append(entry)
 
 	return comps
+
+class CompletionEntry:
+	def __init__(self, hint, insert, doc):
+		self.hint = hint
+		self.insert = insert
+		self.doc = doc
+
 
 
 def extract_errors( str ):

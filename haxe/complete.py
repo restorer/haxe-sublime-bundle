@@ -78,7 +78,7 @@ def hx_auto_complete(project, view, offset):
 
     # if completion is triggered by a background completion process
     # completion return the result
-    background_result = project.completion_context.get_and_delete_delayed(view)
+    background_result = project.completion_context.get_and_delete_async(view)
 
     if background_result is not None:
         comps = get_completions_from_background_run(background_result, view)
@@ -88,7 +88,6 @@ def hx_auto_complete(project, view, offset):
     return comps
 
 def filter_top_level_completions (offset_char, all_comps):
-    log("number of top level completions all:" + str(len(all_comps)))
         
     comps = []
 
@@ -96,10 +95,11 @@ def filter_top_level_completions (offset_char, all_comps):
     is_upper = offset_char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     is_digit = offset_char in "0123456789"
     is_special = offset_char in "$_#"
-    offset_upper = offset_char.upper()
-    offset_lower = offset_char.lower()
+    
     if is_lower or is_upper or is_digit or is_special:
-        
+        offset_upper = offset_char.upper()
+        offset_lower = offset_char.lower()
+
         for c in all_comps:
 
             id = c[1]
@@ -111,7 +111,7 @@ def filter_top_level_completions (offset_char, all_comps):
     else:
         comps = all_comps
 
-    log("number of top level completions filtered" + str(len(comps)))
+    log("number of top level completions (all: " + str(len(all_comps)) + ", filtered: " + str(len(comps)) + ")")
     return comps
 
 def combine_hints_and_comps (comps, hints, comp_type):
@@ -170,8 +170,10 @@ def should_include_top_level_completion(src, comp_type, is_new, complete_offset,
     return comp_type != "hint" and (is_new or toplevel_complete)
 
 
-def get_toplevel_completion_if_reasonable(project, src, build, macro_completion, comp_type, is_new, offset_char, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
+def get_toplevel_completion_if_reasonable(project, src, build, macro_completion, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
     
+    offset_char = src[offset]
+
     if should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
         all_comps = get_toplevel_completion( project, src , build.copy(), macro_completion, is_new )
         comps = filter_top_level_completions(offset_char, all_comps)
@@ -205,8 +207,6 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     commas, complete_offset, prev_symbol_is_comma, is_new = get_completion_info(view, offset, src)
     
     complete_char = src[complete_offset-1]
-
-    offset_char = src[offset]
 
     res = None
     
@@ -242,15 +242,17 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
         only_top_level = is_new or is_directly_after_control_struct
         #log("is_after_cs: " + str(is_directly_after_control_struct))
 
+        def get_toplevel_completions (): 
+            return get_toplevel_completion_if_reasonable(project, src, build.copy(), macro_completion, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)
+
         if only_top_level:
             log("is_new or is_directly_after_control_struct")
             log("is_after_cs: " + str(is_directly_after_control_struct))
             log("is new: " + str(is_new))
-            comps = get_toplevel_completion_if_reasonable(project, src, build.copy(), macro_completion, comp_type, is_new, offset_char, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)
-            res = comps
+            res = get_toplevel_completions()
         else:
 
-            async = hxsettings.is_delayed_completion()
+            async = hxsettings.is_async_completion()
             
             
 
@@ -263,31 +265,37 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
             use_cache = use_completion_cache(last_input, current_input)
 
 
-            comps1 = []
-            status = ""
-            hints = None
-
-            comps = get_toplevel_completion_if_reasonable(project, src, build.copy(), macro_completion, comp_type, is_new, offset_char, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)  
             if use_cache :
                 log("USE COMPLETION CACHE")
                 ret, comps1, status, hints, comp_type = cache["output"]
+                comps = get_toplevel_completions()
+                comps.extend(comps1)
+
+                log_completion_status(status, comps, hints)            
+
+                res = combine_hints_and_comps(comps, hints, comp_type)
             else :
+                comps = get_toplevel_completions()
                 ret, comps1, status, hints = get_fresh_completions(commas, complete_offset, complete_char, build, src, orig_file, project, view, macro_completion, comp_type, comps, completion_id, async, cache, current_input)
-                if not use_cache and async and hxsettings.only_delayed_completions():
-                    log("delayed is running: completion cancelled")
-                    return cancel_completion(view, True)
+                
+                if async and hxsettings.show_only_async_completions():
+                    # we don't show any completions at this point
+                    res = cancel_completion(view, True)
+                else:
+                    if not async:
+                        update_completion_cache(cache, ret, comps1, status, hints, comp_type, current_input)
+                    
+                    
+                    comps.extend(comps1)
 
-            comps.extend(comps1)
+                    log_completion_status(status, comps, hints)            
 
-            if not async:
-                cache["output"] = (ret,comps1,status, hints, comp_type)
-                cache["input"] = current_input
-            
-            log_completion_status(status, comps, hints)            
-
-            res = combine_hints_and_comps(comps, hints, comp_type)
-
+                    res = combine_hints_and_comps(comps, hints, comp_type)
     return res
+
+def update_completion_cache(cache, ret, comps1, status, hints, comp_type, current_input):
+    cache["output"] = (ret,comps1,status, hints, comp_type)
+    cache["input"] = current_input
 
 def log_completion_status(status, comps, hints):
     if status != "":
@@ -296,7 +304,7 @@ def log_completion_status(status, comps, hints):
         else:
             hxpanel.default_panel().writeln( status )    
 
-def get_fresh_completions(commas, complete_offset, complete_char, build, src, orig_file, project, view, macro_completion, comp_type, comps, completion_id, delayed, cache, current_input):
+def get_fresh_completions(commas, complete_offset, complete_char, build, src, orig_file, project, view, macro_completion, comp_type, comps, completion_id, async, cache, current_input):
     log("not use cache")
 
     if supported_compiler_completion_char(complete_char): 
@@ -306,105 +314,104 @@ def get_fresh_completions(commas, complete_offset, complete_char, build, src, or
 
         temp_path, temp_file = hxtemp.create_temp_path_and_file(build, orig_file, tmp_source)
 
+        res = None
+
         if temp_path is None or temp_file is None:
             # this should never happen, todo proper error message
             log("completion error")
-            return ("", [], "", [])
-
-        build.add_classpath(temp_path)
-        display = temp_file + "@0"
-        def run_compiler_completion (cb, async):
-            return get_compiler_completion( project, build, view, display, temp_file, orig_file , async, cb, macro_completion, comp_type )
-        if delayed:
-            log("run delayed compiler completion")
-
-            run_async_completion(project, completion_id, list(comps), temp_file, orig_file,temp_path,
-                view, cache, current_input, complete_offset, run_compiler_completion, comp_type)
-            
             res = ("", [], "", [])
         else:
-            log("run normal compiler completion")
-            ret0 = []
-            err0 = []
-            def cb(out1, err1):
-                ret0.append(out1)
-                err0.append(err1)
-            run_compiler_completion(cb, False)
-            ret = ret0[0]
-            err = err0[0]
-            
-            hxtemp.remove_path(temp_path)
-            hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err, commas)
-            comps1 = [(t[0], t[1]) for t in comps1]
-            highlight_errors( errors, view )
-            res = (ret, comps1, status, hints )
+
+            build.add_classpath(temp_path)
+            display = temp_file + "@0"
+            def run_compiler_completion (cb, async):
+                return get_compiler_completion( project, build, view, display, async, cb, macro_completion )
+            if async:
+                log("run async compiler completion")
+
+                run_async_completion(project, completion_id, list(comps), temp_file, orig_file,temp_path,
+                    view, cache, current_input, complete_offset, run_compiler_completion, comp_type)
+                
+                res = ("", [], "", [])
+            else:
+                log("run normal compiler completion")
+                ret0 = []
+                err0 = []
+                def cb(out1, err1):
+                    ret0.append(out1)
+                    err0.append(err1)
+                run_compiler_completion(cb, False)
+                ret = ret0[0]
+                err = err0[0]
+                
+                hxtemp.remove_path(temp_path)
+                hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err, commas)
+                comps1 = [(t.hint, t.insert) for t in comps1]
+                highlight_errors( errors, view )
+                res = (ret, comps1, status, hints )
     else:
         log("not supported completion char")
         res = ("",[], "", [])
 
     return res
 
-def async_completion_finished(ret_, err_, temp_file, orig_file, commas, timer, project, view, temp_path, comps, completion_id, comp_type, cache, current_input, basic_comps, view_id, only_delayed, macro_completion, show_delay):
+def async_completion_finished(ret_, err_, temp_file, orig_file, commas, project, view, temp_path, comps, completion_id, comp_type, cache, current_input, view_id, only_async, macro_completion, show_delay):
+    
     hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_, commas)
 
-        
-    comps_ = [(t[0], t[1]) for t in comps_]
+    # we don't need doc here
+    comps_ = [(t.hint, t.insert) for t in comps_]
             
-    log("background completion time: " + str(time.time() - timer))
     project.completion_context.set_errors(errors)
     highlight_errors( errors, view )
 
-    
     hxtemp.remove_path(temp_path)
-    comps.extend(comps_)
 
-    
     if completion_id == project.completion_context.current_id:
-        cache["output"] = (ret_,comps_,status_, hints, comp_type)
-        cache["input"] = current_input
-    else:
-        log("ignored completion")
-    
-    # do we still need this completion, or is it old
-    has_new_comps = len(comps) > len(basic_comps)
-    has_hints = len(hints) > 0
-    if completion_id == project.completion_context.current_id and (has_new_comps or hxsettings.only_delayed_completions() or has_hints):
-        
-        project.completion_context.delayed.insert(view_id, (comps, hints, comp_type))
-        if only_delayed:
-            log("trigger_auto_complete")
-            if (comp_type == "hint"):
-                trigger_manual_completion_type(view,comp_type)    
+        update_completion_cache(cache, ret_, comps_, status_, hints, comp_type, current_input)
+
+        # do we still need this completion, or is it old
+        has_new_comps = len(comps_) > 0
+        has_hints = len(hints) > 0
+        if completion_id == project.completion_context.current_id and (has_new_comps or hxsettings.show_only_async_completions() or has_hints):
+            new_comps = list(comps)
+            new_comps.extend(comps_)
+            project.completion_context.async.insert(view_id, (new_comps, hints, comp_type))
+            if only_async:
+                log("trigger_auto_complete")
+                if (comp_type == "hint"):
+                    trigger_manual_completion_type(view,comp_type)    
+                else:
+                    trigger_manual_completion(view,macro_completion)
             else:
-                trigger_manual_completion(view,macro_completion)
-            #view.run_command('auto_complete', {'disable_auto_insert': True})
+                view.run_command('hide_auto_complete')
+                sublime.set_timeout(lambda : trigger_manual_completion(view,macro_completion), show_delay)
         else:
-            view.run_command('hide_auto_complete')
-            sublime.set_timeout(lambda : trigger_manual_completion(view,macro_completion), show_delay)
-            #sublime.set_timeout(lambda : view.run_command('auto_complete', {'disable_auto_insert': True}), show_delay)
+            log("ignore background completion")    
     else:
         log("ignore background completion")
     
     project.completion_context.running.delete(completion_id)
 
 
-def run_async_completion(project, completion_id, basic_comps, temp_file, orig_file, temp_path, 
+def run_async_completion(project, completion_id, comps, temp_file, orig_file, temp_path, 
         view, cache, current_input, complete_offset, run_compiler_completion, comp_type):
     hide_delay, show_delay = hxsettings.get_completion_delays()
 
-    commas = current_input[2]
-    macro_completion = current_input[4]
-    
     view_id = view.id()
     
-    comps = list(basic_comps) # make copy
+    only_async = hxsettings.show_only_async_completions()
 
-    only_async = hxsettings.only_delayed_completions()
-
-    timer = time.time()
+    start_time = time.time()
 
     def in_main (ret_, err_):
-        async_completion_finished(ret_, err_, temp_file, orig_file, commas, timer, project, view, temp_path, comps, completion_id, comp_type, cache, current_input, basic_comps, view_id, only_async, macro_completion, show_delay)
+        commas = current_input[2]
+        macro_completion = current_input[4]
+
+        run_time = time.time() - start_time;
+        log("async completion time: " + str(run_time))
+
+        async_completion_finished(ret_, err_, temp_file, orig_file, commas, project, view, temp_path, comps, completion_id, comp_type, cache, current_input, view_id, only_async, macro_completion, show_delay)
         
     def on_result(ret_, err_):
         # replace current completion workaround
@@ -726,7 +733,7 @@ def trigger_manual_completion_type(view, comp_type):
     sublime.set_timeout(run_complete, 20)
     
 
-def get_compiler_completion( project, build, view , display, temp_file, orig_file, async, cb, macroCompletion = False, comp_type = "normal") :
+def get_compiler_completion( project, build, view , display, async, cb, macroCompletion = False) :
         
     server_mode = project.is_server_mode()
     

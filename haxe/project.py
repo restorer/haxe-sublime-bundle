@@ -32,7 +32,7 @@ class ProjectCompletionContext:
         self.trigger_comp = Cache(1000)
         self.current_id = None   
         self.errors = []
-        self.delayed = Cache(1000)
+        self.async = Cache(1000)
         self.current = {
             "input" : None,
             "output" : None
@@ -63,8 +63,8 @@ class ProjectCompletionContext:
     def get_and_delete_trigger(self, view):
         return self.trigger.get_and_delete(view.id(), TRIGGER_SUBLIME)
 
-    def get_and_delete_delayed(self, view):
-        return self.delayed.get_and_delete(view.id())
+    def get_and_delete_async(self, view):
+        return self.async.get_and_delete(view.id())
 
 
 classpath_line = re.compile("Classpath : (.*)")

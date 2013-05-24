@@ -60,16 +60,16 @@ def no_fuzzy_completion (view = None):
 def top_level_completions_on_demand (view = None):
 	return get_bool("haxe_completions_top_level_only_on_demand", False, view)
 
-def only_delayed_completions (view = None):
-	return get_bool("haxe_completions_only_delayed", True, view)
+def show_only_async_completions (view = None):
+	return get_bool("haxe_completions_show_only_async", True, view)
 
-def is_delayed_completion (view = None):
-	return get_bool("haxe_completion_delayed", True, view)
+def is_async_completion (view = None):
+	return get_bool("haxe_completion_async", True, view)
 
 def get_completion_delays (view = None):
 	return (
-		get_int("haxe_completion_delayed_timing_hide", 60, view),
-		get_int("haxe_completion_delayed_timing_show", 150, view)
+		get_int("haxe_completion_async_timing_hide", 60, view),
+		get_int("haxe_completion_async_timing_show", 150, view)
 	)
 
 
@@ -85,11 +85,13 @@ def haxe_sdk_path (view = None):
 
 def haxe_inst_path (view = None):
 	tmp = haxe_sdk_path(view)
+	import os
 	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "haxe") if tmp != None else None
 	return get_string("haxe_inst_path", default, view)
 
 def neko_inst_path (view = None):
 	tmp = haxe_sdk_path(view)
+	import os
 	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "default") if tmp != None else None
 	return get_string("neko_inst_path", default, view)
 
@@ -102,7 +104,7 @@ def haxelib_exec (view = None):
 	return get_string("haxe_haxelib_exec", "haxelib", view)
 	
 def smart_snippets (view = None):
-	return get_string("haxe_completion_smart_snippets", "none", view)	
+	return get_bool("haxe_completion_smart_snippets", False, view)	
 
 def use_debug_panel (view = None):
 	return get_bool("haxe_use_debug_panel", False, view)	
