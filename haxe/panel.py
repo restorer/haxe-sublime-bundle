@@ -79,7 +79,7 @@ def make_tab_panel (win, name, syntax):
 	active = win.active_view()
 	v = win.new_file()
 	v.set_name(name)
-	v.set_read_only(True)
+	#v.set_read_only(True)
 	v.settings().set('word_wrap', True)
 	v.settings().set("result_file_regex", _haxe_file_regex())
 	v.settings().set("haxe_panel_win_id", win.id())
@@ -133,11 +133,11 @@ class TabPanel():
 					print "output_view_id:" + str(self.output_view_id)
 
 				if (v != None):
-					v.set_read_only(False)
+					#v.set_read_only(False)
 					edit = v.begin_edit()
 					v.insert(edit, 0, msg1)
 					v.end_edit( edit )
-					v.set_read_only(True)
+					#v.set_read_only(True)
 
 		sublime.set_timeout(f,40)
 

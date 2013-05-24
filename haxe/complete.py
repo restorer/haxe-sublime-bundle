@@ -24,7 +24,7 @@ print "initialize complete.py"
 
 lib_flag = re.compile("-lib\s+(.*?)")
 
-control_struct = re.compile( "\s*(if|switch|for|while)\($" );
+control_struct = re.compile( "\s+(if|switch|for|while)\s*\($" );
 
 bundle_file = __file__
 bundle_path = os.path.abspath(bundle_file)
@@ -151,158 +151,158 @@ def is_iterator_completion(src, offset):
     s = src
     return o > 3 and s[o] == "\n" and s[o-1] == "." and s[o-2] == "." and s[o-3] != "."
 
-def should_include_top_level_completion(comp_type, is_new, toplevel_complete):
-    return comp_type != "hint" and (is_new or toplevel_complete)
+
 
 def should_trigger_manual_hint_completion(manual_completion, complete_char):
     return not manual_completion and complete_char in "(,"
 
 
-
-
-def hx_normal_auto_complete(project, view, offset, build, cache):
-    
-    completion_id = time.time()
+def is_same_completion_already_running(project, complete_offset, view):
     last_completion_id = project.completion_context.current_id
-
-    trigger = project.completion_context.get_and_delete_trigger(view)
-    comp_type = project.completion_context.get_and_delete_trigger_comp(view)
-    
-
-    manual_completion = trigger is not hxproject.TRIGGER_SUBLIME
-
-    macro_completion = trigger is hxproject.TRIGGER_MANUAL_MACRO
+    running_completion = project.completion_context.running.get_or_default(last_completion_id, None)    
+    return running_completion is not None and running_completion[0] == complete_offset and running_completion[1] == view.id()
 
 
-    src = view_tools.get_content(view)
-    orig_file = view.file_name()
-    src_dir = os.path.dirname(orig_file)
-    
-    
-
-    #find actual autocompletable char.
-    prev = src[offset-1]
-    
-    commas, complete_offset, toplevel_complete, is_new = get_completion_info(view, offset, src, prev)
-    
-    # autocompletion is triggered, but its already 
-    # running as a background process, starting it
-    # again would result in multiple queries for
-    # the same view and src position
-    if project.completion_context.running.exists(last_completion_id):
-        o1, id1 = project.completion_context.running.get_or_default(last_completion_id, None)
-        if (o1 == complete_offset and id1 == view.id()):
-            log("cancel completion, same is running")
-            return cancel_completion(view, False)
-
-
-    
-
-    complete_char = src[complete_offset-1]
-
-    in_control_struct = control_struct.search( src[0:complete_offset] ) is not None
-
-    on_demand = hxsettings.top_level_completions_on_demand()
-
+def should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
+    skipped = src[complete_offset:offset]
+    toplevel_complete = False if not prev_symbol_is_comma else (hxsrctools.skippable.search( skipped ) is None and hxsrctools.in_anonymous.search( skipped ) is None)
     toplevel_complete = (toplevel_complete or complete_char in ":(," or in_control_struct) and not on_demand
+    return comp_type != "hint" and (is_new or toplevel_complete)
 
 
-    if should_trigger_manual_hint_completion(manual_completion, complete_char):
-        trigger_manual_completion_type(view, "hint")
-        return cancel_completion(view)
-    elif not manual_completion:
-        trigger_manual_completion(view, macro_completion )
-        return cancel_completion(view)
-
-    #if (hxsettings.no_fuzzy_completion() and not manual_completion and not toplevel_complete):
-    #    log("trigger manual -> cancel completion")
-    #    trigger_manual_completion(view, macro_completion )
-        
-        
-
-    offset_char = src[offset]
+def get_toplevel_completion_if_reasonable(project, src, build, macro_completion, comp_type, is_new, offset_char, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
     
-    
-
-    if is_iterator_completion(src, offset):
-        log("iterator completion")
-        return [(".\tint iterator", "..")]
-
-    
-    comps = []
-    log("toplevel_complete:" + str(toplevel_complete))
-
-    if should_include_top_level_completion(comp_type, is_new, toplevel_complete):
+    if should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
         all_comps = get_toplevel_completion( project, src , build.copy(), macro_completion, is_new )
         comps = filter_top_level_completions(offset_char, all_comps)
     else:
         log("comps_without_top_level")
         comps = []
+    return comps
+
+
+def get_completion_id ():
+    # make the current time the id for this completion
+    return time.time()
+
+def hx_normal_auto_complete(project, view, offset, build, cache):
+
+    log("------- COMPLETION START -----------")
+
+    completion_id = get_completion_id()
+
+    trigger = project.completion_context.get_and_delete_trigger(view)
+    comp_type = project.completion_context.get_and_delete_trigger_comp(view)
     
-    
+    manual_completion = trigger is not hxproject.TRIGGER_SUBLIME
 
-    if comp_type != "hint" and (is_new or (toplevel_complete and (in_control_struct or complete_char not in "(,")))  :
-        log("comps_from_top_level_and_control_struct")
-        return comps
-
-    delayed = hxsettings.is_delayed_completion()
-    
-    comps1 = []
-    status = ""
-
-    offset = complete_offset
-
-    current_input = create_completion_input_key(orig_file, offset, commas, src, macro_completion, complete_char, comp_type)
-
-    last_input = cache["input"]
-
-    log("DELAYED COMPLETION: " + str(delayed))
-
-    use_cache = use_completion_cache(last_input, current_input)
-
-    hints = None
-
-    if use_cache :
-        log("use completions from cache")
-        ret, comps1, status, hints, comp_type = cache["output"]
-    else :
-        ret, comps1, status, hints = get_fresh_completions(commas, complete_offset, complete_char, build, src, offset, orig_file, project, view, macro_completion, comp_type, comps, completion_id, delayed, cache, current_input)
-
-
-    comps.extend(comps1)
-
-    log("hints1:" + str(hints))
-    
-    if not delayed:
-        cache["output"] = (ret,comps1,status, hints, comp_type)
-        cache["input"] = current_input
+    macro_completion = trigger is hxproject.TRIGGER_MANUAL_MACRO
+    src = view_tools.get_content(view)
+    orig_file = view.file_name()
+    #src_dir = os.path.dirname(orig_file)
     
 
+    commas, complete_offset, prev_symbol_is_comma, is_new = get_completion_info(view, offset, src)
+    
+    complete_char = src[complete_offset-1]
+
+    offset_char = src[offset]
+
+    res = None
+    
+    # autocompletion is triggered, but its already 
+    # running as a background process, starting it
+    # again would result in multiple queries for
+    # the same view and src position
+    if is_same_completion_already_running(project, complete_offset, view):
+        log("cancel completion, same is running")
+        res = cancel_completion(view)
+    elif should_trigger_manual_hint_completion(manual_completion, complete_char):
+        trigger_manual_completion_type(view, "hint")
+        res = cancel_completion(view)
+    elif not manual_completion:
+        trigger_manual_completion(view, macro_completion )
+        res = cancel_completion(view)
+    elif is_iterator_completion(src, offset):
+        log("iterator completion")
+        res = [(".\tint iterator", "..")]
+    else:
+    
+        #toplevel_complete = should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)
+        
+        src_until_completion_offset = src[0:complete_offset]
+
+        in_control_struct = control_struct.search( src_until_completion_offset ) is not None
+
+        on_demand = hxsettings.top_level_completions_on_demand()
+
+        is_directly_after_control_struct = in_control_struct and complete_char == "("
+
+        #comp_type != "hint" and (is_new or (toplevel_complete and (in_control_struct or complete_char not in "(,")))
+        only_top_level = is_new or is_directly_after_control_struct
+        #log("is_after_cs: " + str(is_directly_after_control_struct))
+
+        if only_top_level:
+            log("is_new or is_directly_after_control_struct")
+            log("is_after_cs: " + str(is_directly_after_control_struct))
+            log("is new: " + str(is_new))
+            comps = get_toplevel_completion_if_reasonable(project, src, build.copy(), macro_completion, comp_type, is_new, offset_char, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)
+            res = comps
+        else:
+
+            async = hxsettings.is_delayed_completion()
+            
+            
+
+            current_input = create_completion_input_key(orig_file, complete_offset, commas, src, macro_completion, complete_char, comp_type)
+
+            last_input = cache["input"]
+
+            log("USE ASYNC COMPLETION: " + str(async))
+
+            use_cache = use_completion_cache(last_input, current_input)
+
+
+            comps1 = []
+            status = ""
+            hints = None
+
+            comps = get_toplevel_completion_if_reasonable(project, src, build.copy(), macro_completion, comp_type, is_new, offset_char, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)  
+            if use_cache :
+                log("USE COMPLETION CACHE")
+                ret, comps1, status, hints, comp_type = cache["output"]
+            else :
+                ret, comps1, status, hints = get_fresh_completions(commas, complete_offset, complete_char, build, src, orig_file, project, view, macro_completion, comp_type, comps, completion_id, async, cache, current_input)
+                if not use_cache and async and hxsettings.only_delayed_completions():
+                    log("delayed is running: completion cancelled")
+                    return cancel_completion(view, True)
+
+            comps.extend(comps1)
+
+            if not async:
+                cache["output"] = (ret,comps1,status, hints, comp_type)
+                cache["input"] = current_input
+            
+            log_completion_status(status, comps, hints)            
+
+            res = combine_hints_and_comps(comps, hints, comp_type)
+
+    return res
+
+def log_completion_status(status, comps, hints):
     if status != "":
         if len(comps) > 0 or len(hints) > 0:
             log(status)
         else:
-            hxpanel.default_panel().writeln( status )
+            hxpanel.default_panel().writeln( status )    
 
-
-    
-    if not use_cache and delayed and hxsettings.only_delayed_completions():
-        log("delayed is running: completion cancelled")
-        return cancel_completion(view, True)
-    
-
-    comps = combine_hints_and_comps(comps, hints, comp_type)
-
-    log("completion end")
-    return comps
-
-def get_fresh_completions(commas, complete_offset, complete_char, build, src, offset, orig_file, project, view, macro_completion, comp_type, comps, completion_id, delayed, cache, current_input):
+def get_fresh_completions(commas, complete_offset, complete_char, build, src, orig_file, project, view, macro_completion, comp_type, comps, completion_id, delayed, cache, current_input):
     log("not use cache")
 
     if supported_compiler_completion_char(complete_char): 
         log(build)
 
-        tmp_source = src[:offset] + "|" + src[offset:]
+        tmp_source = src[:complete_offset] + "|" + src[complete_offset:]
 
         temp_path, temp_file = hxtemp.create_temp_path_and_file(build, orig_file, tmp_source)
 
@@ -657,11 +657,13 @@ def count_commas_and_complete_offset (src, prev_comma, complete_offset):
     return (commas, complete_offset)
 
 
-def get_completion_info (view, offset, src, prev):
+def get_completion_info (view, offset, src):
+    prev = src[offset-1]
     commas = 0
-    toplevel_complete = False
+    
     complete_offset = offset
     is_new = False
+    prev_symbol_is_comma = False
     if (prev == " " and (offset-4 >= 0) and src[offset-4:offset-1] == "new"):
         is_new = True
     elif prev not in "(." :
@@ -678,14 +680,21 @@ def get_completion_info (view, offset, src, prev):
             commas, complete_offset = count_commas_and_complete_offset(src, prev_comma, complete_offset)
             log("commas: " + str(commas))
             #print("closedBrackets : " + str(closedBrackets))
-            
+            prev_symbol_is_comma = True
         else :
 
             complete_offset = max( prev_dot + 1, prev_par + 1 , prev_colon + 1 )
-            skipped = src[complete_offset:offset]
-            toplevel_complete = hxsrctools.skippable.search( skipped ) is None and hxsrctools.in_anonymous.search( skipped ) is None
+            
 
-    return (commas, complete_offset, toplevel_complete, is_new)
+    return (commas, complete_offset, prev_symbol_is_comma, is_new)
+
+class CompletionInfo:
+
+    def __init__(self, commas, complete_offset, toplevel_complete, is_new):
+        self.commas = commas
+        self.complete_offset = complete_offset
+        self.toplevel_complete = toplevel_complete
+        self.is_new = is_new
 
 
 def cancel_completion(view, hide_complete = True):
@@ -717,9 +726,6 @@ def trigger_manual_completion_type(view, comp_type):
     sublime.set_timeout(run_complete, 20)
     
 
-
-
-
 def get_compiler_completion( project, build, view , display, temp_file, orig_file, async, cb, macroCompletion = False, comp_type = "normal") :
         
     server_mode = project.is_server_mode()
@@ -734,8 +740,6 @@ def get_compiler_completion( project, build, view , display, temp_file, orig_fil
 
     haxe_exec = project.haxe_exec(view)
     env = project.haxe_env(view)
-
-
 
     if (async):
         

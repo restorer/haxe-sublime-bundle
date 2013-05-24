@@ -277,63 +277,39 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 
 class HaxeDisplayCompletionCommand( sublime_plugin.TextCommand ):
-
     def run( self , edit ) :
-
-        log("run HaxeDisplayCompletion")
-        
-        view = self.view
-        project = hxproject.current_project(view)
-        project.completion_context.set_manual_trigger(view, False)
-        project.completion_context.set_type(view, "normal")
-
-        self.view.run_command( "auto_complete" , {
-            "api_completions_only" : True,
-            "disable_auto_insert" : True,
-            "next_completion_if_showing" : True,
-            'auto_complete_commit_on_tab': True
-        })
+        trigger_completion(self.view, False, "macro")
 
 
 class HaxeDisplayMacroCompletionCommand( sublime_plugin.TextCommand ):
-    
     def run( self , edit ) :
+        trigger_completion(self.view, True, "macro")
         
-        log("run HaxeDisplayMacroCompletion")
-        
-        view = self.view
-        project = hxproject.current_project(view)
-        project.completion_context.set_manual_trigger(view, True)
-        project.completion_context.set_type(view, "macro")
-        
-        view.run_command( "auto_complete" , {
-            "api_completions_only" : True,
-            "disable_auto_insert" : True,
-            "next_completion_if_showing" : True,
-            'auto_complete_commit_on_tab': True
-        } )
 
 class HaxeHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
-    
     def run( self , edit ) :
-        
-        log("run HaxeHintDisplayCompletion")
-        
-        view = self.view
-        project = hxproject.current_project(view)
-        
-        project.completion_context.set_manual_trigger(view, True)
-        project.completion_context.set_type(view, "hint")
-        
-        
-        view.run_command( "auto_complete" , {
-            "api_completions_only" : True,
-            "disable_auto_insert" : True,
-            "next_completion_if_showing" : True,
-            'auto_complete_commit_on_tab': True
-        } )
+        trigger_completion(self.view, False, "hint")
 
+class HaxeMacroHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
+    def run( self , edit ) :
+        trigger_completion(self.view, True, "hint")    
         
+
+def trigger_completion (view, macro, type):
+    log("run HaxeCompletionCommand (macro:" + str(macro) + ", type:" + str(type) + ")")
+        
+    project = hxproject.current_project(view)
+    
+    project.completion_context.set_manual_trigger(view, macro)
+    project.completion_context.set_type(view, type)
+    
+    
+    view.run_command( "auto_complete" , {
+        "api_completions_only" : True,
+        "disable_auto_insert" : True,
+        "next_completion_if_showing" : True,
+        'auto_complete_commit_on_tab': True
+    } )
 
 class HaxeInsertCompletionCommand( sublime_plugin.TextCommand ):
     
@@ -385,20 +361,6 @@ class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
         hxproject.current_project(self.view).select_build( view )
 
 # called 
-class HaxeHintCommand( sublime_plugin.TextCommand ):
-    def run( self , edit ) :
-        log("run HaxeHintCommand")
-        
-        view = self.view
-        
-        view.run_command( "auto_complete" , {
-            "api_completions_only" : True,
-            "disable_auto_insert" : True,
-            "next_completion_if_showing" : True,
-            'auto_complete_commit_on_tab': True
-        } )
-        
-
 
 class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 
@@ -423,7 +385,6 @@ class HaxeGenerateImportCommand( sublime_plugin.TextCommand ):
 
     def run( self, edit ) :
         log("run HaxeGenerateImportCommand")
-        
         haxe.codegen.generate_import(self.view, edit)
         
 

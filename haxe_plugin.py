@@ -82,12 +82,12 @@ from haxe.commands import (
     ,HaxeDisplayCompletionCommand
     ,HaxeDisplayMacroCompletionCommand
     ,HaxeHintDisplayCompletionCommand
+    ,HaxeMacroHintDisplayCompletionCommand
     ,HaxeInsertCompletionCommand
     ,HaxeSaveAllAndBuildCommand
     ,HaxeRunBuildCommand
     ,HaxeRunBuildAltCommand
     ,HaxeSelectBuildCommand 
-    ,HaxeHintCommand 
     ,HaxeRestartServerCommand
     ,HaxeGenerateUsingCommand
     ,HaxeGenerateImportCommand
