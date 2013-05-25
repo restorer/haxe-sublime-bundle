@@ -51,10 +51,209 @@ def hxml_auto_complete( project, view , offset ) :
         return []
 
 
-class CompletionContext:
-    pass
+
 
 # ------------------- HX COMPLETION -------------------------
+
+
+# ------------------- DATA ----------------------------------
+
+def lazyprop(fn):
+    attr_name = '_lazy_' + fn.__name__
+    @property
+    def _lazyprop(self):
+        if not hasattr(self, attr_name):
+            setattr(self, attr_name, fn(self))
+        return getattr(self, attr_name)
+    return _lazyprop
+
+COMPLETION_TRIGGER_MANUAL = 1
+COMPLETION_TRIGGER_AUTO = 2
+
+COMPILER_CONTEXT_MACRO = 1
+COMPILER_CONTEXT_REGULAR = 2
+
+COMPLETION_TYPE_REGULAR = 1 # regular compiler completion without hints
+COMPLETION_TYPE_HINT = 2 # compiler hints
+COMPLETION_TYPE_TOPLEVEL = 4 # include top level if useful
+COMPLETION_TYPE_TOPLEVEL_FORCED = COMPLETION_TYPE_TOPLEVEL | 8 # force inclusion of top level completion
+
+TOPLEVEL_OPTION_TYPES = 1
+TOPLEVEL_OPTION_LOCALS = 2
+TOPLEVEL_OPTION_KEYWORDS = 4
+
+TOPLEVEL_OPTION_ALL = TOPLEVEL_OPTION_KEYWORDS | TOPLEVEL_OPTION_LOCALS | TOPLEVEL_OPTION_TYPES
+
+
+
+class CompletionOptions:
+    def __init__(self, context = COMPILER_CONTEXT_REGULAR, types = COMPLETION_TYPE_REGULAR, toplevel = 0):
+        self.types = CompletionTypes(types)
+        self.toplevel = TopLevelOptions(toplevel)
+        self.context = context
+
+    def eq (self, other):
+        return self.types.eq(other.types) and self.toplevel.eq(other.toplevel) and self.context == other.context
+
+
+class CompletionTypes:
+
+    def __init__(self, val = COMPLETION_TYPE_REGULAR):
+        self._opt = val
+
+    def add (self, val):
+        self._opt |= val
+
+    def hasRegular (self):
+        return (self._opt & COMPLETION_TYPE_REGULAR) > 0
+
+    def hasHint (self):
+        return (self._opt & COMPLETION_TYPE_HINT) > 0
+    
+    def hasToplevel (self):
+        return (self._opt & COMPLETION_TYPE_TOPLEVEL) > 0
+
+    def hasToplevelForced (self):
+        return (self._opt & COMPLETION_TYPE_TOPLEVEL_FORCED) > 0
+
+    def eq (self, other):
+        return self._opt == other._opt
+
+class TopLevelOptions:
+
+    def __init__(self, val = 0):
+        self._opt = val
+
+    def set (self, val):
+        self._opt |= val
+
+    def hasTypes (self):
+        return (self._opt & TOPLEVEL_OPTION_TYPES) > 0
+
+    def hasLocals (self):
+        return (self._opt & TOPLEVEL_OPTION_LOCALS) > 0
+    
+    def hasKeywords (self):
+        return (self._opt & TOPLEVEL_OPTION_KEYWORDS) > 0
+
+    def eq (self, other):
+        return self._opt == other._opt
+
+class CompletionSettings:
+    def __init__(self, settings):
+        self.settings = settings
+
+    def smarts_hints_only_next(self):
+        return self.settings.smarts_hints_only_next()
+
+    def no_fuzzy_completion(self):
+        return self.settings.no_fuzzy_completion()
+
+    def top_level_completions_on_demand(self):
+        return self.settings.top_level_completions_on_demand()
+
+    def is_async_completion(self):
+        return self.settings.is_async_completion()
+
+    def show_only_async_completions(self):
+        return self.settings.show_only_async_completions()
+
+    def get_completion_delays(self):
+        return self.settings.get_completion_delays()
+
+    def show_completion_times(self, view):
+        return self.settings.show_completion_times(view)
+
+class CompletionResult:
+    def __init__(self, toplevel, comps, hints, options, errors):
+        self.toplevel = toplevel
+        self.comps = comps
+        self.hints = hints
+        self.errors = errors
+        self.options = options
+
+    def to_sublime_completions (self):
+        res = []
+
+        if self.options.types.hasHint():     res.extend(hints_to_sublime_completions(self.hints))
+        if self.options.types.hasToplevel(): res.extend(self.toplevel)
+        if self.options.types.hasRegular():  res.extend(self.comps)
+
+        return res
+
+
+class CompletionContext:
+    def __init__(self, view, project, offset, options, settings):
+        self.view = view
+
+        # position in src where auto completion was triggered
+        self.offset = offset
+    
+        # current project
+        self.project = project
+        
+        # context independent completion options
+        self.options = options
+
+        # user settings
+        self.settings = settings
+
+    @lazyprop
+    def orig_file(self):
+        return self.view.file_name()
+
+    # build which is used for current compiler completion
+    @lazyprop
+    def build(self):
+        if not self.project.has_build():
+            self.project.extract_build_args()
+        return self.project.get_build( self.view ).copy()
+
+    # indicates if completion starts after the first ( after a control struct like while, if, for etc.
+    @lazyprop
+    def complete_char_is_after_control_struct(self):
+        return control_struct.search( self.src_until_control_char ) is not None and self.control_char == "("
+
+    @lazyprop
+    def src_until_control_char(self):
+        return self.src[0:self.complete_offset]
+
+    # src of current file
+    @lazyprop
+    def src (self):
+        return view_tools.get_content(self.view)
+
+    @lazyprop
+    def complete_char (self):
+        return self.src[self.complete_offset]
+
+    @lazyprop
+    def offset_char (self):
+        return self.src[self.offset]
+
+    @lazyprop
+    def _completion_info(self):
+        return get_completion_info(self.view, self.offset, self.source)
+
+    @lazyprop
+    def commas(self):
+        return self._completion_info[0]
+
+    @lazyprop
+    def prev_symbol_is_comma(self):
+        return self._completion_info[2]
+
+    # position in source where compiler completion gets triggered
+    @lazyprop
+    def complete_offset(self):
+        return self._completion_info[1]
+
+    @lazyprop
+    def is_new(self):
+        return self._completion_info[3]
+
+
+# ------------------- FUNCTIONS ----------------------------------
 
 def get_completions_from_background_run(background_result, view):
     comps1 = background_result[0]
@@ -114,7 +313,8 @@ def filter_top_level_completions (offset_char, all_comps):
     log("number of top level completions (all: " + str(len(all_comps)) + ", filtered: " + str(len(comps)) + ")")
     return comps
 
-def combine_hints_and_comps (comps, hints, comp_type):
+
+def hints_to_sublime_completions(hints):
     def make_hint_comp (h):
         is_only_type = len(h) == 1
         res = None
@@ -131,7 +331,11 @@ def combine_hints_and_comps (comps, hints, comp_type):
             res = (show, insert)
         return res
 
-    all_comps = [make_hint_comp(h) for h in hints]
+    return [make_hint_comp(h) for h in hints]
+
+def combine_hints_and_comps (comps, hints, comp_type):
+    
+    all_comps = hints_to_sublime_completions(hints)
 
     if comp_type != "hint":
         all_comps.extend(comps)
@@ -189,16 +393,22 @@ def get_completion_id ():
 
 def hx_normal_auto_complete(project, view, offset, build, cache):
 
-    log("------- COMPLETION START -----------")
-
-    completion_id = get_completion_id()
-
     trigger = project.completion_context.get_and_delete_trigger(view)
     comp_type = project.completion_context.get_and_delete_trigger_comp(view)
     
     manual_completion = trigger is not hxproject.TRIGGER_SUBLIME
 
     macro_completion = trigger is hxproject.TRIGGER_MANUAL_MACRO
+
+    #options = CompletionOptions
+    settings = CompletionSettings(hxsettings)
+    #context = CompletionContext(view, project, offset, options, settings)
+
+    log("------- COMPLETION START -----------")
+
+    completion_id = get_completion_id()
+
+    
     src = view_tools.get_content(view)
     orig_file = view.file_name()
     #src_dir = os.path.dirname(orig_file)
@@ -267,9 +477,10 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 
             if use_cache :
                 log("USE COMPLETION CACHE")
-                ret, comps1, status, hints, comp_type = cache["output"]
+                ret, comps_cache, status, hints, comp_type = cache["output"]
+                # combine cache with top level completions
                 comps = get_toplevel_completions()
-                comps.extend(comps1)
+                comps.extend(comps_cache)
 
                 log_completion_status(status, comps, hints)            
 
