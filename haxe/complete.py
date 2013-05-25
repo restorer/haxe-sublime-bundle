@@ -258,6 +258,10 @@ class CompletionContext:
         return self.src[self.complete_offset-1]
 
     @lazyprop
+    def src_from_complete_to_offset(self):
+        return self.src[self.complete_offset:self.offset]
+
+    @lazyprop
     def offset_char (self):
         return self.src[self.offset]
 
@@ -392,42 +396,35 @@ def should_trigger_manual_hint_completion(manual_completion, complete_char):
     return not manual_completion and complete_char in "(,"
 
 
-def is_same_completion_already_running(project, complete_offset, view):
+def is_same_completion_already_running(ctx):
+    project = ctx.project
+    complete_offset = ctx.complete_offset
+    view = ctx.view
+
     last_completion_id = project.completion_context.current_id
     running_completion = project.completion_context.running.get_or_default(last_completion_id, None)    
     return running_completion is not None and running_completion[0] == complete_offset and running_completion[1] == view.id()
 
 def should_include_top_level_completion(ctx):
-    src = ctx.src
-    is_new = ctx.is_new
-    complete_offset = ctx.complete_offset
-    offset = ctx.offset
+    
     prev_symbol_is_comma = ctx.prev_symbol_is_comma
     on_demand = ctx.settings.top_level_completions_only_on_demand
     in_control_struct = ctx.in_control_struct
-    complete_char = ctx.complete_char
+    is_not_hint = not ctx.options.types.has_hint();
+    
+    skipped = ctx.src_from_complete_to_offset
 
-    skipped = src[complete_offset:offset]
     toplevel_complete = False if not prev_symbol_is_comma else (hxsrctools.skippable.search( skipped ) is None and hxsrctools.in_anonymous.search( skipped ) is None)
     
-    toplevel_complete = (toplevel_complete or complete_char in ":(," or in_control_struct) and not on_demand
+    toplevel_complete = (toplevel_complete or ctx.complete_char in ":(," or in_control_struct) and not on_demand
     
-    return not ctx.options.types.has_hint() and (is_new or toplevel_complete)
+    return is_not_hint and (ctx.is_new or toplevel_complete)
 
 
 def get_toplevel_completion_if_reasonable(ctx):
-    src = ctx.src
-    
-    build = ctx.build
-    project = ctx.project
-    macro_completion = ctx.options.macro_completion
-    is_new = ctx.is_new
-    
-    offset_char = ctx.offset_char
-
-    if should_include_top_level_completion(ctx):
-        all_comps = get_toplevel_completion( project, src , build.copy(), macro_completion, is_new )
-        comps = filter_top_level_completions(offset_char, all_comps)
+    if should_include_top_level_completion( ctx ):
+        all_comps = get_toplevel_completion( ctx )
+        comps = filter_top_level_completions(ctx.offset_char, all_comps)
     else:
         comps = []
     return comps
@@ -489,7 +486,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
     # running as a background process, starting it
     # again would result in multiple queries for
     # the same view and src position
-    if is_same_completion_already_running(ctx.project, ctx.complete_offset, ctx.view):
+    if is_same_completion_already_running(ctx):
         log("cancel completion, same is running")
         res = cancel_completion(ctx.view)
     elif should_trigger_manual_hint_completion(ctx.options.manual_completion, ctx.complete_char):
@@ -509,9 +506,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
 
         in_control_struct = control_struct.search( src_until_completion_offset ) is not None
 
-
         is_directly_after_control_struct = ctx.complete_char_is_after_control_struct
-
 
 
         #comp_type != "hint" and (is_new or (toplevel_complete and (in_control_struct or complete_char not in "(,")))
@@ -538,7 +533,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
             
             
 
-            current_input = create_completion_input_key(orig_file, complete_offset, commas, src, macro_completion, complete_char, comp_type)
+            current_input = create_completion_input_key(ctx, comp_type)
 
             last_input = cache["input"]
 
@@ -708,7 +703,15 @@ def run_async_completion(project, completion_id, comps, temp_file, orig_file, te
     run_compiler_completion(on_result, True)
 
 
-def create_completion_input_key (fn, offset, commas, src, macro_completion, complete_char, comp_type):
+def create_completion_input_key (ctx, comp_type):
+
+    fn = ctx.orig_file
+    offset  = ctx.offset
+    commas = ctx.commas
+    src = ctx.src
+    macro_completion = ctx.options.macro_completion
+    complete_char = ctx.complete_char
+
     return (fn,offset,commas,src[0:offset-1], macro_completion, complete_char, comp_type)
 
 
@@ -730,7 +733,14 @@ def is_package_available (target, pack):
 
     return res
 
-def get_toplevel_completion( project, src , build, is_macro_completion = False, only_types = False ) :
+def get_toplevel_completion( ctx  ) :
+    
+    project = ctx.project
+    src = ctx.src 
+    build = ctx.build.copy()
+    is_macro_completion = ctx.options.macro_completion
+    only_types = ctx.is_new
+    
     cl = []
     packs = []
     std_packages = []
