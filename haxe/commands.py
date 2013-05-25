@@ -278,7 +278,7 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 class HaxeDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        trigger_completion(self.view, False, "macro")
+        trigger_completion(self.view, False, "regular")
 
 
 class HaxeDisplayMacroCompletionCommand( sublime_plugin.TextCommand ):

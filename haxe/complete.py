@@ -87,13 +87,29 @@ TOPLEVEL_OPTION_ALL = TOPLEVEL_OPTION_KEYWORDS | TOPLEVEL_OPTION_LOCALS | TOPLEV
 
 
 class CompletionOptions:
-    def __init__(self, context = COMPILER_CONTEXT_REGULAR, types = COMPLETION_TYPE_REGULAR, toplevel = 0):
-        self.types = CompletionTypes(types)
-        self.toplevel = TopLevelOptions(toplevel)
-        self.context = context
+    def __init__(self, trigger, context = COMPILER_CONTEXT_REGULAR, types = COMPLETION_TYPE_REGULAR, toplevel = 0):
+        self._types = CompletionTypes(types)
+        self._toplevel = TopLevelOptions(toplevel)
+        self._context = context
+        self._trigger = trigger
+    @property
+    def types(self):
+        return self._types
+
+    @lazyprop
+    def manual_completion(self):
+        return self._trigger == COMPLETION_TRIGGER_MANUAL
+
+    @lazyprop
+    def macro_completion(self):
+        return self._context == COMPILER_CONTEXT_MACRO
+
+    @lazyprop
+    def regular_completion(self):
+        return self._context == COMPILER_CONTEXT_REGULAR
 
     def eq (self, other):
-        return self.types.eq(other.types) and self.toplevel.eq(other.toplevel) and self.context == other.context
+        return self._trigger == other._trigger and self._types.eq(other._types) and self._toplevel.eq(other._toplevel) and self._context == other._context
 
 
 class CompletionTypes:
@@ -104,16 +120,16 @@ class CompletionTypes:
     def add (self, val):
         self._opt |= val
 
-    def hasRegular (self):
+    def has_regular (self):
         return (self._opt & COMPLETION_TYPE_REGULAR) > 0
 
-    def hasHint (self):
+    def has_hint (self):
         return (self._opt & COMPLETION_TYPE_HINT) > 0
     
-    def hasToplevel (self):
+    def has_toplevel (self):
         return (self._opt & COMPLETION_TYPE_TOPLEVEL) > 0
 
-    def hasToplevelForced (self):
+    def has_toplevel_forced (self):
         return (self._opt & COMPLETION_TYPE_TOPLEVEL_FORCED) > 0
 
     def eq (self, other):
@@ -143,21 +159,27 @@ class CompletionSettings:
     def __init__(self, settings):
         self.settings = settings
 
+    @lazyprop
     def smarts_hints_only_next(self):
         return self.settings.smarts_hints_only_next()
 
+    @lazyprop
     def no_fuzzy_completion(self):
         return self.settings.no_fuzzy_completion()
 
-    def top_level_completions_on_demand(self):
+    @lazyprop
+    def top_level_completions_only_on_demand(self):
         return self.settings.top_level_completions_on_demand()
 
+    @lazyprop
     def is_async_completion(self):
         return self.settings.is_async_completion()
 
+    @lazyprop
     def show_only_async_completions(self):
         return self.settings.show_only_async_completions()
 
+    @lazyprop
     def get_completion_delays(self):
         return self.settings.get_completion_delays()
 
@@ -199,6 +221,10 @@ class CompletionContext:
         self.settings = settings
 
     @lazyprop
+    def id(self):
+        return get_completion_id()
+
+    @lazyprop
     def orig_file(self):
         return self.view.file_name()
 
@@ -212,10 +238,14 @@ class CompletionContext:
     # indicates if completion starts after the first ( after a control struct like while, if, for etc.
     @lazyprop
     def complete_char_is_after_control_struct(self):
-        return control_struct.search( self.src_until_control_char ) is not None and self.control_char == "("
+        return self.in_control_struct and self.control_char == "("
 
     @lazyprop
-    def src_until_control_char(self):
+    def in_control_struct(self):
+        return control_struct.search( self.src_until_complete_offset ) is not None
+
+    @lazyprop
+    def src_until_complete_offset(self):
         return self.src[0:self.complete_offset]
 
     # src of current file
@@ -225,7 +255,7 @@ class CompletionContext:
 
     @lazyprop
     def complete_char (self):
-        return self.src[self.complete_offset]
+        return self.src[self.complete_offset-1]
 
     @lazyprop
     def offset_char (self):
@@ -233,7 +263,8 @@ class CompletionContext:
 
     @lazyprop
     def _completion_info(self):
-        return get_completion_info(self.view, self.offset, self.source)
+        log("CALLED ONCE")
+        return get_completion_info(self.view, self.offset, self.src)
 
     @lazyprop
     def commas(self):
@@ -251,6 +282,8 @@ class CompletionContext:
     @lazyprop
     def is_new(self):
         return self._completion_info[3]
+
+
 
 
 # ------------------- FUNCTIONS ----------------------------------
@@ -342,12 +375,10 @@ def combine_hints_and_comps (comps, hints, comp_type):
     return all_comps
 
 def get_completions_regular(project, view, offset):
-    if not project.has_build():
-        project.extract_build_args()
-    build = project.get_build( view ).copy()
+    
     cache = project.completion_context.current
     
-    return hx_normal_auto_complete(project, view, offset, build, cache)
+    return hx_normal_auto_complete(project, view, offset, cache)
 
 
 def is_iterator_completion(src, offset):
@@ -366,23 +397,38 @@ def is_same_completion_already_running(project, complete_offset, view):
     running_completion = project.completion_context.running.get_or_default(last_completion_id, None)    
     return running_completion is not None and running_completion[0] == complete_offset and running_completion[1] == view.id()
 
+def should_include_top_level_completion(ctx):
+    src = ctx.src
+    is_new = ctx.is_new
+    complete_offset = ctx.complete_offset
+    offset = ctx.offset
+    prev_symbol_is_comma = ctx.prev_symbol_is_comma
+    on_demand = ctx.settings.top_level_completions_only_on_demand
+    in_control_struct = ctx.in_control_struct
+    complete_char = ctx.complete_char
 
-def should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
     skipped = src[complete_offset:offset]
     toplevel_complete = False if not prev_symbol_is_comma else (hxsrctools.skippable.search( skipped ) is None and hxsrctools.in_anonymous.search( skipped ) is None)
-    toplevel_complete = (toplevel_complete or complete_char in ":(," or in_control_struct) and not on_demand
-    return comp_type != "hint" and (is_new or toplevel_complete)
-
-
-def get_toplevel_completion_if_reasonable(project, src, build, macro_completion, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
     
-    offset_char = src[offset]
+    toplevel_complete = (toplevel_complete or complete_char in ":(," or in_control_struct) and not on_demand
+    
+    return not ctx.options.types.has_hint() and (is_new or toplevel_complete)
 
-    if should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char):
+
+def get_toplevel_completion_if_reasonable(ctx):
+    src = ctx.src
+    
+    build = ctx.build
+    project = ctx.project
+    macro_completion = ctx.options.macro_completion
+    is_new = ctx.is_new
+    
+    offset_char = ctx.offset_char
+
+    if should_include_top_level_completion(ctx):
         all_comps = get_toplevel_completion( project, src , build.copy(), macro_completion, is_new )
         comps = filter_top_level_completions(offset_char, all_comps)
     else:
-        log("comps_without_top_level")
         comps = []
     return comps
 
@@ -391,7 +437,7 @@ def get_completion_id ():
     # make the current time the id for this completion
     return time.time()
 
-def hx_normal_auto_complete(project, view, offset, build, cache):
+def hx_normal_auto_complete(project, view, offset, cache):
 
     trigger = project.completion_context.get_and_delete_trigger(view)
     comp_type = project.completion_context.get_and_delete_trigger_comp(view)
@@ -400,23 +446,42 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
 
     macro_completion = trigger is hxproject.TRIGGER_MANUAL_MACRO
 
-    #options = CompletionOptions
+
+    log("is macro completion :" + str(macro_completion))
+    compiler_context = COMPILER_CONTEXT_MACRO if macro_completion else COMPLETION_TYPE_REGULAR
+    completion_type = COMPLETION_TYPE_REGULAR if comp_type != "hint" else COMPLETION_TYPE_HINT
+    completion_type |= COMPLETION_TYPE_TOPLEVEL
+
+    completion_trigger = COMPLETION_TRIGGER_MANUAL if manual_completion else COMPLETION_TRIGGER_AUTO
+
+    options = CompletionOptions(completion_trigger, compiler_context, completion_type, TOPLEVEL_OPTION_ALL)
     settings = CompletionSettings(hxsettings)
-    #context = CompletionContext(view, project, offset, options, settings)
+    ctx = CompletionContext(view, project, offset, options, settings)
+
+    build = ctx.build
 
     log("------- COMPLETION START -----------")
 
-    completion_id = get_completion_id()
-
+    completion_id = ctx.id
     
-    src = view_tools.get_content(view)
-    orig_file = view.file_name()
+    src = ctx.src
+    orig_file = ctx.orig_file
     #src_dir = os.path.dirname(orig_file)
+    commas = ctx.commas
+    complete_offset = ctx.complete_offset
     
+    is_new = ctx.is_new
 
-    commas, complete_offset, prev_symbol_is_comma, is_new = get_completion_info(view, offset, src)
+    #commas, complete_offset, prev_symbol_is_comma, is_new = get_completion_info(view, offset, src)
     
-    complete_char = src[complete_offset-1]
+    complete_char = ctx.complete_char
+
+    log("comp_type:" + comp_type)
+    log("src:" + str(ctx.src))
+    log("completion_info:" + str(ctx._completion_info))
+    log("complete_offset:" + str(ctx.complete_offset))
+    
+    log("complete_char:" + complete_char)
 
     res = None
     
@@ -424,36 +489,43 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
     # running as a background process, starting it
     # again would result in multiple queries for
     # the same view and src position
-    if is_same_completion_already_running(project, complete_offset, view):
+    if is_same_completion_already_running(ctx.project, ctx.complete_offset, ctx.view):
         log("cancel completion, same is running")
-        res = cancel_completion(view)
-    elif should_trigger_manual_hint_completion(manual_completion, complete_char):
-        trigger_manual_completion_type(view, "hint")
-        res = cancel_completion(view)
+        res = cancel_completion(ctx.view)
+    elif should_trigger_manual_hint_completion(ctx.options.manual_completion, ctx.complete_char):
+        trigger_manual_completion_type(ctx.view, "hint")
+        res = cancel_completion(ctx.view)
     elif not manual_completion:
-        trigger_manual_completion(view, macro_completion )
-        res = cancel_completion(view)
-    elif is_iterator_completion(src, offset):
+        trigger_manual_completion(ctx.view, macro_completion )
+        res = cancel_completion(ctx.view)
+    elif is_iterator_completion(ctx.src, ctx.offset):
         log("iterator completion")
         res = [(".\tint iterator", "..")]
     else:
     
         #toplevel_complete = should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)
         
-        src_until_completion_offset = src[0:complete_offset]
+        src_until_completion_offset = ctx.src_until_complete_offset
 
         in_control_struct = control_struct.search( src_until_completion_offset ) is not None
 
-        on_demand = hxsettings.top_level_completions_on_demand()
 
-        is_directly_after_control_struct = in_control_struct and complete_char == "("
+        is_directly_after_control_struct = ctx.complete_char_is_after_control_struct
+
+
 
         #comp_type != "hint" and (is_new or (toplevel_complete and (in_control_struct or complete_char not in "(,")))
         only_top_level = is_new or is_directly_after_control_struct
         #log("is_after_cs: " + str(is_directly_after_control_struct))
 
+
+
+
+        log("only_top_level: " + str(only_top_level))
+        log("in_control_struct: " + str(in_control_struct))
+
         def get_toplevel_completions (): 
-            return get_toplevel_completion_if_reasonable(project, src, build.copy(), macro_completion, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)
+            return get_toplevel_completion_if_reasonable(ctx)
 
         if only_top_level:
             log("is_new or is_directly_after_control_struct")
@@ -482,7 +554,7 @@ def hx_normal_auto_complete(project, view, offset, build, cache):
                 comps = get_toplevel_completions()
                 comps.extend(comps_cache)
 
-                log_completion_status(status, comps, hints)            
+                log_completion_status(status, comps, hints)
 
                 res = combine_hints_and_comps(comps, hints, comp_type)
             else :
@@ -891,6 +963,7 @@ def get_completion_info (view, offset, src):
         prev_comma = fragment.rfind(",")
         prev_colon = fragment.rfind(":")
         prev_brace = fragment.rfind("{")
+        
         
         prev_symbol = max(prev_dot,prev_par,prev_comma,prev_brace,prev_colon)
         
