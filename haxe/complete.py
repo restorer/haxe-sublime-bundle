@@ -51,8 +51,6 @@ def hxml_auto_complete( project, view , offset ) :
         return []
 
 
-
-
 # ------------------- HX COMPLETION -------------------------
 
 
@@ -455,17 +453,11 @@ def hx_normal_auto_complete(project, view, offset, cache):
     settings = CompletionSettings(hxsettings)
     ctx = CompletionContext(view, project, offset, options, settings)
 
-    build = ctx.build
 
     log("------- COMPLETION START -----------")
 
-    completion_id = ctx.id
-    
-    src = ctx.src
-    orig_file = ctx.orig_file
+
     #src_dir = os.path.dirname(orig_file)
-    commas = ctx.commas
-    complete_offset = ctx.complete_offset
     
     is_new = ctx.is_new
 
@@ -554,7 +546,8 @@ def hx_normal_auto_complete(project, view, offset, cache):
                 res = combine_hints_and_comps(comps, hints, comp_type)
             else :
                 comps = get_toplevel_completions()
-                ret, comps1, status, hints = get_fresh_completions(commas, complete_offset, complete_char, build, src, orig_file, project, view, macro_completion, comp_type, comps, completion_id, async, cache, current_input)
+
+                ret, comps1, status, hints = get_fresh_completions(ctx, comp_type, comps, cache, current_input)
                 
                 if async and hxsettings.show_only_async_completions():
                     # we don't show any completions at this point
@@ -582,9 +575,16 @@ def log_completion_status(status, comps, hints):
         else:
             hxpanel.default_panel().writeln( status )    
 
-def get_fresh_completions(commas, complete_offset, complete_char, build, src, orig_file, project, view, macro_completion, comp_type, comps, completion_id, async, cache, current_input):
-    log("not use cache")
-
+def get_fresh_completions(ctx, comp_type, comps, cache, current_input):
+    
+    commas = ctx.commas
+    complete_offset = ctx.complete_offset
+    complete_char = ctx.complete_char
+    build = ctx.build
+    src = ctx.src
+    orig_file = ctx.orig_file
+    view = ctx.view
+    async = ctx.settings.is_async_completion
     if supported_compiler_completion_char(complete_char): 
         log(build)
 
@@ -602,13 +602,14 @@ def get_fresh_completions(commas, complete_offset, complete_char, build, src, or
 
             build.add_classpath(temp_path)
             display = temp_file + "@0"
-            def run_compiler_completion (cb, async):
-                return get_compiler_completion( project, build, view, display, async, cb, macro_completion )
+            def run_compiler_completion (cb):
+                return get_compiler_completion( ctx, display, cb )
             if async:
                 log("run async compiler completion")
 
-                run_async_completion(project, completion_id, list(comps), temp_file, orig_file,temp_path,
-                    view, cache, current_input, complete_offset, run_compiler_completion, comp_type)
+
+                run_async_completion(ctx, list(comps), temp_file, temp_path,
+                    cache, current_input, run_compiler_completion, comp_type)
                 
                 res = ("", [], "", [])
             else:
@@ -618,7 +619,7 @@ def get_fresh_completions(commas, complete_offset, complete_char, build, src, or
                 def cb(out1, err1):
                     ret0.append(out1)
                     err0.append(err1)
-                run_compiler_completion(cb, False)
+                run_compiler_completion(cb)
                 ret = ret0[0]
                 err = err0[0]
                 
@@ -633,8 +634,17 @@ def get_fresh_completions(commas, complete_offset, complete_char, build, src, or
 
     return res
 
-def async_completion_finished(ret_, err_, temp_file, orig_file, commas, project, view, temp_path, comps, completion_id, comp_type, cache, current_input, view_id, only_async, macro_completion, show_delay):
+def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, current_input, view_id):
     
+    show_delay = ctx.settings.get_completion_delays[1]
+    orig_file = ctx.orig_file
+    project = ctx.project
+    commas = ctx.commas
+    view = ctx.view
+    only_async = ctx.settings.show_only_async_completions
+    macro_completion = ctx.options.macro_completion
+    completion_id = ctx.id
+
     hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_, commas)
 
     # we don't need doc here
@@ -672,36 +682,34 @@ def async_completion_finished(ret_, err_, temp_file, orig_file, commas, project,
     project.completion_context.running.delete(completion_id)
 
 
-def run_async_completion(project, completion_id, comps, temp_file, orig_file, temp_path, 
-        view, cache, current_input, complete_offset, run_compiler_completion, comp_type):
-    hide_delay, show_delay = hxsettings.get_completion_delays()
-
-    view_id = view.id()
+def run_async_completion(ctx, comps, temp_file, temp_path, 
+        cache, current_input, run_compiler_completion, comp_type):
     
+    project = ctx.project
+    complete_offset = ctx.complete_offset
+    hide_delay = ctx.settings.get_completion_delays[0]
+    view_id = ctx.view.id()
     only_async = hxsettings.show_only_async_completions()
 
     start_time = time.time()
 
     def in_main (ret_, err_):
-        commas = current_input[2]
-        macro_completion = current_input[4]
 
         run_time = time.time() - start_time;
         log("async completion time: " + str(run_time))
 
-        async_completion_finished(ret_, err_, temp_file, orig_file, commas, project, view, temp_path, comps, completion_id, comp_type, cache, current_input, view_id, only_async, macro_completion, show_delay)
+        async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, current_input, view_id)
         
     def on_result(ret_, err_):
         # replace current completion workaround
         # delays are customizable with project settings
         sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_async else 20)
 
-    project.completion_context.running.insert(completion_id, (complete_offset, view.id()))
-    project.completion_context.current_id = completion_id
+    project.completion_context.running.insert(ctx.id, (complete_offset, view_id))
+    project.completion_context.current_id = ctx.id
 
 
-    run_compiler_completion(on_result, True)
-
+    run_compiler_completion(on_result)
 
 def create_completion_input_key (ctx, comp_type):
 
@@ -990,7 +998,6 @@ def get_completion_info (view, offset, src):
     return (commas, complete_offset, prev_symbol_is_comma, is_new)
 
 class CompletionInfo:
-
     def __init__(self, commas, complete_offset, toplevel_complete, is_new):
         self.commas = commas
         self.complete_offset = complete_offset
@@ -1027,8 +1034,13 @@ def trigger_manual_completion_type(view, comp_type):
     sublime.set_timeout(run_complete, 20)
     
 
-def get_compiler_completion( project, build, view , display, async, cb, macroCompletion = False) :
-        
+def get_compiler_completion( ctx , display, cb) :
+    project = ctx.project
+    build = ctx.build
+    view = ctx.view
+    macroCompletion = ctx.options.macro_completion
+    async = ctx.settings.is_async_completion
+
     server_mode = project.is_server_mode()
     
 
