@@ -104,34 +104,21 @@ def get_local_types (ctx):
             cl.append( t[1] )
     return cl
 
-def get_toplevel_completion( ctx  ) :
-    
-    project = ctx.project
-    build = ctx.build
-    
-
+def get_packs_and_types (ctx):
     
     build_target = get_build_target(ctx)
 
-    comps = get_toplevel_keywords(ctx)
-        
-
-    #src = hxsrctools.comments.sub("",src)
+    build_classes , build_packs = ctx.build.get_types()
 
     cl = get_local_types(ctx)
 
-
-    
     imported = get_imports(ctx)
-    
-
-    build_classes , build_packs = build.get_types()
 
     log("number of build classes: " + str(len(build_classes)))
 
     build_classes = filter_duplicate_types(build_classes, cl)
 
-    cl.extend( project.std_classes )
+    cl.extend( ctx.project.std_classes )
     
     cl.extend( build_classes )
     
@@ -140,12 +127,12 @@ def get_toplevel_completion( ctx  ) :
     log("target: " + str(build_target))
 
     packs = get_packages(ctx, build_packs)
-    
-    
-    if not ctx.is_new:
-        comps.extend(get_local_vars_and_functions(ctx))
-        
 
+    return packs, cl, imported
+
+def get_type_comps (ctx, packs, cl, imported):
+    build_target = get_build_target(ctx)
+    comps = []
     for c in cl :
         spl = c.split(".")
         if spl[0] == "flash9" or spl[0] == "flash8" :
@@ -210,7 +197,22 @@ def get_toplevel_completion( ctx  ) :
                 packs.append(p) 
 
             comps.append( cm )
+    return comps
+
+def get_toplevel_completion( ctx  ) :
+
+    comps = get_toplevel_keywords(ctx)
+    
+    packs, cl, imported = get_packs_and_types(ctx)
+    
+
+    if not ctx.is_new:
+        comps.extend(get_local_vars_and_functions(ctx))
         
+
+    comps = get_type_comps(ctx, packs, cl, imported)
+    
+    
     
     for p in packs :
         cm = (p + "\tpackage",p)
