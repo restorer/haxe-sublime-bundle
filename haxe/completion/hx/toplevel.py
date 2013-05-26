@@ -5,136 +5,6 @@ import re
 
 from haxe.tools.decorator import lazyprop
 
-def is_package_available (target, pack):
-    cls = hxconfig
-    res = True
-    
-    if target != None and pack in cls.target_packages:
-        if target in cls.target_std_packages:
-            if pack not in cls.target_std_packages[target]:
-                res = False;
-
-    return res
-
-
-def get_toplevel_keywords (ctx):
-
-    res = None
-    
-    if ctx.is_new:
-        res = []
-    else:
-        res = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
-    
-    return res
-
-def get_build_target(ctx):
-    return "neko" if ctx.options.macro_completion else ctx.build.target
-
-
-def get_local_vars_and_functions (ctx):
-    comps = []
-    for v in hxsrctools.variables.findall(ctx.src) :
-        comps.append(( v + "\tvar" , v ))
-
-    for f in hxsrctools.named_functions.findall(ctx.src) :
-        if f not in ["new"] :
-            comps.append(( f + "\tfunction" , f ))
-    #TODO can we restrict this to local scope ?
-    for params_text in hxsrctools.function_params.findall(ctx.src) :
-        cleaned_params_text = re.sub(hxsrctools.param_default,"",params_text)
-        params_list = cleaned_params_text.split(",")
-        for param in params_list:
-            a = param.strip();
-            if a.startswith("?"):
-                a = a[1:]
-            
-            idx = a.find(":") 
-            if idx > -1:
-                a = a[0:idx]
-
-            idx = a.find("=")
-            if idx > -1:
-                a = a[0:idx]
-                
-            a = a.strip()
-            cm = (a + "\tvar", a)
-            if cm not in comps:
-                comps.append( cm )
-    return comps
-
-def get_packages (ctx, build_packs):
-    packs = []
-    std_packages = []
-    build_target = get_build_target(ctx)
-    for p in ctx.project.std_packages :
-        if is_package_available(build_target, p):
-            if p == "flash9" or p == "flash8" :
-                p = "flash"
-            std_packages.append(p)
-
-    packs.extend( std_packages )
-    packs.extend( build_packs ) 
-
-    return packs
-
-
-def get_imports (ctx):
-    imports = hxsrctools.import_line.findall( ctx.src )
-    imported = []
-    for i in imports :
-        imp = i[1]
-        imported.append(imp)
-
-    return imported
-
-def filter_duplicate_types (types_to_filter, types):
-    def filter_type (x):
-        for c in types:
-            if x == c:
-                return False
-        return True
-
-    return filter(filter_type, types_to_filter)
-
-def get_local_types (ctx):
-    src = hxsrctools.comments.sub("",ctx.src)
-    cl = []
-    local_types = hxsrctools.type_decl.findall( src )
-    for t in local_types :
-        if t[1] not in cl:
-            cl.append( t[1] )
-    return cl
-
-def get_packs_and_types (ctx):
-    
-    build_classes , build_packs = ctx.build.get_types()
-
-    cl = get_local_types(ctx)
-
-    imported = get_imports(ctx)
-
-    build_classes = filter_duplicate_types(build_classes, cl)
-
-    cl.extend( ctx.project.std_classes )
-    
-    cl.extend( build_classes )
-    
-    cl.sort();
-
-    packs = get_packages(ctx, build_packs)
-
-    return packs, cl, imported
-
-
-# scuts.core.Validation.Validation.Success // enum value
-# sys.db.SpodInfos.SpodType.DBytes // enzm value
-# scuts.core.Option.Option.Some
-# scuts.core.Option.Option.None
-# scuts.core.Option // Module or class
-# sociallib.google.Gplus.RenderOptions // Type
-# sys.FileSystem // class
-
 def has_upper_first (s):
     return s[0].isupper()
 
@@ -145,7 +15,14 @@ def join_with_type(pre, type):
         res = type
     return res
 
-class HaxeType:
+def pack_convert(pack):
+    if len(pack) > 0:
+        if pack[0] in ["flash8", "flash9"]:
+            pack[0] = "flash"
+    return pack
+
+
+class HxType:
     def __init__(self, path):
         self.path = path
         self.parts = path.split(".")
@@ -252,11 +129,142 @@ class HaxeType:
         return self.path in hxconfig.ignored_types
 
 
-def pack_convert(pack):
-    if len(pack) > 0:
-        if pack[0] in ["flash8", "flash9"]:
-            pack[0] = "flash"
-    return pack
+def is_package_available (target, pack):
+    cls = hxconfig
+    res = True
+    
+    if target != None and pack in cls.target_packages:
+        if target in cls.target_std_packages:
+            if pack not in cls.target_std_packages[target]:
+                res = False;
+
+    return res
+
+
+TOP_LEVEL_KEYWORDS = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
+
+def get_toplevel_keywords (ctx):
+
+    res = None
+    
+    return [] if ctx.is_new else TOP_LEVEL_KEYWORDS
+    
+    return res
+
+def get_build_target(ctx):
+    return "neko" if ctx.options.macro_completion else ctx.build.target
+
+
+def get_local_vars(ctx):
+    comps = []
+    for v in hxsrctools.variables.findall(ctx.src) :
+        comps.append(( v + "\tvar" , v ))
+    return comps
+
+def get_local_functions(ctx):
+    comps = []
+    for f in hxsrctools.named_functions.findall(ctx.src) :
+        if f not in ["new"] :
+            comps.append(( f + "\tfunction" , f ))    
+    return comps
+
+def get_local_function_params(ctx):
+    comps = []
+    #TODO can we restrict this to local scope ?
+    for params_text in hxsrctools.function_params.findall(ctx.src) :
+        cleaned_params_text = re.sub(hxsrctools.param_default,"",params_text)
+        params_list = cleaned_params_text.split(",")
+        for param in params_list:
+            a = param.strip();
+            if a.startswith("?"):
+                a = a[1:]
+            
+            idx = a.find(":") 
+            if idx > -1:
+                a = a[0:idx]
+
+            idx = a.find("=")
+            if idx > -1:
+                a = a[0:idx]
+                
+            a = a.strip()
+            cm = (a + "\tvar", a)
+            if cm not in comps:
+                comps.append( cm )
+    return comps
+
+def get_local_vars_and_functions (ctx):
+    comps = []
+    comps.extend(get_local_vars(ctx))
+    comps.extend(get_local_functions(ctx))
+    comps.extend(get_local_function_params(ctx))
+
+    return comps
+
+def get_packages (ctx, build_packs):
+    packs = []
+    std_packages = []
+    build_target = get_build_target(ctx)
+    for p in ctx.project.std_packages :
+        if is_package_available(build_target, p):
+            if p == "flash9" or p == "flash8" :
+                p = "flash"
+            std_packages.append(p)
+
+    packs.extend( std_packages )
+    packs.extend( build_packs ) 
+
+    return packs
+
+
+def get_imports (ctx):
+    imports = hxsrctools.import_line.findall( ctx.src )
+    imported = []
+    for i in imports :
+        imp = i[1]
+        imported.append(imp)
+
+    return imported
+
+def filter_duplicate_types (types_to_filter, types):
+    def filter_type (x):
+        for c in types:
+            if x == c:
+                return False
+        return True
+
+    return filter(filter_type, types_to_filter)
+
+def get_local_types (ctx):
+    src = hxsrctools.comments.sub("",ctx.src)
+    cl = []
+    local_types = hxsrctools.type_decl.findall( src )
+    for t in local_types :
+        if t[1] not in cl:
+            cl.append( t[1] )
+    return cl
+
+def get_packs_and_types (ctx):
+    
+    build_classes , build_packs = ctx.build.get_types()
+
+    cl = get_local_types(ctx)
+
+    imported = get_imports(ctx)
+
+    build_classes = filter_duplicate_types(build_classes, cl)
+
+    cl.extend( ctx.project.std_classes )
+    
+    cl.extend( build_classes )
+    
+    cl.sort();
+
+    packs = get_packages(ctx, build_packs)
+
+    return packs, cl, imported
+
+
 
 
 def haxe_type_as_completion (type):
@@ -300,7 +308,7 @@ def get_type_comps (ctx, cl, imported):
     comps = []
     packs = []
     for c in cl :
-        ht = HaxeType(c)
+        ht = HxType(c)
         if ht.can_be_ignored:
             continue
         
