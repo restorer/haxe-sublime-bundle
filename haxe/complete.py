@@ -315,6 +315,8 @@ def get_completions_from_background_run(background_result, view):
 
     has_results = background_result.has_results()
 
+    log("has_bg_results: " + str(has_results))
+
     comps = None
 
     if (not has_results and (hxsettings.no_fuzzy_completion() or ctx.options.types.has_hint())):
@@ -388,8 +390,8 @@ def hints_to_sublime_completions(hints):
 def combine_hints_and_comps (comp_result):
     all_comps = hints_to_sublime_completions(comp_result.hints)
 
-    if not comp_result.ctx.options.types.has_hint():
-        all_comps.extend(comp_result.comps)
+    if not comp_result.ctx.options.types.has_hint() or len(comp_result.hints) == 0:
+        all_comps.extend(comp_result.all_comps())
     return all_comps
 
 def get_completions_regular(project, view, offset):
@@ -418,18 +420,12 @@ def is_same_completion_already_running(ctx):
 
 def should_include_top_level_completion(ctx):
     
-    prev_symbol_is_comma = ctx.prev_symbol_is_comma
-    on_demand = ctx.settings.top_level_completions_only_on_demand
     in_control_struct = ctx.in_control_struct
-    is_not_hint = not ctx.options.types.has_hint();
     
-    skipped = ctx.src_from_complete_to_offset
 
-    toplevel_complete = False if not prev_symbol_is_comma else (hxsrctools.skippable.search( skipped ) is None and hxsrctools.in_anonymous.search( skipped ) is None)
+    toplevel_complete = ctx.complete_char in ":(,{;" or in_control_struct or ctx.is_new
     
-    toplevel_complete = (toplevel_complete or ctx.complete_char in ":(," or in_control_struct) and not on_demand
-    
-    return is_not_hint and (ctx.is_new or toplevel_complete)
+    return toplevel_complete
 
 
 def get_toplevel_completion_if_reasonable(ctx):
@@ -551,7 +547,8 @@ def hx_normal_auto_complete(project, view, offset, cache):
                 comp_result = get_fresh_completions(ctx, toplevel_comps, cache)
                 comp_result.toplevel = toplevel_comps
 
-                if async and hxsettings.show_only_async_completions():
+
+                if async and hxsettings.show_only_async_completions() and supported_compiler_completion_char(complete_char):
                     # we don't show any completions at this point
                     res = cancel_completion(view, True)
                 else:
@@ -578,7 +575,7 @@ class CompletionResult:
         self.toplevel = toplevel
 
     def has_results (self):
-        return len(self.comps) > 0 or len(self.hints) > 0
+        return len(self.comps) > 0 or len(self.hints) > 0 or len(self.toplevel) > 0
 
     def all_comps (self):
         res = list(self.toplevel)
@@ -645,7 +642,7 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
                 res = output_to_result(ctx, temp_file, err, ret, [])
     else:
         log("not supported completion char")
-        CompletionResult.empty_result(ctx)
+        res = CompletionResult.empty_result(ctx)
 
     return res
 
@@ -656,7 +653,7 @@ def output_to_result (ctx, temp_file, err, ret, toplevel_comps):
     comps1 = [(t.hint, t.insert) for t in comps1]
     ctx.project.completion_context.set_errors(errors)
     highlight_errors( errors, ctx.view )
-    return CompletionResult(ret, comps1, status, hints, [], ctx )
+    return CompletionResult(ret, comps1, status, hints, toplevel_comps, ctx )
 
 def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id):
     
@@ -978,24 +975,24 @@ def get_completion_info (view, offset, src):
     prev_symbol_is_comma = False
     if (prev == " " and (offset-4 >= 0) and src[offset-4:offset-1] == "new"):
         is_new = True
-    elif prev not in "(." :
+    elif prev not in "(.;" :
         fragment = view.substr(sublime.Region(0,offset))
         prev_dot = fragment.rfind(".")
         prev_par = fragment.rfind("(")
         prev_comma = fragment.rfind(",")
         prev_colon = fragment.rfind(":")
         prev_brace = fragment.rfind("{")
+        prev_semi = fragment.rfind(";")
         
         
-        prev_symbol = max(prev_dot,prev_par,prev_comma,prev_brace,prev_colon)
+        prev_symbol = max(prev_dot,prev_par,prev_comma,prev_brace,prev_colon, prev_semi)
         
         if prev_symbol == prev_comma:
             commas, complete_offset = count_commas_and_complete_offset(src, prev_comma, complete_offset)
-            log("commas: " + str(commas))
             #print("closedBrackets : " + str(closedBrackets))
             prev_symbol_is_comma = True
         else :
-            complete_offset = max( prev_dot + 1, prev_par + 1 , prev_colon + 1 )
+            complete_offset = max( prev_dot + 1, prev_par + 1 , prev_colon + 1, prev_brace + 1, prev_semi + 1 )
             
 
     return (commas, complete_offset, prev_symbol_is_comma, is_new)
