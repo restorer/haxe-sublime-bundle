@@ -490,20 +490,13 @@ def hx_normal_auto_complete(project, view, offset, cache):
         res = [(".\tint iterator", "..")]
     else:
     
-        #toplevel_complete = should_include_top_level_completion(src, comp_type, is_new, complete_offset, offset, prev_symbol_is_comma, on_demand, in_control_struct, complete_char)
-        
         src_until_completion_offset = ctx.src_until_complete_offset
 
         in_control_struct = control_struct.search( src_until_completion_offset ) is not None
 
         is_directly_after_control_struct = ctx.complete_char_is_after_control_struct
 
-
-        #comp_type != "hint" and (is_new or (toplevel_complete and (in_control_struct or complete_char not in "(,")))
         only_top_level = is_new or is_directly_after_control_struct
-        #log("is_after_cs: " + str(is_directly_after_control_struct))
-
-
 
 
         log("only_top_level: " + str(only_top_level))
@@ -531,14 +524,10 @@ def hx_normal_auto_complete(project, view, offset, cache):
                 comp_result = get_fresh_completions(ctx, toplevel_comps, cache)
                 comp_result.toplevel = toplevel_comps
 
-                if async and hxsettings.show_only_async_completions() and supported_compiler_completion_char(ctx.complete_char):
+                if supported_compiler_completion_char(ctx.complete_char):
                     # we don't show any completions at this point
                     res = cancel_completion(view, True)
                 else:
-                    if not async:
-                        update_completion_cache(cache, comp_result)
-                    
-
                     res = combine_hints_and_comps(comp_result)
     return res
 
@@ -581,14 +570,12 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
     
     complete_char = ctx.complete_char
     build = ctx.build
-    orig_file = ctx.orig_file
-    async = ctx.settings.is_async_completion
+    
     if supported_compiler_completion_char(complete_char): 
-        log(build)
 
         tmp_src = ctx.temp_completion_src
 
-        temp_path, temp_file = hxtemp.create_temp_path_and_file(build, orig_file, tmp_src)
+        temp_path, temp_file = hxtemp.create_temp_path_and_file(build, ctx.orig_file, tmp_src)
 
         res = None
 
@@ -597,75 +584,27 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
             log("completion error")
             res = CompletionResult.empty_result(ctx)
         else:
-
             build.add_classpath(temp_path)
             display = temp_file + "@0"
+            view_id = ctx.view.id()
+
             def run_compiler_completion (cb):
                 return get_compiler_completion( ctx, display, cb )
-            if async:
-                log("run async compiler completion")
-                view_id = ctx.view.id()
-                def cb_async (ret_, err_):
-                    async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id)
+            
+            def cb (out, err):
+                completion_finished(ctx, out, err, temp_file, temp_path, toplevel_comps, cache, view_id)
 
-                run_async_completion(ctx, run_compiler_completion, cb_async)
-                
-                res = CompletionResult.empty_result(ctx)
-            else:
-                log("run normal compiler completion")
-                ret0 = []
-                err0 = []
-                def cb(out1, err1):
-                    ret0.append(out1)
-                    err0.append(err1)
-                run_compiler_completion(cb)
-                ret = ret0[0]
-                err = err0[0]
-                
-                hxtemp.remove_path(temp_path)
-                
-                res = output_to_result(ctx, temp_file, err, ret, [])
+            run_completion(ctx, run_compiler_completion, cb)
+            res = CompletionResult.empty_result(ctx)
+            
     else:
         log("not supported completion char")
         res = CompletionResult.empty_result(ctx)
 
     return res
 
-def run_async_completion(ctx, run_compiler_completion, cb):
-    
-    project = ctx.project
-    complete_offset = ctx.complete_offset
-    hide_delay = ctx.settings.get_completion_delays[0]
-    view_id = ctx.view.id()
-    only_async = hxsettings.show_only_async_completions()
+def completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id):
 
-    start_time = time.time()
-
-    def in_main (ret_, err_):
-        run_time = time.time() - start_time;
-        log("async completion time: " + str(run_time))
-        cb(ret_, err_)
-        
-        
-    def on_result(ret_, err_):
-        sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_async else 20)
-
-    project.completion_context.running.insert(ctx.id, (complete_offset, view_id))
-    project.completion_context.current_id = ctx.id
-
-
-    run_compiler_completion(on_result)
-
-def output_to_result (ctx, temp_file, err, ret, toplevel_comps):
-    hints, comps1, status, errors = get_completion_output(temp_file, ctx.orig_file, err, ctx.commas)
-    # we don't need doc here
-    comps1 = [(t.hint, t.insert) for t in comps1]
-    ctx.project.completion_context.set_errors(errors)
-    highlight_errors( errors, ctx.view )
-    return CompletionResult(ret, comps1, status, hints, toplevel_comps, ctx )
-
-def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id):
-    
     show_delay = ctx.settings.get_completion_delays[1]
     project = ctx.project
     view = ctx.view
@@ -700,6 +639,42 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_co
         log("ignore background completion")
     
     project.completion_context.running.delete(completion_id)
+
+
+
+def run_completion(ctx, run_compiler_completion, cb):
+    
+    project = ctx.project
+    complete_offset = ctx.complete_offset
+    hide_delay = ctx.settings.get_completion_delays[0]
+    view_id = ctx.view.id()
+    only_async = hxsettings.show_only_async_completions()
+
+    start_time = time.time()
+
+    def in_main (ret_, err_):
+        run_time = time.time() - start_time;
+        log("completion time: " + str(run_time))
+        cb(ret_, err_)
+        
+    def on_result(ret_, err_):
+        sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_async else 20)
+
+    project.completion_context.running.insert(ctx.id, (complete_offset, view_id))
+    project.completion_context.current_id = ctx.id
+
+
+    run_compiler_completion(on_result)
+
+
+
+def output_to_result (ctx, temp_file, err, ret, toplevel_comps):
+    hints, comps1, status, errors = get_completion_output(temp_file, ctx.orig_file, err, ctx.commas)
+    # we don't need doc here
+    comps1 = [(t.hint, t.insert) for t in comps1]
+    ctx.project.completion_context.set_errors(errors)
+    highlight_errors( errors, ctx.view )
+    return CompletionResult(ret, comps1, status, hints, toplevel_comps, ctx )
 
 
 
@@ -1037,9 +1012,10 @@ def get_compiler_completion( ctx , display, cb) :
     env = project.haxe_env(view)
 
     if (async):
-        
+        log("RUN ASYNC COMPLETION")
         build.run_async(haxe_exec, env, server_mode, view, project, cb)
     else:
+        log("RUN SYNC COMPLETION")
         out, err = build.run(haxe_exec, env, server_mode, view, project)
         cb(out, err)
 
