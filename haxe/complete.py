@@ -573,7 +573,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
                     res = cancel_completion(view, True)
                 else:
                     if not async:
-                        update_completion_cache(cache, comp_result, comp_type, ctx)
+                        update_completion_cache(cache, comp_result, comp_type)
                     
                     
                     comps.extend(comps1)
@@ -586,20 +586,21 @@ def hx_normal_auto_complete(project, view, offset, cache):
 
 class CompletionResult:
     @staticmethod
-    def empty_result ():
-        return CompletionResult("", [], "", [])
+    def empty_result (ctx):
+        return CompletionResult("", [], "", [], ctx)
 
 
-    def __init__(self, ret, comps, status, hints):
+    def __init__(self, ret, comps, status, hints, ctx):
         self.ret = ret
         self.comps = comps
         self.status = status
         self.hints = hints
+        self.ctx = ctx
 
 
-def update_completion_cache(cache, comp_result, comp_type, current_ctx):
+def update_completion_cache(cache, comp_result, comp_type):
     cache["output"] = (comp_result, comp_type)
-    cache["input"] = current_ctx
+    cache["input"] = comp_result.ctx
 
 def log_completion_status(status, comps, hints):
     if status != "":
@@ -630,7 +631,7 @@ def get_fresh_completions(ctx, comp_type, comps, cache):
         if temp_path is None or temp_file is None:
             # this should never happen, todo proper error message
             log("completion error")
-            res = CompletionResult.empty_result()
+            res = CompletionResult.empty_result(ctx)
         else:
 
             build.add_classpath(temp_path)
@@ -643,7 +644,7 @@ def get_fresh_completions(ctx, comp_type, comps, cache):
                 run_async_completion(ctx, list(comps), temp_file, temp_path,
                     cache, run_compiler_completion, comp_type)
                 
-                res = CompletionResult.empty_result()
+                res = CompletionResult.empty_result(ctx)
             else:
                 log("run normal compiler completion")
                 ret0 = []
@@ -659,10 +660,10 @@ def get_fresh_completions(ctx, comp_type, comps, cache):
                 hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err, commas)
                 comps1 = [(t.hint, t.insert) for t in comps1]
                 highlight_errors( errors, view )
-                res = CompletionResult(ret, comps1, status, hints )
+                res = CompletionResult(ret, comps1, status, hints, ctx )
     else:
         log("not supported completion char")
-        CompletionResult.empty_result()
+        CompletionResult.empty_result(ctx)
 
     return res
 
@@ -689,7 +690,7 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
 
     if completion_id == project.completion_context.current_id:
 
-        update_completion_cache(cache, CompletionResult(ret_, comps_, status_, hints), comp_type, ctx)
+        update_completion_cache(cache, CompletionResult(ret_, comps_, status_, hints, ctx), comp_type)
 
         # do we still need this completion, or is it old
         has_new_comps = len(comps_) > 0
