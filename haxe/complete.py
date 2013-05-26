@@ -290,6 +290,10 @@ class CompletionContext:
     def src_until_offset (self):
         return self.src[0:self.offset-1]
 
+    @lazyprop
+    def temp_completion_src(self):
+        return self.src[:self.complete_offset] + "|" + self.src[self.complete_offset:]
+
 
     def eq (self, other):
         return (
@@ -539,13 +543,13 @@ def hx_normal_auto_complete(project, view, offset, cache):
                 res = combine_hints_and_comps(out)
             else :
                 
-                comps = get_toplevel_completions()
+                toplevel_comps = get_toplevel_completions()
                 async = hxsettings.is_async_completion()
 
                 log("USE ASYNC COMPLETION: " + str(async))
 
-                comp_result = get_fresh_completions(ctx, comps, cache)
-                comp_result.toplevel = comps
+                comp_result = get_fresh_completions(ctx, toplevel_comps, cache)
+                comp_result.toplevel = toplevel_comps
 
                 if async and hxsettings.show_only_async_completions():
                     # we don't show any completions at this point
@@ -595,20 +599,16 @@ def log_completion_status(status, comps, hints):
 
 def get_fresh_completions(ctx, toplevel_comps, cache):
     
-    commas = ctx.commas
-    complete_offset = ctx.complete_offset
     complete_char = ctx.complete_char
     build = ctx.build
-    src = ctx.src
     orig_file = ctx.orig_file
-    view = ctx.view
     async = ctx.settings.is_async_completion
     if supported_compiler_completion_char(complete_char): 
         log(build)
 
-        tmp_source = src[:complete_offset] + "|" + src[complete_offset:]
+        tmp_src = ctx.temp_completion_src
 
-        temp_path, temp_file = hxtemp.create_temp_path_and_file(build, orig_file, tmp_source)
+        temp_path, temp_file = hxtemp.create_temp_path_and_file(build, orig_file, tmp_src)
 
         res = None
 
@@ -641,42 +641,37 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
                 err = err0[0]
                 
                 hxtemp.remove_path(temp_path)
-                hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err, commas)
-                comps1 = [(t.hint, t.insert) for t in comps1]
-                highlight_errors( errors, view )
-                res = CompletionResult(ret, comps1, status, hints, [], ctx )
+                
+                res = output_to_result(ctx, temp_file, err, ret, [])
     else:
         log("not supported completion char")
         CompletionResult.empty_result(ctx)
 
     return res
 
+
+def output_to_result (ctx, temp_file, err, ret, toplevel_comps):
+    hints, comps1, status, errors = get_completion_output(temp_file, ctx.orig_file, err, ctx.commas)
+    # we don't need doc here
+    comps1 = [(t.hint, t.insert) for t in comps1]
+    ctx.project.completion_context.set_errors(errors)
+    highlight_errors( errors, ctx.view )
+    return CompletionResult(ret, comps1, status, hints, [], ctx )
+
 def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id):
     
     show_delay = ctx.settings.get_completion_delays[1]
-    orig_file = ctx.orig_file
     project = ctx.project
-    commas = ctx.commas
     view = ctx.view
     only_async = ctx.settings.show_only_async_completions
     macro_completion = ctx.options.macro_completion
     completion_id = ctx.id
 
-    hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_, commas)
-
-
-    # we don't need doc here
-    comps_ = [(t.hint, t.insert) for t in comps_]
-
-    project.completion_context.set_errors(errors)
-    highlight_errors( errors, view )
-
-    hxtemp.remove_path(temp_path)
-
     if completion_id == project.completion_context.current_id:
 
-        comp_result = CompletionResult(ret_, comps_, status_, hints, list(toplevel_comps), ctx)
+        hxtemp.remove_path(temp_path)
 
+        comp_result = output_to_result(ctx, temp_file, err_, ret_, list(toplevel_comps))
         update_completion_cache(cache, comp_result)
 
         # do we still need this completion, or is it old
