@@ -306,14 +306,10 @@ class CompletionContext:
 # ------------------- FUNCTIONS ----------------------------------
 
 def get_completions_from_background_run(background_result, view):
-    comps1 = background_result.all_comps()
-    hints1 = background_result.hints
+
     ctx = background_result.ctx
-    #comp_type = background_result[2]
 
     has_results = background_result.has_results()
-    has_comps = len(comps1) > 0
-    has_hints = len(hints1) > 0 
 
     comps = None
 
@@ -534,49 +530,30 @@ def hx_normal_auto_complete(project, view, offset, cache):
             res = get_toplevel_completions()
         else:
 
-            async = hxsettings.is_async_completion()
-
-            log("USE ASYNC COMPLETION: " + str(async))
-
             last_ctx = cache["input"]
-
 
             if use_completion_cache(ctx,last_ctx) :
                 log("USE COMPLETION CACHE")
                 out = cache["output"]
 
-                comp_type = out[1]
-                comps_cache = out[0].comps
-                hints = out[0].hints
-                status = out[0].status
-
-                #ret, comps_cache, status, hints, comp_type = cache["output"]
-                # combine cache with top level completions
-                comps = get_toplevel_completions()
-                comps.extend(comps_cache)
-
-                log_completion_status(status, comps, hints)
-
-                res = combine_hints_and_comps(out[0])
+                res = combine_hints_and_comps(out)
             else :
+                
                 comps = get_toplevel_completions()
+                async = hxsettings.is_async_completion()
 
-                #ret, comps1, status, hints = get_fresh_completions(ctx, comp_type, comps, cache)
-                comp_result = get_fresh_completions(ctx, comp_type, comps, cache)
+                log("USE ASYNC COMPLETION: " + str(async))
+
+                comp_result = get_fresh_completions(ctx, comps, cache)
                 comp_result.toplevel = comps
 
-                comps1 = comp_result.comps
                 if async and hxsettings.show_only_async_completions():
                     # we don't show any completions at this point
                     res = cancel_completion(view, True)
                 else:
                     if not async:
-                        update_completion_cache(cache, comp_result, comp_type)
+                        update_completion_cache(cache, comp_result)
                     
-                    
-                    comps.extend(comps1)
-
-                    log_completion_status(status, comps, hints)            
 
                     res = combine_hints_and_comps(comp_result)
     return res
@@ -605,8 +582,8 @@ class CompletionResult:
         return res
 
 
-def update_completion_cache(cache, comp_result, comp_type):
-    cache["output"] = (comp_result, comp_type)
+def update_completion_cache(cache, comp_result):
+    cache["output"] = comp_result
     cache["input"] = comp_result.ctx
 
 def log_completion_status(status, comps, hints):
@@ -616,7 +593,7 @@ def log_completion_status(status, comps, hints):
         else:
             hxpanel.default_panel().writeln( status )    
 
-def get_fresh_completions(ctx, comp_type, comps, cache):
+def get_fresh_completions(ctx, toplevel_comps, cache):
     
     commas = ctx.commas
     complete_offset = ctx.complete_offset
@@ -648,8 +625,8 @@ def get_fresh_completions(ctx, comp_type, comps, cache):
             if async:
                 log("run async compiler completion")
 
-                run_async_completion(ctx, list(comps), temp_file, temp_path,
-                    cache, run_compiler_completion, comp_type)
+                run_async_completion(ctx, list(toplevel_comps), temp_file, temp_path,
+                    cache, run_compiler_completion)
                 
                 res = CompletionResult.empty_result(ctx)
             else:
@@ -674,7 +651,7 @@ def get_fresh_completions(ctx, comp_type, comps, cache):
 
     return res
 
-def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, view_id):
+def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id):
     
     show_delay = ctx.settings.get_completion_delays[1]
     orig_file = ctx.orig_file
@@ -698,21 +675,20 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
 
     if completion_id == project.completion_context.current_id:
 
-        comp_result = CompletionResult(ret_, comps_, status_, hints, list(comps), ctx)
+        comp_result = CompletionResult(ret_, comps_, status_, hints, list(toplevel_comps), ctx)
 
-        update_completion_cache(cache, comp_result, comp_type)
+        update_completion_cache(cache, comp_result)
 
         # do we still need this completion, or is it old
         has_results = comp_result.has_results()
         
         if completion_id == project.completion_context.current_id and (has_results or hxsettings.show_only_async_completions()):
-            new_comps = comp_result.all_comps()
             
             project.completion_context.async.insert(view_id, comp_result)
             if only_async:
                 log("trigger_auto_complete")
-                if (comp_type == "hint"):
-                    trigger_manual_completion_type(view,comp_type)    
+                if ctx.options.types.has_hint():
+                    trigger_manual_completion_type(view,"hint")
                 else:
                     trigger_manual_completion(view,macro_completion)
             else:
@@ -726,8 +702,8 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
     project.completion_context.running.delete(completion_id)
 
 
-def run_async_completion(ctx, comps, temp_file, temp_path, 
-        cache, run_compiler_completion, comp_type):
+def run_async_completion(ctx, toplevel_comps, temp_file, temp_path, 
+        cache, run_compiler_completion):
     
     project = ctx.project
     complete_offset = ctx.complete_offset
@@ -741,7 +717,7 @@ def run_async_completion(ctx, comps, temp_file, temp_path,
         run_time = time.time() - start_time;
         log("async completion time: " + str(run_time))
 
-        async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, view_id)
+        async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id)
         
     def on_result(ret_, err_):
         # replace current completion workaround
