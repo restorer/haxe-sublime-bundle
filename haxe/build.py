@@ -423,7 +423,16 @@ class HaxeBuild :
 		
 		return (cmd, self.get_build_folder(), nekox_file_name)
 
-	def run_async (self, haxe_exec, env, server_mode, view, project, callback):
+	def run_async (self, project, view, callback):
+
+		# get environment
+		server_mode = project.is_server_mode()
+		
+		haxe_exec = project.haxe_exec(view)
+		env = project.haxe_env(view)
+
+    	
+
 		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
 		def cb (out, err):
@@ -448,7 +457,12 @@ class HaxeBuild :
 		
 		
 
-	def run (self, haxe_exec, env, server_mode, view, project):
+	def run (self, project, view):
+		# get environment
+		server_mode = project.is_server_mode()
+		
+		haxe_exec = project.haxe_exec(view)
+		env = project.haxe_env(view)
 		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
 		
 		

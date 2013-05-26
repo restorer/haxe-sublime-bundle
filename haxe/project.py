@@ -317,14 +317,14 @@ class Project:
             view = sublime.active_window().active_view()
 
         haxe_exec = self.haxe_exec(view)
-        env = haxe_build_env(self.project_dir("."))
+        
         if (self.has_build()):
             build = self.get_build(view)
         else:
             self.extract_build_args(view)
             build = self.get_build(view)
 
-        out, err = build.run(haxe_exec, env, False, view, self)
+        out, err = build.run(self, view)
         
         if (err != None and err != ""):
             msg = "build finished with errors"
