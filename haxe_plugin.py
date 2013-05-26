@@ -23,6 +23,7 @@ plugin_modules = [
     ,'haxe.tools.view'
     ,'haxe.tools.scope'
     ,'haxe.tools.cache'
+    ,'haxe.tools.decorator'
     ,'haxe.panel'
     ,'haxe.log'
     ,'haxe.settings'

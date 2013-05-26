@@ -3,6 +3,8 @@ import haxe.hxtools as hxsrctools
 import haxe.config as hxconfig
 import re
 
+from haxe.tools.decorator import lazyprop
+
 def is_package_available (target, pack):
     cls = hxconfig
     res = True
@@ -106,15 +108,11 @@ def get_local_types (ctx):
 
 def get_packs_and_types (ctx):
     
-    build_target = get_build_target(ctx)
-
     build_classes , build_packs = ctx.build.get_types()
 
     cl = get_local_types(ctx)
 
     imported = get_imports(ctx)
-
-    log("number of build classes: " + str(len(build_classes)))
 
     build_classes = filter_duplicate_types(build_classes, cl)
 
@@ -124,102 +122,217 @@ def get_packs_and_types (ctx):
     
     cl.sort();
 
-    log("target: " + str(build_target))
-
     packs = get_packages(ctx, build_packs)
 
     return packs, cl, imported
 
-def get_type_comps (ctx, packs, cl, imported):
+
+# scuts.core.Validation.Validation.Success // enum value
+# sys.db.SpodInfos.SpodType.DBytes // enzm value
+# scuts.core.Option.Option.Some
+# scuts.core.Option.Option.None
+# scuts.core.Option // Module or class
+# sociallib.google.Gplus.RenderOptions // Type
+# sys.FileSystem // class
+
+def has_upper_first (s):
+    return s[0].isupper()
+
+def join_with_type(pre, type):
+    if len(pre) > 0:
+        res = pre + "." + type
+    else:
+        res = type
+    return res
+
+class HaxeType:
+    def __init__(self, path):
+        self.path = path
+        self.parts = path.split(".")
+
+    @lazyprop
+    def is_enum_value (self):
+        p = self.parts
+        l = self.num_parts
+        return l >= 3 and has_upper_first(p[l-2]) and has_upper_first(p[l-3])
+
+    @lazyprop
+    def num_parts(self):
+        return len(self.parts)
+
+    @lazyprop
+    def enum_value_name (self):
+        return self.parts[self.num_parts-1] if self.is_enum_value else None
+
+    @lazyprop
+    def type_name (self):
+        p = self.parts
+        l = self.num_parts
+        return p[l-2] if self.is_enum_value else p[l-1]
+
+    @lazyprop
+    def full_pack_with_module_and_type (self):
+        return join_with_type(self.full_pack_with_module, self.type_name)
+
+    
+
+    @lazyprop
+    def full_pack_with_optional_module_and_type (self):
+        return join_with_type(self.pack_with_optional_module_joined, self.type_name)
+
+    @lazyprop
+    def full_pack_with_optional_module_type_and_enum_value (self):
+        return join_with_type(self.pack_with_optional_module_joined, self.type_name_with_optional_enum_value)
+        
+
+    @lazyprop
+    def full_pack_with_module(self):
+        return join_with_type(self.pack_joined, self.module_name)
+
+    @lazyprop
+    def full_pack_with_module_type_and_enum_value (self):
+        return join_with_type(self.full_pack_with_module, self.type_name_with_optional_enum_value)
+
+    @lazyprop
+    def type_name_with_optional_enum_value (self):
+        res = self.type_name
+        if self.is_enum_value:
+            res += "." + self.enum_value_name
+        return res
+
+    @lazyprop
+    def module_name(self):
+        for p in self.parts:
+            if has_upper_first(p):
+                return p
+        return None
+
+    @lazyprop
+    def toplevel_pack(self):
+        res = None
+        if len(self.pack) > 0:
+            res = self.pack[0]
+        return res
+
+    @lazyprop
+    def pack_joined(self):
+        return ".".join(self.pack)
+
+    @lazyprop
+    def pack(self):
+        pack = []
+        for p in self.parts:
+            if not has_upper_first(p):
+                pack.append(p)
+            else:
+                break
+        return pack_convert(pack)
+
+    @lazyprop
+    def pack_with_optional_module_joined(self):
+        return ".".join(self.pack_with_optional_module)
+
+    @lazyprop
+    def pack_with_optional_module(self):
+        p = list(self.pack)
+        if (not self.type_has_same_name_as_module):
+            p.append(self.module_name)
+        return p
+
+    @lazyprop
+    def type_has_same_name_as_module (self):
+        return self.type_name == self.module_name
+
+    @lazyprop
+    def type_hint (self):
+        return "enum value" if self.is_enum_value else "class"
+
+    @lazyprop
+    def can_be_ignored (self):
+        return self.path in hxconfig.ignored_types
+
+
+def pack_convert(pack):
+    if len(pack) > 0:
+        if pack[0] in ["flash8", "flash9"]:
+            pack[0] = "flash"
+    return pack
+
+
+def haxe_type_as_completion (type):
+    insert = type.full_pack_with_optional_module_type_and_enum_value
+    display = type.type_name_with_optional_enum_value
+    display += "\t" + type.get_type_hint
+    return (display, insert)
+
+def type_is_imported_as(import_list, type):
+    res = False
+    for i in import_list:
+        res = None
+        if type.full_pack_with_module == i or type.full_pack_with_module_and_type == i or type.full_pack_with_optional_module_and_type  == i:
+            if type.is_enum_value: 
+                res = type.enum_value_name
+            else: 
+                res = type.type_name_with_optional_enum_value
+            
+        elif type.full_pack_with_optional_module_type_and_enum_value  == i or type.full_pack_with_module_type_and_enum_value  == i:
+            res = type.enum_value_name
+        if res != None:
+            break
+    return res
+
+
+
+def get_snippet_insert(type, import_list):
+    r = type_is_imported_as(import_list, type)
+    if r == None:
+        r = type.full_pack_with_optional_module_type_and_enum_value
+    return r
+
+def get_snippet_display(type):
+    return type.type_name_with_optional_enum_value + "\t" + type.type_hint
+
+def get_snippet(type, import_list):
+    return (get_snippet_display(type), get_snippet_insert(type, import_list))
+
+def get_type_comps (ctx, cl, imported):
     build_target = get_build_target(ctx)
     comps = []
+    packs = []
     for c in cl :
-        spl = c.split(".")
-        if spl[0] == "flash9" or spl[0] == "flash8" :
-            spl[0] = "flash"
-
-        if c in hxconfig.ignored_types:
+        ht = HaxeType(c)
+        if ht.can_be_ignored:
             continue
-
-        top = spl[0]
         
-        clname = spl.pop()
-        enum_name = None;
-
-        if len(spl) >= 2:
-            last1 = spl[len(spl)-2]
-            last2 = spl[len(spl)-1]
-
-            if last1[0].isupper():
-                enum_name = last2
-                spl.pop()
-                if enum_name == last1:
-                    spl.pop();
-                     
-        pack = ".".join(spl)
-
-        display = clname
-
-        if enum_name is not None:
-            spl.append(enum_name) 
-            display = enum_name + "." + display
-
-        if pack != "" :
-            display += "\t" + pack
-        else :
-            display += "\tclass"
+        cm = get_snippet(ht, imported)
         
-        
-        
-        spl.append(clname)
-        
-        is_imported = (pack in imported or c in imported 
-                 or (enum_name != None and (pack + "." + enum_name) in imported))
-
-        if is_imported:
-           
-            cm = ( display , clname )
-            # at this point we could search for enum constructors and
-            # add them to toplevel completion
-        
-        else :
-            #add an option for full packages in completion, something like this:
-            #cm = ( ".".join(spl) , ".".join(spl) )
-            
-            cm = ( display , ".".join(spl) )
-
-        if cm not in comps and is_package_available(build_target, top):
-            # add packages to completion
-            
-            z = [x for x in spl if len(x) > 0 and x[0].lower() == x[0]]
-            if (len(z) > 0):
-                p = ".".join(z)
-                packs.append(p) 
+        if cm not in comps and is_package_available(build_target, ht.toplevel_pack):
+            if len(ht.pack) > 0:
+                packs.append(ht.pack_joined)
 
             comps.append( cm )
-    return comps
+    return comps,packs
+
 
 def get_toplevel_completion( ctx  ) :
-
     comps = get_toplevel_keywords(ctx)
     
     packs, cl, imported = get_packs_and_types(ctx)
     
-
     if not ctx.is_new:
         comps.extend(get_local_vars_and_functions(ctx))
         
+    comps1, packs1 = get_type_comps(ctx, cl, imported)
 
-    comps = get_type_comps(ctx, packs, cl, imported)
+    comps.extend(comps1)
     
-    
+    packs.extend(packs1)
     
     for p in packs :
         cm = (p + "\tpackage",p)
         if cm not in comps :
             comps.append(cm)
 
-    #log("comps:" + str(comps))
     return comps
 
 def filter_top_level_completions (offset_char, all_comps):

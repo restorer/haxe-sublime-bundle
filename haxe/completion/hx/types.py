@@ -1,4 +1,4 @@
-from haxe.tools import lazyprop
+from haxe.tools.decorator import lazyprop
 import haxe.tools.view as view_tools
 from haxe.log import log
 import re
