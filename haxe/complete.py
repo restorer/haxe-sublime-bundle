@@ -306,19 +306,21 @@ class CompletionContext:
 # ------------------- FUNCTIONS ----------------------------------
 
 def get_completions_from_background_run(background_result, view):
-    comps1 = background_result[0]
-    hints1 = background_result[1]
-    comp_type = background_result[2]
+    comps1 = background_result.all_comps()
+    hints1 = background_result.hints
+    ctx = background_result.ctx
+    #comp_type = background_result[2]
 
+    has_results = background_result.has_results()
     has_comps = len(comps1) > 0
     has_hints = len(hints1) > 0 
 
     comps = None
 
-    if (not has_comps and not has_hints and (hxsettings.no_fuzzy_completion() or comp_type == "hint")):
+    if (not has_results and (hxsettings.no_fuzzy_completion() or ctx.options.types.has_hint())):
         comps = cancel_completion(view)
     else:
-        comps = combine_hints_and_comps(comps1, hints1, comp_type)
+        comps = combine_hints_and_comps(background_result)
 
     return comps
 
@@ -383,11 +385,11 @@ def hints_to_sublime_completions(hints):
 
     return [make_hint_comp(h) for h in hints]
 
-def combine_hints_and_comps (comps, hints, comp_type):
-    all_comps = hints_to_sublime_completions(hints)
+def combine_hints_and_comps (comp_result):
+    all_comps = hints_to_sublime_completions(comp_result.hints)
 
-    if comp_type != "hint":
-        all_comps.extend(comps)
+    if not comp_result.ctx.options.types.has_hint():
+        all_comps.extend(comp_result.comps)
     return all_comps
 
 def get_completions_regular(project, view, offset):
@@ -555,7 +557,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
 
                 log_completion_status(status, comps, hints)
 
-                res = combine_hints_and_comps(comps, hints, comp_type)
+                res = combine_hints_and_comps(out[0])
             else :
                 comps = get_toplevel_completions()
 
@@ -576,7 +578,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
 
                     log_completion_status(status, comps, hints)            
 
-                    res = combine_hints_and_comps(comps, hints, comp_type)
+                    res = combine_hints_and_comps(comp_result)
     return res
 
 
@@ -706,7 +708,7 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
         if completion_id == project.completion_context.current_id and (has_results or hxsettings.show_only_async_completions()):
             new_comps = comp_result.all_comps()
             
-            project.completion_context.async.insert(view_id, (new_comps, hints, comp_type))
+            project.completion_context.async.insert(view_id, comp_result)
             if only_async:
                 log("trigger_auto_complete")
                 if (comp_type == "hint"):
