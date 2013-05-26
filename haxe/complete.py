@@ -85,14 +85,20 @@ TOPLEVEL_OPTION_ALL = TOPLEVEL_OPTION_KEYWORDS | TOPLEVEL_OPTION_LOCALS | TOPLEV
 
 
 class CompletionOptions:
-    def __init__(self, trigger, context = COMPILER_CONTEXT_REGULAR, types = COMPLETION_TYPE_REGULAR, toplevel = 0):
+    def __init__(self, trigger, context = COMPILER_CONTEXT_REGULAR, types = COMPLETION_TYPE_REGULAR, toplevel = COMPLETION_TYPE_TOPLEVEL):
         self._types = CompletionTypes(types)
         self._toplevel = TopLevelOptions(toplevel)
         self._context = context
         self._trigger = trigger
+
+    def copy_as_manual(self):
+        return CompletionOptions(COMPLETION_TRIGGER_MANUAL, self._context, self.types.val, self._toplevel.val)
+
     @property
     def types(self):
         return self._types
+
+    
 
     @lazyprop
     def manual_completion(self):
@@ -114,6 +120,10 @@ class CompletionTypes:
 
     def __init__(self, val = COMPLETION_TYPE_REGULAR):
         self._opt = val
+
+    @property
+    def val (self):
+        return self._opt
 
     def add (self, val):
         self._opt |= val
@@ -137,6 +147,10 @@ class TopLevelOptions:
 
     def __init__(self, val = 0):
         self._opt = val
+
+    @property
+    def val (self):
+        return self._opt
 
     def set (self, val):
         self._opt |= val
@@ -443,22 +457,26 @@ def get_completion_id ():
 
 def hx_normal_auto_complete(project, view, offset, cache):
 
-    trigger = project.completion_context.get_and_delete_trigger(view)
-    comp_type = project.completion_context.get_and_delete_trigger_comp(view)
+    options = project.completion_context.get_and_delete_trigger(view)
+    #comp_type = project.completion_context.get_and_delete_trigger_comp(view)
     
-    manual_completion = trigger is not hxproject.TRIGGER_SUBLIME
+    #manual_completion = trigger is not hxproject.TRIGGER_SUBLIME
 
-    macro_completion = trigger is hxproject.TRIGGER_MANUAL_MACRO
+    #macro_completion = trigger is hxproject.TRIGGER_MANUAL_MACRO
 
-    log("is macro completion :" + str(macro_completion))
+    # log("is macro completion :" + str(macro_completion))
     
-    compiler_context = COMPILER_CONTEXT_MACRO if macro_completion else COMPLETION_TYPE_REGULAR
-    completion_type = COMPLETION_TYPE_REGULAR if comp_type != "hint" else COMPLETION_TYPE_HINT
-    completion_type |= COMPLETION_TYPE_TOPLEVEL
+    # compiler_context = options
+    # completion_type = COMPLETION_TYPE_REGULAR if comp_type != "hint" else COMPLETION_TYPE_HINT
+    # completion_type |= COMPLETION_TYPE_TOPLEVEL
 
-    completion_trigger = COMPLETION_TRIGGER_MANUAL if manual_completion else COMPLETION_TRIGGER_AUTO
+    # completion_trigger = COMPLETION_TRIGGER_MANUAL if manual_completion else COMPLETION_TRIGGER_AUTO
 
-    options = CompletionOptions(completion_trigger, compiler_context, completion_type, TOPLEVEL_OPTION_ALL)
+    log("options: " + str(options))
+
+    if options == None:
+        options = CompletionOptions(COMPLETION_TRIGGER_AUTO)
+    
     settings = CompletionSettings(hxsettings)
     ctx = CompletionContext(view, project, offset, options, settings)
 
@@ -476,10 +494,10 @@ def hx_normal_auto_complete(project, view, offset, cache):
         log("cancel completion, same is running")
         res = cancel_completion(ctx.view)
     elif should_trigger_manual_hint_completion(ctx.options.manual_completion, ctx.complete_char):
-        trigger_manual_completion_type(ctx.view, "hint")
+        trigger_manual_completion(ctx.view, ctx.options.copy_as_manual())
         res = cancel_completion(ctx.view)
-    elif not manual_completion:
-        trigger_manual_completion(ctx.view, macro_completion )
+    elif not ctx.options.manual_completion:
+        trigger_manual_completion(ctx.view, ctx.options.copy_as_manual() )
         res = cancel_completion(ctx.view)
     elif is_iterator_completion(ctx.src, ctx.offset):
         log("iterator completion")
@@ -618,10 +636,7 @@ def completion_finished(ctx, ret_, err_, temp_file, toplevel_comps, cache):
     if has_results:
         project.completion_context.async.insert(ctx.view_id, comp_result)
         
-        if ctx.options.types.has_hint():
-            trigger_manual_completion_type(view,"hint")
-        else:
-            trigger_manual_completion(view,macro_completion)
+        trigger_manual_completion(view, ctx.options)
     else:
         log("ignore background completion")    
 
@@ -660,13 +675,11 @@ def output_to_result (ctx, temp_file, err, ret, toplevel_comps):
     highlight_errors( errors, ctx.view )
     return CompletionResult(ret, comps1, status, hints, toplevel_comps, ctx )
 
-
 def use_completion_cache (last_input, current_input):
     return last_input.eq(current_input)
 
 def supported_compiler_completion_char (char):
     return char in "(.,"
-
 
 def is_package_available (target, pack):
     cls = hxconfig
@@ -950,25 +963,26 @@ def cancel_completion(view, hide_complete = True):
         view.run_command('hide_auto_complete')
     return [("  ...  ", "")]
 
-def trigger_manual_completion(view, macro_completion):
+def trigger_manual_completion(view, options):
     
+    log("LOG: " + str(options.types._opt))
+
+
+    hint = options.types.has_hint()
+    macro = options.macro_completion
+
     def run_complete():
-        if (macro_completion):
+        if hint and macro:
+            view.run_command("haxe_hint_display_macro_completion")
+        if hint:
+            view.run_command("haxe_hint_display_completion")
+        if macro:
             view.run_command("haxe_display_macro_completion")
         else:
             view.run_command("haxe_display_completion")
 
     sublime.set_timeout(run_complete, 20)
 
-def trigger_manual_completion_type(view, comp_type):
-    
-    def run_complete():
-        if (comp_type == "hint"):
-            view.run_command("haxe_hint_display_completion")
-        else:
-            view.run_command("haxe_display_completion")
-
-    sublime.set_timeout(run_complete, 20)
     
 
 def get_compiler_completion( ctx , display, cb) :

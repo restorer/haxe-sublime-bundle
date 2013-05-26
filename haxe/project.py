@@ -29,7 +29,6 @@ class ProjectCompletionContext:
         
         self.running = Cache()
         self.trigger = Cache(1000)
-        self.trigger_comp = Cache(1000)
         self.current_id = None   
         self.errors = []
         self.async = Cache(1000)
@@ -39,14 +38,10 @@ class ProjectCompletionContext:
         }
 
 
-    def set_manual_trigger(self, view, macro):
+    def set_trigger(self, view, options):
         
-        t = TRIGGER_MANUAL_MACRO if macro else TRIGGER_MANUAL_NORMAL
-        self.trigger.insert(view.id(), t)
-
-    def set_type(self, view, type):
         
-        self.trigger_comp.insert(view.id(), type)
+        self.trigger.insert(view.id(), options)
 
     def clear_completion (self):
         self.current = {
@@ -57,11 +52,9 @@ class ProjectCompletionContext:
     def set_errors (self, errors):
         self.errors = errors
 
-    def get_and_delete_trigger_comp(self, view):
-        return self.trigger_comp.get_and_delete(view.id(), "normal")
 
     def get_and_delete_trigger(self, view):
-        return self.trigger.get_and_delete(view.id(), TRIGGER_SUBLIME)
+        return self.trigger.get_and_delete(view.id(), None)
 
     def get_and_delete_async(self, view):
         return self.async.get_and_delete(view.id())

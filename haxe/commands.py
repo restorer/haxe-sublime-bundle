@@ -12,6 +12,8 @@ import haxe.hxtools as hxsrctools
 import haxe.settings as hxsettings
 from haxe.log import log
 
+import haxe.complete as hxcomplete
+
 import haxe.tools.view as view_tools
 import haxe.temp as hxtemp
 
@@ -278,31 +280,50 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 class HaxeDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        trigger_completion(self.view, False, "regular")
+        options = hxcomplete.CompletionOptions(
+            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
+            hxcomplete.COMPILER_CONTEXT_REGULAR, 
+            hxcomplete.COMPLETION_TYPE_REGULAR)
+        trigger_completion(self.view, options)
+        #trigger_completion(self.view, False, "regular")
 
 
 class HaxeDisplayMacroCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        trigger_completion(self.view, True, "macro")
+        options = hxcomplete.CompletionOptions(
+            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
+            hxcomplete.COMPILER_CONTEXT_REGULAR, 
+            hxcomplete.COMPLETION_TYPE_REGULAR)
+        trigger_completion(self.view, options)
+        
+        #trigger_completion(self.view, True, "macro")
         
 
 class HaxeHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        trigger_completion(self.view, False, "hint")
+        options = hxcomplete.CompletionOptions(
+            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
+            hxcomplete.COMPILER_CONTEXT_REGULAR, 
+            hxcomplete.COMPLETION_TYPE_HINT)
+        trigger_completion(self.view, options)
+        #trigger_completion(self.view, False, "hint")
 
 class HaxeMacroHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        trigger_completion(self.view, True, "hint")    
+        options = hxcomplete.CompletionOptions(
+            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
+            hxcomplete.COMPILER_CONTEXT_MACRO, 
+            hxcomplete.COMPLETION_TYPE_HINT)
+        trigger_completion(self.view, options)
+        #trigger_completion(self.view, True, "hint")    
         
 
-def trigger_completion (view, macro, type):
-    log("run HaxeCompletionCommand (macro:" + str(macro) + ", type:" + str(type) + ")")
+def trigger_completion (view, options):
+    #log("run HaxeCompletionCommand (macro:" + str(macro) + ", type:" + str(type) + ")")
         
     project = hxproject.current_project(view)
     
-    project.completion_context.set_manual_trigger(view, macro)
-    project.completion_context.set_type(view, type)
-    
+    project.completion_context.set_trigger(view, options)
     
     view.run_command( "auto_complete" , {
         "api_completions_only" : True,
