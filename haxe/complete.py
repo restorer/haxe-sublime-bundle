@@ -384,11 +384,7 @@ def hints_to_sublime_completions(hints):
     return [make_hint_comp(h) for h in hints]
 
 def combine_hints_and_comps (comps, hints, comp_type):
-    
-    
-    
     all_comps = hints_to_sublime_completions(hints)
-
 
     if comp_type != "hint":
         all_comps.extend(comps)
@@ -400,13 +396,10 @@ def get_completions_regular(project, view, offset):
     
     return hx_normal_auto_complete(project, view, offset, cache)
 
-
 def is_iterator_completion(src, offset):
     o = offset
     s = src
     return o > 3 and s[o] == "\n" and s[o-1] == "." and s[o-2] == "." and s[o-3] != "."
-
-
 
 def should_trigger_manual_hint_completion(manual_completion, complete_char):
     return not manual_completion and complete_char in "(,"
@@ -601,6 +594,14 @@ class CompletionResult:
         self.ctx = ctx
         self.toplevel = toplevel
 
+    def has_results (self):
+        return len(self.comps) > 0 or len(self.hints) > 0
+
+    def all_comps (self):
+        res = list(self.toplevel)
+        res.extend(self.comps)
+        return res
+
 
 def update_completion_cache(cache, comp_result, comp_type):
     cache["output"] = (comp_result, comp_type)
@@ -695,14 +696,16 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
 
     if completion_id == project.completion_context.current_id:
 
-        update_completion_cache(cache, CompletionResult(ret_, comps_, status_, hints, [], ctx), comp_type)
+        comp_result = CompletionResult(ret_, comps_, status_, hints, list(comps), ctx)
+
+        update_completion_cache(cache, comp_result, comp_type)
 
         # do we still need this completion, or is it old
-        has_new_comps = len(comps_) > 0
-        has_hints = len(hints) > 0
-        if completion_id == project.completion_context.current_id and (has_new_comps or hxsettings.show_only_async_completions() or has_hints):
-            new_comps = list(comps)
-            new_comps.extend(comps_)
+        has_results = comp_result.has_results()
+        
+        if completion_id == project.completion_context.current_id and (has_results or hxsettings.show_only_async_completions()):
+            new_comps = comp_result.all_comps()
+            
             project.completion_context.async.insert(view_id, (new_comps, hints, comp_type))
             if only_async:
                 log("trigger_auto_complete")
