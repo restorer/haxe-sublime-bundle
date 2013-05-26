@@ -6,7 +6,13 @@ plugin_modules = [
      'haxe.config'
     ,'haxe.project'
     ,'haxe.build'
-    ,'haxe.complete'
+    ,'haxe.completion.base'
+    ,'haxe.completion.hx.base'
+    ,'haxe.completion.hx.constants'
+    ,'haxe.completion.hx.types'
+    ,'haxe.completion.hx.toplevel'
+    ,'haxe.completion.hxsl.base'
+    ,'haxe.completion.hxml.base'
     ,'haxe.commands'
     ,'haxe.execute'
     ,'haxe.codegen'
@@ -70,10 +76,28 @@ from haxe.project import (
     ,ProjectCompletionContext
 )
 
-from haxe.complete import (
+from haxe.completion.base import (
 
      HaxeCompleteListener
      
+) 
+
+#from haxe.completion.hx import
+
+#from haxe.completion.hxsl import ()
+
+     
+     
+
+
+from haxe.completion.hx.types import (
+
+     CompletionOptions
+    ,CompletionTypes
+    ,TopLevelOptions
+    ,CompletionSettings
+    ,CompletionContext
+    ,CompletionInfo
 ) 
 
 from haxe.commands import (

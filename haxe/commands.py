@@ -12,10 +12,12 @@ import haxe.hxtools as hxsrctools
 import haxe.settings as hxsettings
 from haxe.log import log
 
-import haxe.complete as hxcomplete
+import haxe.completion.hx.constants as hxcc
 
 import haxe.tools.view as view_tools
 import haxe.temp as hxtemp
+
+from haxe.completion.hx.types import CompletionOptions
 
 plugin_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
@@ -280,20 +282,20 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
 class HaxeDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        options = hxcomplete.CompletionOptions(
-            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
-            hxcomplete.COMPILER_CONTEXT_REGULAR, 
-            hxcomplete.COMPLETION_TYPE_REGULAR)
+        options = CompletionOptions(
+            hxcc.COMPLETION_TRIGGER_MANUAL, 
+            hxcc.COMPILER_CONTEXT_REGULAR, 
+            hxcc.COMPLETION_TYPE_REGULAR)
         trigger_completion(self.view, options)
         #trigger_completion(self.view, False, "regular")
 
 
 class HaxeDisplayMacroCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        options = hxcomplete.CompletionOptions(
-            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
-            hxcomplete.COMPILER_CONTEXT_REGULAR, 
-            hxcomplete.COMPLETION_TYPE_REGULAR)
+        options = CompletionOptions(
+            hxcc.COMPLETION_TRIGGER_MANUAL, 
+            hxcc.COMPILER_CONTEXT_REGULAR, 
+            hxcc.COMPLETION_TYPE_REGULAR)
         trigger_completion(self.view, options)
         
         #trigger_completion(self.view, True, "macro")
@@ -301,19 +303,19 @@ class HaxeDisplayMacroCompletionCommand( sublime_plugin.TextCommand ):
 
 class HaxeHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        options = hxcomplete.CompletionOptions(
-            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
-            hxcomplete.COMPILER_CONTEXT_REGULAR, 
-            hxcomplete.COMPLETION_TYPE_HINT)
+        options = CompletionOptions(
+            hxcc.COMPLETION_TRIGGER_MANUAL, 
+            hxcc.COMPILER_CONTEXT_REGULAR, 
+            hxcc.COMPLETION_TYPE_HINT)
         trigger_completion(self.view, options)
         #trigger_completion(self.view, False, "hint")
 
 class HaxeMacroHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
-        options = hxcomplete.CompletionOptions(
-            hxcomplete.COMPLETION_TRIGGER_MANUAL, 
-            hxcomplete.COMPILER_CONTEXT_MACRO, 
-            hxcomplete.COMPLETION_TYPE_HINT)
+        options = CompletionOptions(
+            hxcc.COMPLETION_TRIGGER_MANUAL, 
+            hxcc.COMPILER_CONTEXT_MACRO, 
+            hxcc.COMPLETION_TYPE_HINT)
         trigger_completion(self.view, options)
         #trigger_completion(self.view, True, "hint")    
         

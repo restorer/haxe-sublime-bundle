@@ -17,12 +17,6 @@ from haxe.tools.cache import Cache
 
 
 
-
-TRIGGER_SUBLIME = "auto_sublime"
-TRIGGER_MANUAL_MACRO = "manual_macro"
-TRIGGER_MANUAL_NORMAL = "manual_normal"
-
-
 class ProjectCompletionContext:
 
     def __init__(self):
@@ -39,8 +33,6 @@ class ProjectCompletionContext:
 
 
     def set_trigger(self, view, options):
-        
-        
         self.trigger.insert(view.id(), options)
 
     def clear_completion (self):
@@ -51,7 +43,6 @@ class ProjectCompletionContext:
 
     def set_errors (self, errors):
         self.errors = errors
-
 
     def get_and_delete_trigger(self, view):
         return self.trigger.get_and_delete(view.id(), None)
@@ -585,9 +576,6 @@ def select_nme_target( build, i, view ):
         hxbuild.HaxeBuild.nme_target = target
         view.set_status( "haxe-build" , build.to_string() )
         hxpanel.default_panel().status( "haxe-build" , build.to_string() )
-
-
-
 
 
 _projects = Cache()
