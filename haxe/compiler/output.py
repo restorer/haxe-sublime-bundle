@@ -2,9 +2,17 @@ import sublime
 import re
 import os
 from xml.etree import ElementTree
-from elementtree import SimpleXMLTreeBuilder # part of your codebase
+#from xml.etree.ElementTree import XMLTreeBuilder
 
-ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
+
+
+try :
+    from elementtree import SimpleXMLTreeBuilder # part of your codebase
+    ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
+except ImportError as e:
+    pass # ST3
+    
+
 
 import haxe.panel as hxpanel
 import haxe.hxtools as hxtools
