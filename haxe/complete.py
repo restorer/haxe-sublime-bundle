@@ -385,7 +385,10 @@ def hints_to_sublime_completions(hints):
 
 def combine_hints_and_comps (comps, hints, comp_type):
     
+    
+    
     all_comps = hints_to_sublime_completions(hints)
+
 
     if comp_type != "hint":
         all_comps.extend(comps)
@@ -542,10 +545,8 @@ def hx_normal_auto_complete(project, view, offset, cache):
 
             last_ctx = cache["input"]
 
-            use_cache = ctx.eq(last_ctx)
 
-
-            if use_cache :
+            if use_completion_cache(ctx,last_ctx) :
                 log("USE COMPLETION CACHE")
                 out = cache["output"]
 
@@ -567,6 +568,8 @@ def hx_normal_auto_complete(project, view, offset, cache):
 
                 #ret, comps1, status, hints = get_fresh_completions(ctx, comp_type, comps, cache)
                 comp_result = get_fresh_completions(ctx, comp_type, comps, cache)
+                comp_result.toplevel = comps
+
                 comps1 = comp_result.comps
                 if async and hxsettings.show_only_async_completions():
                     # we don't show any completions at this point
@@ -587,15 +590,16 @@ def hx_normal_auto_complete(project, view, offset, cache):
 class CompletionResult:
     @staticmethod
     def empty_result (ctx):
-        return CompletionResult("", [], "", [], ctx)
+        return CompletionResult("", [], "", [], [], ctx)
 
 
-    def __init__(self, ret, comps, status, hints, ctx):
+    def __init__(self, ret, comps, status, hints, toplevel, ctx):
         self.ret = ret
         self.comps = comps
         self.status = status
         self.hints = hints
         self.ctx = ctx
+        self.toplevel = toplevel
 
 
 def update_completion_cache(cache, comp_result, comp_type):
@@ -660,7 +664,7 @@ def get_fresh_completions(ctx, comp_type, comps, cache):
                 hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err, commas)
                 comps1 = [(t.hint, t.insert) for t in comps1]
                 highlight_errors( errors, view )
-                res = CompletionResult(ret, comps1, status, hints, ctx )
+                res = CompletionResult(ret, comps1, status, hints, [], ctx )
     else:
         log("not supported completion char")
         CompletionResult.empty_result(ctx)
@@ -680,9 +684,10 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
 
     hints, comps_, status_, errors = get_completion_output(temp_file, orig_file, err_, commas)
 
+
     # we don't need doc here
     comps_ = [(t.hint, t.insert) for t in comps_]
-            
+
     project.completion_context.set_errors(errors)
     highlight_errors( errors, view )
 
@@ -690,7 +695,7 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
 
     if completion_id == project.completion_context.current_id:
 
-        update_completion_cache(cache, CompletionResult(ret_, comps_, status_, hints, ctx), comp_type)
+        update_completion_cache(cache, CompletionResult(ret_, comps_, status_, hints, [], ctx), comp_type)
 
         # do we still need this completion, or is it old
         has_new_comps = len(comps_) > 0
@@ -744,16 +749,6 @@ def run_async_completion(ctx, comps, temp_file, temp_path,
 
     run_compiler_completion(on_result)
 
-def create_completion_input_key (ctx, comp_type):
-
-    fn = ctx.orig_file
-    offset  = ctx.offset
-    commas = ctx.commas
-    src = ctx.src
-    macro_completion = ctx.options.macro_completion
-    complete_char = ctx.complete_char
-
-    return (fn,offset,commas,src[0:offset-1], macro_completion, complete_char, comp_type)
 
 
 def use_completion_cache (last_input, current_input):
