@@ -76,17 +76,39 @@ def get_packages (ctx, build_packs):
 
     return packs
 
+
+def get_imports (ctx):
+    imports = hxsrctools.import_line.findall( ctx.src )
+    imported = []
+    for i in imports :
+        imp = i[1]
+        imported.append(imp)
+
+    return imported
+
+def filter_duplicate_types (types_to_filter, types):
+    def filter_type (x):
+        for c in types:
+            if x == c:
+                return False
+        return True
+
+    return filter(filter_type, types_to_filter)
+
+def get_local_types (ctx):
+    src = hxsrctools.comments.sub("",ctx.src)
+    cl = []
+    local_types = hxsrctools.type_decl.findall( src )
+    for t in local_types :
+        if t[1] not in cl:
+            cl.append( t[1] )
+    return cl
+
 def get_toplevel_completion( ctx  ) :
     
     project = ctx.project
-    src = ctx.src 
     build = ctx.build
     
-    only_types = ctx.is_new
-    
-    cl = []
-    
-    std_packages = []
 
     
     build_target = get_build_target(ctx)
@@ -94,32 +116,20 @@ def get_toplevel_completion( ctx  ) :
     comps = get_toplevel_keywords(ctx)
         
 
-    src = hxsrctools.comments.sub("",src)
+    #src = hxsrctools.comments.sub("",src)
 
-    local_types = hxsrctools.type_decl.findall( src )
-    for t in local_types :
-        if t[1] not in cl:
-            cl.append( t[1] )
+    cl = get_local_types(ctx)
 
 
-    imports = hxsrctools.import_line.findall( src )
-    imported = []
-    for i in imports :
-        imp = i[1]
-        imported.append(imp)
+    
+    imported = get_imports(ctx)
+    
 
     build_classes , build_packs = build.get_types()
 
     log("number of build classes: " + str(len(build_classes)))
 
-    # filter duplicates
-    def filter_build (x):
-        for c in cl:
-            if x == c:
-                return False
-        return True
-
-    build_classes = filter(filter_build, build_classes)
+    build_classes = filter_duplicate_types(build_classes, cl)
 
     cl.extend( project.std_classes )
     
@@ -129,10 +139,10 @@ def get_toplevel_completion( ctx  ) :
 
     log("target: " + str(build_target))
 
-
     packs = get_packages(ctx, build_packs)
     
-    if not only_types:
+    
+    if not ctx.is_new:
         comps.extend(get_local_vars_and_functions(ctx))
         
 
