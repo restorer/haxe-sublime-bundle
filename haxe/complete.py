@@ -184,22 +184,23 @@ class CompletionSettings:
     def show_completion_times(self, view):
         return self.settings.show_completion_times(view)
 
-class CompletionResult:
-    def __init__(self, toplevel, comps, hints, options, errors):
-        self.toplevel = toplevel
-        self.comps = comps
-        self.hints = hints
-        self.errors = errors
-        self.options = options
-
-    def to_sublime_completions (self):
-        res = []
-
-        if self.options.types.hasHint():     res.extend(hints_to_sublime_completions(self.hints))
-        if self.options.types.hasToplevel(): res.extend(self.toplevel)
-        if self.options.types.hasRegular():  res.extend(self.comps)
-
-        return res
+#
+#class CompletionResult:
+#    def __init__(self, toplevel, comps, hints, options, errors):
+#        self.toplevel = toplevel
+#        self.comps = comps
+#        self.hints = hints
+#        self.errors = errors
+#        self.options = options
+#
+#    def to_sublime_completions (self):
+#        res = []
+#
+#        if self.options.types.hasHint():     res.extend(hints_to_sublime_completions(self.hints))
+#        if self.options.types.hasToplevel(): res.extend(self.toplevel)
+#        if self.options.types.hasRegular():  res.extend(self.comps)
+#
+#        return res
 
 
 class CompletionContext:
@@ -285,6 +286,20 @@ class CompletionContext:
     def is_new(self):
         return self._completion_info[3]
 
+    @lazyprop
+    def src_until_offset (self):
+        return self.src[0:self.offset-1]
+
+
+    def eq (self, other):
+        return (
+            self != None and other != None
+        and self.orig_file == other.orig_file
+        and self.offset == other.offset
+        and self.commas == other.commas
+        and self.src_until_offset == other.src_until_offset
+        and self.options.eq(other.options)
+        and self.complete_char == other.complete_char)
 
 
 
@@ -522,21 +537,24 @@ def hx_normal_auto_complete(project, view, offset, cache):
         else:
 
             async = hxsettings.is_async_completion()
-            
-            
-
-            current_input = create_completion_input_key(ctx, comp_type)
-
-            last_input = cache["input"]
 
             log("USE ASYNC COMPLETION: " + str(async))
 
-            use_cache = use_completion_cache(last_input, current_input)
+            last_ctx = cache["input"]
+
+            use_cache = ctx.eq(last_ctx)
 
 
             if use_cache :
                 log("USE COMPLETION CACHE")
-                ret, comps_cache, status, hints, comp_type = cache["output"]
+                out = cache["output"]
+
+                comp_type = out[1]
+                comps_cache = out[0].comps
+                hints = out[0].hints
+                status = out[0].status
+
+                #ret, comps_cache, status, hints, comp_type = cache["output"]
                 # combine cache with top level completions
                 comps = get_toplevel_completions()
                 comps.extend(comps_cache)
@@ -547,14 +565,15 @@ def hx_normal_auto_complete(project, view, offset, cache):
             else :
                 comps = get_toplevel_completions()
 
-                ret, comps1, status, hints = get_fresh_completions(ctx, comp_type, comps, cache, current_input)
-                
+                #ret, comps1, status, hints = get_fresh_completions(ctx, comp_type, comps, cache)
+                comp_result = get_fresh_completions(ctx, comp_type, comps, cache)
+                comps1 = comp_result.comps
                 if async and hxsettings.show_only_async_completions():
                     # we don't show any completions at this point
                     res = cancel_completion(view, True)
                 else:
                     if not async:
-                        update_completion_cache(cache, ret, comps1, status, hints, comp_type, current_input)
+                        update_completion_cache(cache, comp_result, comp_type, ctx)
                     
                     
                     comps.extend(comps1)
@@ -564,9 +583,23 @@ def hx_normal_auto_complete(project, view, offset, cache):
                     res = combine_hints_and_comps(comps, hints, comp_type)
     return res
 
-def update_completion_cache(cache, ret, comps1, status, hints, comp_type, current_input):
-    cache["output"] = (ret,comps1,status, hints, comp_type)
-    cache["input"] = current_input
+
+class CompletionResult:
+    @staticmethod
+    def empty_result ():
+        return CompletionResult("", [], "", [])
+
+
+    def __init__(self, ret, comps, status, hints):
+        self.ret = ret
+        self.comps = comps
+        self.status = status
+        self.hints = hints
+
+
+def update_completion_cache(cache, comp_result, comp_type, current_ctx):
+    cache["output"] = (comp_result, comp_type)
+    cache["input"] = current_ctx
 
 def log_completion_status(status, comps, hints):
     if status != "":
@@ -575,7 +608,7 @@ def log_completion_status(status, comps, hints):
         else:
             hxpanel.default_panel().writeln( status )    
 
-def get_fresh_completions(ctx, comp_type, comps, cache, current_input):
+def get_fresh_completions(ctx, comp_type, comps, cache):
     
     commas = ctx.commas
     complete_offset = ctx.complete_offset
@@ -597,7 +630,7 @@ def get_fresh_completions(ctx, comp_type, comps, cache, current_input):
         if temp_path is None or temp_file is None:
             # this should never happen, todo proper error message
             log("completion error")
-            res = ("", [], "", [])
+            res = CompletionResult.empty_result()
         else:
 
             build.add_classpath(temp_path)
@@ -607,11 +640,10 @@ def get_fresh_completions(ctx, comp_type, comps, cache, current_input):
             if async:
                 log("run async compiler completion")
 
-
                 run_async_completion(ctx, list(comps), temp_file, temp_path,
-                    cache, current_input, run_compiler_completion, comp_type)
+                    cache, run_compiler_completion, comp_type)
                 
-                res = ("", [], "", [])
+                res = CompletionResult.empty_result()
             else:
                 log("run normal compiler completion")
                 ret0 = []
@@ -627,14 +659,14 @@ def get_fresh_completions(ctx, comp_type, comps, cache, current_input):
                 hints, comps1, status, errors = get_completion_output(temp_file, orig_file, err, commas)
                 comps1 = [(t.hint, t.insert) for t in comps1]
                 highlight_errors( errors, view )
-                res = (ret, comps1, status, hints )
+                res = CompletionResult(ret, comps1, status, hints )
     else:
         log("not supported completion char")
-        res = ("",[], "", [])
+        CompletionResult.empty_result()
 
     return res
 
-def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, current_input, view_id):
+def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, view_id):
     
     show_delay = ctx.settings.get_completion_delays[1]
     orig_file = ctx.orig_file
@@ -656,7 +688,8 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
     hxtemp.remove_path(temp_path)
 
     if completion_id == project.completion_context.current_id:
-        update_completion_cache(cache, ret_, comps_, status_, hints, comp_type, current_input)
+
+        update_completion_cache(cache, CompletionResult(ret_, comps_, status_, hints), comp_type, ctx)
 
         # do we still need this completion, or is it old
         has_new_comps = len(comps_) > 0
@@ -683,7 +716,7 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp
 
 
 def run_async_completion(ctx, comps, temp_file, temp_path, 
-        cache, current_input, run_compiler_completion, comp_type):
+        cache, run_compiler_completion, comp_type):
     
     project = ctx.project
     complete_offset = ctx.complete_offset
@@ -694,11 +727,10 @@ def run_async_completion(ctx, comps, temp_file, temp_path,
     start_time = time.time()
 
     def in_main (ret_, err_):
-
         run_time = time.time() - start_time;
         log("async completion time: " + str(run_time))
 
-        async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, current_input, view_id)
+        async_completion_finished(ctx, ret_, err_, temp_file, temp_path, comps, comp_type, cache, view_id)
         
     def on_result(ret_, err_):
         # replace current completion workaround
@@ -724,7 +756,7 @@ def create_completion_input_key (ctx, comp_type):
 
 
 def use_completion_cache (last_input, current_input):
-    return last_input is not None and current_input == last_input
+    return last_input.eq(current_input)
 
 def supported_compiler_completion_char (char):
     return char in "(.,"
@@ -991,7 +1023,6 @@ def get_completion_info (view, offset, src):
             #print("closedBrackets : " + str(closedBrackets))
             prev_symbol_is_comma = True
         else :
-
             complete_offset = max( prev_dot + 1, prev_par + 1 , prev_colon + 1 )
             
 
