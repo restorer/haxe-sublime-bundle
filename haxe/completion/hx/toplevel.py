@@ -15,25 +15,84 @@ def is_package_available (target, pack):
     return res
 
 
+def get_toplevel_keywords (ctx):
+
+    res = None
+    
+    if ctx.is_new:
+        res = []
+    else:
+        res = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
+    
+    return res
+
+def get_build_target(ctx):
+    return "neko" if ctx.options.macro_completion else ctx.build.target
+
+
+def get_local_vars_and_functions (ctx):
+    comps = []
+    for v in hxsrctools.variables.findall(ctx.src) :
+        comps.append(( v + "\tvar" , v ))
+
+    for f in hxsrctools.named_functions.findall(ctx.src) :
+        if f not in ["new"] :
+            comps.append(( f + "\tfunction" , f ))
+    #TODO can we restrict this to local scope ?
+    for params_text in hxsrctools.function_params.findall(ctx.src) :
+        cleaned_params_text = re.sub(hxsrctools.param_default,"",params_text)
+        params_list = cleaned_params_text.split(",")
+        for param in params_list:
+            a = param.strip();
+            if a.startswith("?"):
+                a = a[1:]
+            
+            idx = a.find(":") 
+            if idx > -1:
+                a = a[0:idx]
+
+            idx = a.find("=")
+            if idx > -1:
+                a = a[0:idx]
+                
+            a = a.strip()
+            cm = (a + "\tvar", a)
+            if cm not in comps:
+                comps.append( cm )
+    return comps
+
+def get_packages (ctx, build_packs):
+    packs = []
+    std_packages = []
+    build_target = get_build_target(ctx)
+    for p in ctx.project.std_packages :
+        if is_package_available(build_target, p):
+            if p == "flash9" or p == "flash8" :
+                p = "flash"
+            std_packages.append(p)
+
+    packs.extend( std_packages )
+    packs.extend( build_packs ) 
+
+    return packs
+
 def get_toplevel_completion( ctx  ) :
     
     project = ctx.project
     src = ctx.src 
-    build = ctx.build.copy()
-    is_macro_completion = ctx.options.macro_completion
+    build = ctx.build
+    
     only_types = ctx.is_new
     
     cl = []
-    packs = []
+    
     std_packages = []
 
     
-    build_target = "neko" if is_macro_completion else build.target
+    build_target = get_build_target(ctx)
 
-    if (only_types):
-        comps = []
-    else:
-        comps = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
+    comps = get_toplevel_keywords(ctx)
+        
 
     src = hxsrctools.comments.sub("",src)
 
@@ -61,8 +120,6 @@ def get_toplevel_completion( ctx  ) :
         return True
 
     build_classes = filter(filter_build, build_classes)
-    
-
 
     cl.extend( project.std_classes )
     
@@ -72,42 +129,12 @@ def get_toplevel_completion( ctx  ) :
 
     log("target: " + str(build_target))
 
-    for p in project.std_packages :
-        if is_package_available(build_target, p):
-            if p == "flash9" or p == "flash8" :
-                p = "flash"
-            std_packages.append(p)
 
-    packs.extend( std_packages )
-    packs.extend( build_packs ) 
-    if not only_types:
-        for v in hxsrctools.variables.findall(src) :
-            comps.append(( v + "\tvar" , v ))
+    packs = get_packages(ctx, build_packs)
     
-        for f in hxsrctools.named_functions.findall(src) :
-            if f not in ["new"] :
-                comps.append(( f + "\tfunction" , f ))
-        #TODO can we restrict this to local scope ?
-        for params_text in hxsrctools.function_params.findall(src) :
-            cleaned_params_text = re.sub(hxsrctools.param_default,"",params_text)
-            params_list = cleaned_params_text.split(",")
-            for param in params_list:
-                a = param.strip();
-                if a.startswith("?"):
-                    a = a[1:]
-                
-                idx = a.find(":") 
-                if idx > -1:
-                    a = a[0:idx]
-
-                idx = a.find("=")
-                if idx > -1:
-                    a = a[0:idx]
-                    
-                a = a.strip()
-                cm = (a + "\tvar", a)
-                if cm not in comps:
-                    comps.append( cm )
+    if not only_types:
+        comps.extend(get_local_vars_and_functions(ctx))
+        
 
     for c in cl :
         spl = c.split(".")
