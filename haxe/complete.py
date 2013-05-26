@@ -420,10 +420,7 @@ def is_same_completion_already_running(ctx):
 
 def should_include_top_level_completion(ctx):
     
-    in_control_struct = ctx.in_control_struct
-    
-
-    toplevel_complete = ctx.complete_char in ":(,{;" or in_control_struct or ctx.is_new
+    toplevel_complete = ctx.complete_char in ":(,{;" or ctx.in_control_struct or ctx.is_new
     
     return toplevel_complete
 
@@ -472,14 +469,6 @@ def hx_normal_auto_complete(project, view, offset, cache):
 
     #commas, complete_offset, prev_symbol_is_comma, is_new = get_completion_info(view, offset, src)
     
-    complete_char = ctx.complete_char
-
-    log("comp_type:" + comp_type)
-    log("src:" + str(ctx.src))
-    log("completion_info:" + str(ctx._completion_info))
-    log("complete_offset:" + str(ctx.complete_offset))
-    
-    log("complete_char:" + complete_char)
 
     res = None
     
@@ -524,9 +513,6 @@ def hx_normal_auto_complete(project, view, offset, cache):
             return get_toplevel_completion_if_reasonable(ctx)
 
         if only_top_level:
-            log("is_new or is_directly_after_control_struct")
-            log("is_after_cs: " + str(is_directly_after_control_struct))
-            log("is new: " + str(is_new))
             res = get_toplevel_completions()
         else:
 
@@ -535,10 +521,8 @@ def hx_normal_auto_complete(project, view, offset, cache):
             if use_completion_cache(ctx,last_ctx) :
                 log("USE COMPLETION CACHE")
                 out = cache["output"]
-
                 res = combine_hints_and_comps(out)
             else :
-                
                 toplevel_comps = get_toplevel_completions()
                 async = hxsettings.is_async_completion()
 
@@ -547,8 +531,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
                 comp_result = get_fresh_completions(ctx, toplevel_comps, cache)
                 comp_result.toplevel = toplevel_comps
 
-
-                if async and hxsettings.show_only_async_completions() and supported_compiler_completion_char(complete_char):
+                if async and hxsettings.show_only_async_completions() and supported_compiler_completion_char(ctx.complete_char):
                     # we don't show any completions at this point
                     res = cancel_completion(view, True)
                 else:
@@ -621,9 +604,11 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
                 return get_compiler_completion( ctx, display, cb )
             if async:
                 log("run async compiler completion")
+                view_id = ctx.view.id()
+                def cb_async (ret_, err_):
+                    async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id)
 
-                run_async_completion(ctx, list(toplevel_comps), temp_file, temp_path,
-                    cache, run_compiler_completion)
+                run_async_completion(ctx, run_compiler_completion, cb_async)
                 
                 res = CompletionResult.empty_result(ctx)
             else:
@@ -646,6 +631,30 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
 
     return res
 
+def run_async_completion(ctx, run_compiler_completion, cb):
+    
+    project = ctx.project
+    complete_offset = ctx.complete_offset
+    hide_delay = ctx.settings.get_completion_delays[0]
+    view_id = ctx.view.id()
+    only_async = hxsettings.show_only_async_completions()
+
+    start_time = time.time()
+
+    def in_main (ret_, err_):
+        run_time = time.time() - start_time;
+        log("async completion time: " + str(run_time))
+        cb(ret_, err_)
+        
+        
+    def on_result(ret_, err_):
+        sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_async else 20)
+
+    project.completion_context.running.insert(ctx.id, (complete_offset, view_id))
+    project.completion_context.current_id = ctx.id
+
+
+    run_compiler_completion(on_result)
 
 def output_to_result (ctx, temp_file, err, ret, toplevel_comps):
     hints, comps1, status, errors = get_completion_output(temp_file, ctx.orig_file, err, ctx.commas)
@@ -674,11 +683,10 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_co
         # do we still need this completion, or is it old
         has_results = comp_result.has_results()
         
-        if completion_id == project.completion_context.current_id and (has_results or hxsettings.show_only_async_completions()):
-            
+        if (has_results or hxsettings.show_only_async_completions()):
+
             project.completion_context.async.insert(view_id, comp_result)
             if only_async:
-                log("trigger_auto_complete")
                 if ctx.options.types.has_hint():
                     trigger_manual_completion_type(view,"hint")
                 else:
@@ -694,33 +702,7 @@ def async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_co
     project.completion_context.running.delete(completion_id)
 
 
-def run_async_completion(ctx, toplevel_comps, temp_file, temp_path, 
-        cache, run_compiler_completion):
-    
-    project = ctx.project
-    complete_offset = ctx.complete_offset
-    hide_delay = ctx.settings.get_completion_delays[0]
-    view_id = ctx.view.id()
-    only_async = hxsettings.show_only_async_completions()
 
-    start_time = time.time()
-
-    def in_main (ret_, err_):
-        run_time = time.time() - start_time;
-        log("async completion time: " + str(run_time))
-
-        async_completion_finished(ctx, ret_, err_, temp_file, temp_path, toplevel_comps, cache, view_id)
-        
-    def on_result(ret_, err_):
-        # replace current completion workaround
-        # delays are customizable with project settings
-        sublime.set_timeout(lambda : in_main(ret_, err_), hide_delay if not only_async else 20)
-
-    project.completion_context.running.insert(ctx.id, (complete_offset, view_id))
-    project.completion_context.current_id = ctx.id
-
-
-    run_compiler_completion(on_result)
 
 
 
