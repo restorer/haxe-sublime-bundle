@@ -1,6 +1,14 @@
 import sublime
-import haxe.lib as hxlib
+
 import re
+
+is_st3 = int(sublime.version()) >= 3000
+
+if is_st3:
+	import Haxe.haxe.lib as hxlib
+else:
+	import haxe.lib as hxlib
+
 
 
 lib_flag = re.compile("-lib\s+(.*?)")

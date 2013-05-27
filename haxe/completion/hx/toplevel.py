@@ -1,9 +1,19 @@
-from haxe.log import log
-import haxe.hxtools as hxsrctools
-import haxe.config as hxconfig
-import re
 
-from haxe.tools.decorator import lazyprop
+import re
+import sublime
+
+is_st3 = int(sublime.version()) >= 3000
+
+if is_st3:
+    from Haxe.haxe.tools.decorator import lazyprop
+    from Haxe.haxe.log import log
+    import Haxe.haxe.hxtools as hxsrctools
+    import Haxe.haxe.config as hxconfig
+else:
+    from haxe.tools.decorator import lazyprop
+    from haxe.log import log
+    import haxe.hxtools as hxsrctools
+    import haxe.config as hxconfig
 
 def has_upper_first (s):
     return s[0].isupper()
