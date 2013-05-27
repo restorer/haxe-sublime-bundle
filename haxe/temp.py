@@ -1,8 +1,14 @@
 import os
-import haxe.tools.path as path_tools
+
 import codecs
+import sublime
 
+is_st3 = int(sublime.version()) >= 3000
 
+if is_st3:
+	import Haxe.haxe.tools.path as path_tools
+else:
+	import haxe.tools.path as path_tools
 def get_temp_path(build):
 
 	id = 0

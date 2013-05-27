@@ -1,9 +1,16 @@
 import sys
 import os
 import sublime
-import thread
 
-from startup import STARTUP_INFO
+is_st3 = int(sublime.version()) >= 3000
+if is_st3:
+	import _thread as thread
+	from Haxe.haxe.startup import STARTUP_INFO
+else:
+	import thread
+	from haxe.startup import STARTUP_INFO
+
+
 from subprocess import Popen, PIPE
 
 
@@ -16,7 +23,7 @@ def run_cmd_async(args, callback, input=None, cwd=None, env=None):
 	thread.start_new_thread(in_thread, ())
 
 def _decoded(x):
-	return x.decode('utf-8') if x else ''
+		return x.decode('utf-8') if x else ''
 
 def run_cmd( args, input=None, cwd=None, env=None ):
 	
@@ -32,13 +39,17 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		for k in env:
 			
 			try:
-				val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
+				if is_st3:
+					val = unicode(env[k], "ISO-8859-1")
+				else:
+					val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
 			except:
-				val = env[k].encode(sys.getfilesystemencoding())
+				if is_st3:
+					val = env[k]
+				else:
+					val = env[k].encode(sys.getfilesystemencoding())
 		
 			env[k] = os.path.expandvars(val)
-
-
 
 
 		# safely remove empty strings from args
@@ -46,7 +57,10 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		
 		def encode_arg(a):
 			try:
-				a = unicode(a, "ISO-8859-1").encode(sys.getfilesystemencoding())
+				if is_st3:
+					a = unicode(a, "ISO-8859-1")
+				else:
+					a = unicode(a, "ISO-8859-1").encode(sys.getfilesystemencoding())
 			except:
 				a = a.encode(sys.getfilesystemencoding())
 			return a
@@ -56,7 +70,7 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		p = Popen(encoded_args, cwd=cwd, stdout=PIPE, stderr=PIPE, stdin=PIPE, 
 				startupinfo=STARTUP_INFO, env=env)
 		
-		if isinstance(input, unicode):
+		if not is_st3 and isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)
 

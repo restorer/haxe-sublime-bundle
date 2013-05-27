@@ -4,21 +4,24 @@ import os
 from xml.etree import ElementTree
 #from xml.etree.ElementTree import XMLTreeBuilder
 
+is_st3 = int(sublime.version()) >= 3000
 
-
-try :
+if not is_st3:
     from elementtree import SimpleXMLTreeBuilder # part of your codebase
     ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
-except ImportError as e:
-    pass # ST3
-    
 
+if is_st3:
+	import Haxe.haxe.panel as hxpanel
+	import Haxe.haxe.hxtools as hxtools
+	import Haxe.haxe.settings as hxsettings
 
-import haxe.panel as hxpanel
-import haxe.hxtools as hxtools
-import haxe.settings as hxsettings
+	from Haxe.haxe.log import log
+else:
+	import haxe.panel as hxpanel
+	import haxe.hxtools as hxtools
+	import haxe.settings as hxsettings
 
-from haxe.log import log
+	from haxe.log import log
 
 
 compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
@@ -117,7 +120,7 @@ def completion_field_to_entry(name, sig, doc):
 
 				label = name + "( " + " , ".join( types ) + " )\t" + ret if not_smart else "" + name + "( " + " , ".join( types ) + " )\t" + ret
 				
-				if len(label) > 40: # compact arguments
+				if not is_st3 and len(label) > 40: # compact arguments
 					label = hxtools.compact_func.sub("(...)", label);
 				
 				new_types = list(types)
@@ -131,7 +134,7 @@ def completion_field_to_entry(name, sig, doc):
 		label = name + "\tclass" if re.match("^[A-Z]",name ) else name + "\tpackage"
 			
 	
-	if len(label) > 40: # compact return type
+	if not is_st3 and len(label) > 40: # compact return type
 		m = hxtools.compact_prop.search(label)
 		if m is not None:
 			label = hxtools.compact_prop.sub(": " + m.group(1), label)
@@ -215,7 +218,7 @@ def parse_completion_output(temp_file, orig_file, output):
 		x = "<root>"+output.encode('utf-8')+"</root>";
 		tree = ElementTree.XML(x);
 		
-	except Exception,e:
+	except Exception as e:
 		tree = None
 		log("invalid xml - error: " + str(e))
 

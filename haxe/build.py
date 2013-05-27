@@ -5,14 +5,26 @@ import time
 import codecs
 import sublime
 
-import haxe.config as hxconfig
-import haxe.types as hxtypes
-import haxe.lib as hxlib
-import haxe.settings as hxsettings 
-import haxe.tools.path as path_tools
-import haxe.panel as hxpanel
-from haxe.execute import run_cmd, run_cmd_async
-from haxe.log import log
+is_st3 = int(sublime.version()) >= 3000
+
+if is_st3:
+	import Haxe.haxe.config as hxconfig
+	import Haxe.haxe.types as hxtypes
+	import Haxe.haxe.lib as hxlib
+	import Haxe.haxe.settings as hxsettings 
+	import Haxe.haxe.tools.path as path_tools
+	import Haxe.haxe.panel as hxpanel
+	from Haxe.haxe.execute import run_cmd, run_cmd_async
+	from Haxe.haxe.log import log
+else:
+	import haxe.config as hxconfig
+	import haxe.types as hxtypes
+	import haxe.lib as hxlib
+	import haxe.settings as hxsettings 
+	import haxe.tools.path as path_tools
+	import haxe.panel as hxpanel
+	from haxe.execute import run_cmd, run_cmd_async
+	from haxe.log import log
 
 
 hxml_cache = {}
@@ -353,29 +365,29 @@ class HaxeBuild :
 	def set_auto_completion (self, display, macro_completion = False, no_output = True):
 		
 		args = self.args
-		print args
+		print(args)
 		self.main = None
 		def filterTargets (x):
 			return x[0] != "-cs" and x[0] != "-x" and x[0] != "-js" and x[0] != "-php" and x[0] != "-cpp" and x[0] != "-swf" and x[0] != "-java"
 
 		if macro_completion:
-			args = filter(filterTargets, args )	
+			args = list(filter(filterTargets, args ))
 		else:
-			args = map(lambda x : ("-neko", x[1]) if x[0] == "-x" else x, args)
+			args = list(map(lambda x : ("-neko", x[1]) if x[0] == "-x" else x, args))
 
 		def filter_commands_and_dce (x):
 			return x[0] != "-cmd" and x[0] != "-dce"
 
 
 
-		args = filter(filter_commands_and_dce, args )	
+		args = list(filter(filter_commands_and_dce, args ))
 
 		if not self.show_times:
 			def filter_times (x):
 				return x[0] != "--times"
-			args = filter(filter_times, args)
+			args = list(filter(filter_times, args))
 
-		print args
+		print(args)
 
 		if (macro_completion) :
 			args.append(("-neko", "__temp.n"))
@@ -488,6 +500,6 @@ class HaxeBuild :
 		out1, err1 = run_cmd(["neko", neko_file])
 		hxpanel.default_panel().writeln(out1)
 		hxpanel.default_panel().writeln(err1)
-		#print err1
+		
 
 

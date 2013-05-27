@@ -1,5 +1,7 @@
 import sublime
 
+is_st3 = int(sublime.version()) >= 3000
+
 def get (id, view = None):
 	if view == None:
 		win = sublime.active_window()
@@ -43,7 +45,7 @@ def get_string (id, default, view = None):
 	if (r == None):
 		return default
 	else:
-		if isinstance(r, unicode):
+		if not is_st3 and isinstance(r, unicode):
 			return r.decode("iso-8859-1")
 		elif isinstance(r, str):
 			return r

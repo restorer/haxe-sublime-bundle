@@ -1,42 +1,47 @@
 import sys
+import sublime
+print("init haxe_plugin")
 
-print "init haxe_plugin"
+is_st3 = int(sublime.version()) >= 3000
+
+prefix = "Haxe." if is_st3 else ""
 
 plugin_modules = [
-     'haxe.config'
-    ,'haxe.project'
-    ,'haxe.build'
-    ,'haxe.completion.base'
-    ,'haxe.completion.hx.base'
-    ,'haxe.completion.hx.constants'
-    ,'haxe.completion.hx.types'
-    ,'haxe.completion.hx.toplevel'
-    ,'haxe.completion.hxsl.base'
-    ,'haxe.completion.hxml.base'
-    ,'haxe.commands'
-    ,'haxe.execute'
-    ,'haxe.codegen'
-    ,'haxe.compiler.server'
-    ,'haxe.compiler.output'
-    ,'haxe.lib'
-    ,'haxe.tools.path'
-    ,'haxe.tools.view'
-    ,'haxe.tools.scope'
-    ,'haxe.tools.cache'
-    ,'haxe.tools.decorator'
-    ,'haxe.panel'
-    ,'haxe.log'
-    ,'haxe.settings'
-    ,'haxe.startup'
-    ,'haxe.temp'
-    ,'haxe.types'
-    ,'haxe.hxtools'
+     prefix + 'haxe.config'
+    ,prefix + 'haxe.project'
+    ,prefix + 'haxe.build'
+    ,prefix + 'haxe.completion.base'
+    ,prefix + 'haxe.completion.hx.base'
+    ,prefix + 'haxe.completion.hx.constants'
+    ,prefix + 'haxe.completion.hx.types'
+    ,prefix + 'haxe.completion.hx.toplevel'
+    ,prefix + 'haxe.completion.hxsl.base'
+    ,prefix + 'haxe.completion.hxml.base'
+    ,prefix + 'haxe.commands'
+    ,prefix + 'haxe.execute'
+    ,prefix + 'haxe.codegen'
+    ,prefix + 'haxe.compiler.server'
+    ,prefix + 'haxe.compiler.output'
+    ,prefix + 'haxe.lib'
+    ,prefix + 'haxe.tools.path'
+    ,prefix + 'haxe.tools.view'
+    ,prefix + 'haxe.tools.scope'
+    ,prefix + 'haxe.tools.cache'
+    ,prefix + 'haxe.tools.decorator'
+    ,prefix + 'haxe.panel'
+    ,prefix + 'haxe.log'
+    ,prefix + 'haxe.settings'
+    ,prefix + 'haxe.startup'
+    ,prefix + 'haxe.temp'
+    ,prefix + 'haxe.types'
+    ,prefix + 'haxe.hxtools'
+    ,prefix + 'haxe.plugin'
 ]
 
 reload_mods = []
 
 for mod in sys.modules:
-    if (mod[0:5] == 'haxe.' or mod == 'haxe') and sys.modules[mod] != None:
+    if (mod[0:5] == 'haxe.' or mod == 'haxe' or mod == 'Haxe' or mod[0:5] == 'Haxe.') and sys.modules[mod] != None:
         reload_mods.append(mod) 
 
 reloaded = []
@@ -44,7 +49,8 @@ imported = []
 for mod in plugin_modules:
     if mod in reload_mods:
         reloaded.append(mod)
-        reload(sys.modules[mod])
+        if not is_st3:
+            reload(sys.modules[mod])
     else:
         imported.append(mod)
         __import__(mod)
@@ -52,93 +58,159 @@ for mod in plugin_modules:
 def mod_str (mods):
     return (str(len(mods)) + " modules ")  + ("\n" + ", ".join(mods) if len(mods) > 0 else "")
 
-print "-----------------"
-print "Reloaded modules: " + mod_str(reloaded)
-print "\nImported modules: " + mod_str(imported)
-print "-----------------"
+print("-----------------")
+print("Reloaded modules: " + mod_str(reloaded))
+print("\nImported modules: " + mod_str(imported))
+print("-----------------")
 
 
 # all classes must be included manually, because sublimes autoreload does
 # not reload them otherwise (at runtime)
 
-from haxe.compiler.server import (
+if not is_st3:
 
-    Server
-)
+    from haxe.compiler.server import (
 
-from haxe.build import (
+        Server
+    )
 
-    HaxeBuild
-)
+    from haxe.build import (
 
-from haxe.project import (
+        HaxeBuild
+    )
 
-     Project
-    ,ProjectCompletionContext
-)
+    from haxe.project import (
 
-from haxe.completion.base import (
+         Project
+        ,ProjectCompletionContext
+    )
 
-     HaxeCompleteListener
-     
-) 
+    from haxe.completion.base import (
 
-#from haxe.completion.hx import
+         HaxeCompleteListener
+         
+    ) 
 
-#from haxe.completion.hxsl import ()
+    from haxe.completion.hx.types import (
 
-     
-     
+         CompletionOptions
+        ,CompletionTypes
+        ,TopLevelOptions
+        ,CompletionSettings
+        ,CompletionContext
+        ,CompletionInfo
+    ) 
 
+    from haxe.commands import (
 
-from haxe.completion.hx.types import (
+         HaxeGetTypeOfExprCommand
+        ,HaxeDisplayCompletionCommand
+        ,HaxeDisplayMacroCompletionCommand
+        ,HaxeHintDisplayCompletionCommand
+        ,HaxeMacroHintDisplayCompletionCommand
+        ,HaxeInsertCompletionCommand
+        ,HaxeSaveAllAndBuildCommand
+        ,HaxeRunBuildCommand
+        ,HaxeRunBuildAltCommand
+        ,HaxeSelectBuildCommand 
+        ,HaxeRestartServerCommand
+        ,HaxeGenerateUsingCommand
+        ,HaxeGenerateImportCommand
+        ,HaxeCreateTypeCommand
+        ,HaxeCreateTypeListener
+        ,HaxeFindDeclarationCommand 
+        ,HaxeExecCommand
+        ,HaxeBuildOnSaveListener
+        ,HaxeFindDeclarationListener
 
-     CompletionOptions
-    ,CompletionTypes
-    ,TopLevelOptions
-    ,CompletionSettings
-    ,CompletionContext
-    ,CompletionInfo
-) 
+    ) 
 
-from haxe.commands import (
+    from haxe.panel import (
 
-     HaxeGetTypeOfExprCommand
-    ,HaxeDisplayCompletionCommand
-    ,HaxeDisplayMacroCompletionCommand
-    ,HaxeHintDisplayCompletionCommand
-    ,HaxeMacroHintDisplayCompletionCommand
-    ,HaxeInsertCompletionCommand
-    ,HaxeSaveAllAndBuildCommand
-    ,HaxeRunBuildCommand
-    ,HaxeRunBuildAltCommand
-    ,HaxeSelectBuildCommand 
-    ,HaxeRestartServerCommand
-    ,HaxeGenerateUsingCommand
-    ,HaxeGenerateImportCommand
-    ,HaxeCreateTypeCommand
-    ,HaxeCreateTypeListener
-    ,HaxeFindDeclarationCommand 
-    ,HaxeExecCommand
-    ,HaxeBuildOnSaveListener
-    ,HaxeFindDeclarationListener
+         PanelCloseListener
+        ,TabPanel
+        ,SlidePanel
+    )
 
-) 
+    from haxe.codegen import (
 
-from haxe.panel import (
+         HaxeImportGenerator
+    )
 
-     PanelCloseListener
-    ,TabPanel
-    ,SlidePanel
-)
+    from haxe.tools.cache import (
+         Cache
+    )
+else:
+    from Haxe.haxe.compiler.server import (
 
-from haxe.codegen import (
+        Server
+    )
 
-     HaxeImportGenerator
-)
+    from Haxe.haxe.build import (
 
-from haxe.tools.cache import (
-     Cache
-)
+        HaxeBuild
+    )
 
-print "init haxe_plugin finished"   
+    from Haxe.haxe.project import (
+
+         Project
+        ,ProjectCompletionContext
+    )
+
+    from Haxe.haxe.completion.base import (
+
+         HaxeCompleteListener
+         
+    ) 
+
+    from Haxe.haxe.completion.hx.types import (
+
+         CompletionOptions
+        ,CompletionTypes
+        ,TopLevelOptions
+        ,CompletionSettings
+        ,CompletionContext
+        ,CompletionInfo
+    ) 
+
+    from Haxe.haxe.commands import (
+
+         HaxeGetTypeOfExprCommand
+        ,HaxeDisplayCompletionCommand
+        ,HaxeDisplayMacroCompletionCommand
+        ,HaxeHintDisplayCompletionCommand
+        ,HaxeMacroHintDisplayCompletionCommand
+        ,HaxeInsertCompletionCommand
+        ,HaxeSaveAllAndBuildCommand
+        ,HaxeRunBuildCommand
+        ,HaxeRunBuildAltCommand
+        ,HaxeSelectBuildCommand 
+        ,HaxeRestartServerCommand
+        ,HaxeGenerateUsingCommand
+        ,HaxeGenerateImportCommand
+        ,HaxeCreateTypeCommand
+        ,HaxeCreateTypeListener
+        ,HaxeFindDeclarationCommand 
+        ,HaxeExecCommand
+        ,HaxeBuildOnSaveListener
+        ,HaxeFindDeclarationListener
+
+    ) 
+
+    from Haxe.haxe.panel import (
+
+         PanelCloseListener
+        ,TabPanel
+        ,SlidePanel
+    )
+
+    from Haxe.haxe.codegen import (
+
+         HaxeImportGenerator
+    )
+
+    from Haxe.haxe.tools.cache import (
+         Cache
+    )
+
+print("init haxe_plugin finished")

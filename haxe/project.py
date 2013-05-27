@@ -3,19 +3,38 @@ import sublime
 import os
 import re
 import sys
-import haxe.build as hxbuild
-import haxe.panel as hxpanel
-import haxe.hxtools as hxsrctools
-import haxe.types as hxtypes
-import haxe.settings as hxsettings
-import haxe.tools.path as path_tools
-import haxe.compiler.server as hxserver
+import sublime
 
-from haxe.execute import run_cmd
-from haxe.log import log
-from haxe.tools.cache import Cache
+is_st3 = int(sublime.version()) >= 3000
 
+if is_st3:
+    import Haxe.haxe.build as hxbuild
+    import Haxe.haxe.panel as hxpanel
+    import Haxe.haxe.hxtools as hxsrctools
+    import Haxe.haxe.types as hxtypes
+    import Haxe.haxe.settings as hxsettings
+    import Haxe.haxe.tools.path as path_tools
+    import Haxe.haxe.compiler.server as hxserver
 
+    from Haxe.haxe.execute import run_cmd
+    from Haxe.haxe.log import log
+    from Haxe.haxe.tools.cache import Cache
+else:
+    import haxe.build as hxbuild
+    import haxe.panel as hxpanel
+    import haxe.hxtools as hxsrctools
+    import haxe.types as hxtypes
+    import haxe.settings as hxsettings
+    import haxe.tools.path as path_tools
+    import haxe.compiler.server as hxserver
+
+    from haxe.execute import run_cmd
+    from haxe.log import log
+    from haxe.tools.cache import Cache
+is_st3 = int(sublime.version()) >= 3000
+
+#if is_st3():
+#    str = unicode
 
 class ProjectCompletionContext:
 
@@ -95,7 +114,7 @@ def haxe_build_env (project_dir):
 
     
    
-    print str(env)
+    print(str(env))
     return env
 
 
@@ -160,7 +179,7 @@ class Project:
             self.serverMode = True
         else:
             self.serverMode = int(ver.group(1)) >= 209
-        print ver
+        print(ver)
         self.std_paths = std_paths
         self.std_packages = packs
         self.std_classes = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
@@ -515,59 +534,64 @@ def collect_compiler_info (project_path):
     return (classes, packs, ver, std_paths)
 
 def _get_project_file(win_id = None):
-    global _last_project
-    global _last_modification_time
-
-    log( "try getting project file")
-
-    if win_id == None:
-        win_id = sublime.active_window().id()
-
-    project = None
-    reg_session = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Session.sublime_session"))
-    auto_save = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Auto Save Session.sublime_session"))
-    session = auto_save if os.path.exists(auto_save) else reg_session
-
-    print auto_save
-    print reg_session
-    print session
-
-    if not os.path.exists(session) or win_id == None:
-        return project
-
-
-    mtime = os.path.getmtime(session)
-
-    if (_last_modification_time is not None 
-        and mtime == _last_modification_time
-        and _last_project != None):
-        _last_modification_time = mtime
-        log( "cached project id")
-        return _last_project
+    if is_st3:
+        #if win_id == None:
+        #    win_id = sublime.active_window().id()
+        return sublime.active_window().project_file_name()
     else:
-        _last_modification_time = mtime
-    try:
-        with open(session, 'r') as f:
-            # Tabs in strings messes things up for some reason
-            j = json.JSONDecoder(strict=False).decode(f.read())
-            for w in j['windows']:
-                if w['window_id'] == win_id:
-                    if "workspace_name" in w:
-                        if sublime.platform() == "windows":
-                            # Account for windows specific formatting
-                            project = os.path.normpath(w["workspace_name"].lstrip("/").replace("/", ":/", 1))
-                        else:
-                            project = w["workspace_name"]
-                        break
-    except:
-        pass
+        global _last_project
+        global _last_modification_time
 
-    # Throw out empty project names
-    if project == None or re.match(".*\\.sublime-project", project) == None or not os.path.exists(project):
+        log( "try getting project file")
+
+        if win_id == None:
+            win_id = sublime.active_window().id()
+
         project = None
+        reg_session = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Session.sublime_session"))
+        auto_save = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Auto Save Session.sublime_session"))
+        session = auto_save if os.path.exists(auto_save) else reg_session
 
-    _last_project = project
-    return project
+        print(auto_save)
+        print(reg_session)
+        print(session)
+
+        if not os.path.exists(session) or win_id == None:
+            return project
+
+
+        mtime = os.path.getmtime(session)
+
+        if (_last_modification_time is not None 
+            and mtime == _last_modification_time
+            and _last_project != None):
+            _last_modification_time = mtime
+            log( "cached project id")
+            return _last_project
+        else:
+            _last_modification_time = mtime
+        try:
+            with open(session, 'r') as f:
+                # Tabs in strings messes things up for some reason
+                j = json.JSONDecoder(strict=False).decode(f.read())
+                for w in j['windows']:
+                    if w['window_id'] == win_id:
+                        if "workspace_name" in w:
+                            if sublime.platform() == "windows":
+                                # Account for windows specific formatting
+                                project = os.path.normpath(w["workspace_name"].lstrip("/").replace("/", ":/", 1))
+                            else:
+                                project = w["workspace_name"]
+                            break
+        except:
+            pass
+
+        # Throw out empty project names
+        if project == None or re.match(".*\\.sublime-project", project) == None or not os.path.exists(project):
+            project = None
+
+        _last_project = project
+        return project
 
 
 def select_nme_target( build, i, view ):
@@ -591,12 +615,14 @@ _next_server_port = [6000]
 def current_project(view = None):
 
 
+    
+
     log("next server port: " + str(_next_server_port[0]))
 
     win_ids = [w.id() for w in sublime.windows()]
 
     remove = []
-    for p in _projects.data.iterkeys():
+    for p in _projects.data.keys():
         proj = _projects.get_or_default(p, None)
         if proj != None and proj.win_id not in win_ids:
             remove.append(p)
@@ -632,7 +658,7 @@ def current_project(view = None):
 
     def create ():
         p = Project(id, file, win.id(), _next_server_port[0])
-        _next_server_port[0] = _next_server_port[0] + 1
+        _next_server_port[0] = _next_server_port[0] + 20
         return p
     res = _projects.get_or_insert(id, create )
     

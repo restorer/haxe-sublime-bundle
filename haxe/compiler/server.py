@@ -4,9 +4,16 @@ import os
 import atexit
 from subprocess import Popen
 
-from haxe.startup import STARTUP_INFO
-from haxe.log import log
-import haxe.panel as hxpanel
+is_st3 = int(sublime.version()) >= 3000
+
+if is_st3:
+	from Haxe.haxe.startup import STARTUP_INFO
+	from Haxe.haxe.log import log
+	import Haxe.haxe.panel as hxpanel
+else:
+	from haxe.startup import STARTUP_INFO
+	from haxe.log import log
+	import haxe.panel as hxpanel
 
 class Server ():
 	def __init__ (self, port):
@@ -33,7 +40,10 @@ class Server ():
 				if env != None:
 					for k in env:
 						try:
-							val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
+							if is_st3:
+								val = env[k]
+							else:
+								val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
 						except:
 							val = env[k].encode(sys.getfilesystemencoding())
 						

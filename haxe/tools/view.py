@@ -1,7 +1,12 @@
 import sublime
 import os
 
-import haxe.config as hxconfig
+is_st3 = int(sublime.version()) >= 3000
+
+if is_st3:
+	import Haxe.haxe.config as hxconfig
+else:
+	import haxe.config as hxconfig
 
 def find_view_by_name (name):
 	windows = sublime.windows()

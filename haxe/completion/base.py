@@ -1,15 +1,31 @@
-import haxe.tools.view as view_tools
-import haxe.project as hxproject
+
 import sublime
 import sublime_plugin
-import haxe.tools.scope as scope_tools
-import haxe.config as hxconfig
 
-from haxe.log import log
+is_st3 = int(sublime.version()) >= 3000
 
-import haxe.completion.hx.base as hx 
-import haxe.completion.hxml.base as hxml
-import haxe.completion.hxsl.base as hxsl
+if is_st3:
+    import Haxe.haxe.tools.view as view_tools
+    import Haxe.haxe.project as hxproject
+    import Haxe.haxe.tools.scope as scope_tools
+    import Haxe.haxe.config as hxconfig
+
+    from Haxe.haxe.log import log
+
+    import Haxe.haxe.completion.hx.base as hx 
+    import Haxe.haxe.completion.hxml.base as hxml
+    import Haxe.haxe.completion.hxsl.base as hxsl
+else:
+    import haxe.tools.view as view_tools
+    import haxe.project as hxproject
+    import haxe.tools.scope as scope_tools
+    import haxe.config as hxconfig
+
+    from haxe.log import log
+
+    import haxe.completion.hx.base as hx 
+    import haxe.completion.hxml.base as hxml
+    import haxe.completion.hxsl.base as hxsl
 
 
 import time
@@ -25,8 +41,11 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
     def on_load( self, view ) :
 
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
-            if not hxproject.current_project(view).has_build():
-                hxproject.current_project(view).generate_build( view )
+            def on_load_delay():
+                if not hxproject.current_project(view).has_build():
+                    hxproject.current_project(view).generate_build( view )
+
+            sublime.set_timeout(lambda: on_load_delay, 100)
 
 
     def on_post_save( self , view ) :
@@ -36,6 +55,7 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
             
     # if view is None it's a preview
     def on_activated( self , view ) :
+        log("on_activated")
         if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
 
             sublime.set_timeout(lambda: hxproject.current_project(view), 100)

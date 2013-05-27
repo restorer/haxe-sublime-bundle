@@ -3,10 +3,18 @@ import os
 import sublime, sublime_plugin
 import functools
 
-import haxe.settings as hxsettings
-import haxe.types as hxtypes
+is_st3 = int(sublime.version()) >= 3000
 
-from haxe.execute import run_cmd
+if is_st3:
+	import Haxe.haxe.settings as hxsettings
+	import Haxe.haxe.types as hxtypes
+
+	from Haxe.haxe.execute import run_cmd
+else:
+	import haxe.settings as hxsettings
+	import haxe.types as hxtypes
+
+	from haxe.execute import run_cmd
 
 libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
 
@@ -90,7 +98,7 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 		return menu
 
 	def run(self):
-		print "try install lib"
+		print("try install lib")
 		out,err = run_cmd([hxsettings.haxelib_exec() , "search" , " "]);
 		
 		libs = self.collect_libraries(out)
@@ -112,7 +120,7 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 			cmd = [haxelib , "upgrade" ]
 		else :
 			lib = libs[i]
-			print "lib to install: " + lib
+			print("lib to install: " + lib)
 			if lib in HaxeLib.available :
 				cmd = [haxelib , "remove" , lib ]	
 			else :

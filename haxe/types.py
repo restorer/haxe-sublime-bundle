@@ -1,8 +1,18 @@
 import os, codecs, glob
-import haxe.config as hxconfig
-import haxe.hxtools as hxtools
-from haxe.log import log
-from haxe.tools.cache import Cache
+import sublime
+
+is_st3 = int(sublime.version()) >= 3000
+
+if is_st3:
+	import Haxe.haxe.config as hxconfig
+	import Haxe.haxe.hxtools as hxtools
+	from Haxe.haxe.log import log
+	from Haxe.haxe.tools.cache import Cache
+else:
+	import haxe.config as hxconfig
+	import haxe.hxtools as hxtools
+	from haxe.log import log
+	from haxe.tools.cache import Cache
 
 
 def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None, include_private_types = True):

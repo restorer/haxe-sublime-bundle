@@ -2,17 +2,23 @@ import sublime, sublime_plugin
 
 from datetime import datetime
 
-import haxe.tools.view as view_tools
+is_st3 = int(sublime.version()) >= 3000
 
-
-
-import haxe.settings as hxsettings
-
-from haxe.tools.cache import Cache
+if is_st3:
+	import Haxe.haxe.tools.view as view_tools
+	import Haxe.haxe.settings as hxsettings
+	from Haxe.haxe.tools.cache import Cache
+else:
+	import haxe.tools.view as view_tools
+	import haxe.settings as hxsettings
+	from haxe.tools.cache import Cache
 
 def _haxe_file_regex():
-	from project import haxe_file_regex
- 	return "^[0-9]{2}:[0-9]{2}:[0-9]{2} " + haxe_file_regex[1:]
+	if is_st3:
+		from Haxe.haxe.project import haxe_file_regex
+	else:
+		from haxe.project import haxe_file_regex
+	return "^[0-9]{2}:[0-9]{2}:[0-9]{2} " + haxe_file_regex[1:]
 
 
 def timestamp_msg (msg):
@@ -46,7 +52,7 @@ class SlidePanel ():
 		region = sublime.Region(panel.size(),panel.size() + len(text))
 		panel.insert(edit, panel.size(), text)
 		panel.end_edit( edit )
-
+		
 		if scope is not None :
 			icon = "dot"
 			key = "haxe-" + scope
@@ -55,7 +61,7 @@ class SlidePanel ():
 			panel.add_regions( key , regions , scope , icon )
 		
 		win.run_command("show_panel",{"panel":"output.haxe"})
-
+		
 
 		
 		def f ():
@@ -130,13 +136,16 @@ class TabPanel():
 
 					self.output_view = v
 					self.output_view_id = v.id()
-					print "output_view_id:" + str(self.output_view_id)
+					print("output_view_id:" + str(self.output_view_id))
 
 				if (v != None):
 					#v.set_read_only(False)
-					edit = v.begin_edit()
-					v.insert(edit, 0, msg1)
-					v.end_edit( edit )
+					if is_st3:
+						v.run_command("text2", msg1)
+					else:
+						edit = v.begin_edit()
+						v.insert(edit, 0, msg1)
+						v.end_edit( edit )
 					#v.set_read_only(True)
 
 		sublime.set_timeout(f,40)
@@ -149,6 +158,11 @@ class TabPanel():
 	def status (self, title, msg):
 		if valid_message(msg):
 			self.writeln(title + ": " + msg)
+
+
+class Text2Command(sublime_plugin.TextCommand):
+    def run(self, edit, msg):
+    	self.view.insert(edit, 0, msg1)
 
 
 class PanelCloseListener (sublime_plugin.EventListener):
@@ -170,7 +184,7 @@ class PanelCloseListener (sublime_plugin.EventListener):
 			for p in [_tab_panel, _debug_panel]:
 				panel = p.get_or_default(panel_win_id, None)
 				if panel != None and panel.output_view != None and view_id == panel.output_view_id:
-					print "panel safely removed"
+					print("panel safely removed")
 					panel.output_view = None
 					panel.output_view_id = None
 

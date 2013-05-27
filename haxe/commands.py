@@ -5,19 +5,32 @@ import json
 import codecs
 from sublime import Region
 
-import haxe.project as hxproject
-import haxe.codegen
-import haxe.tools.path as path_tools
-import haxe.hxtools as hxsrctools
-import haxe.settings as hxsettings
-from haxe.log import log
+is_st3 = int(sublime.version()) >= 3000
 
-import haxe.completion.hx.constants as hxcc
+if is_st3:
+    import Haxe.haxe.project as hxproject
+    import Haxe.haxe.codegen as hxcodegen
+    import Haxe.haxe.tools.path as path_tools
+    import Haxe.haxe.hxtools as hxsrctools
+    import Haxe.haxe.settings as hxsettings
+    import Haxe.haxe.completion.hx.constants as hxcc
+    import Haxe.haxe.tools.view as view_tools
+    import Haxe.haxe.temp as hxtemp
 
-import haxe.tools.view as view_tools
-import haxe.temp as hxtemp
+    from Haxe.haxe.log import log
+    from Haxe.haxe.completion.hx.types import CompletionOptions
+else:
+    import haxe.project as hxproject
+    import haxe.codegen as hxcodegen
+    import haxe.tools.path as path_tools
+    import haxe.hxtools as hxsrctools
+    import haxe.settings as hxsettings
+    import haxe.completion.hx.constants as hxcc
+    import haxe.tools.view as view_tools
+    import haxe.temp as hxtemp
 
-from haxe.completion.hx.types import CompletionOptions
+    from haxe.log import log
+    from haxe.completion.hx.types import CompletionOptions
 
 plugin_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
@@ -40,7 +53,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         self.run1(True, False)
 
     def run1 (self, use_display, inline_workaround = False):
-        print "run HaxeFindDeclarationCommand"
+        print("run HaxeFindDeclarationCommand")
         view = self.view
 
         file_name = view.file_name()
@@ -401,14 +414,14 @@ class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 class HaxeGenerateUsingCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
         log("run HaxeGenerateUsingCommand")
-        haxe.codegen.generate_using(self.view, edit)
+        hxcodegen.generate_using(self.view, edit)
         
 
 class HaxeGenerateImportCommand( sublime_plugin.TextCommand ):
 
     def run( self, edit ) :
         log("run HaxeGenerateImportCommand")
-        haxe.codegen.generate_import(self.view, edit)
+        hxcodegen.generate_import(self.view, edit)
         
 
 
@@ -441,7 +454,7 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
         pack = [];
 
         if len(builds) == 0 and view != None and view.file_name() != None:
-            print view.file_name()
+            print(view.file_name())
             project.extract_build_args(view)
             builds = project.builds
 
@@ -577,7 +590,10 @@ class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 
 import sublime, sublime_plugin
 import os, sys
-import thread
+if is_st3:
+    import _thread as thread
+else:
+    import thread
 import subprocess
 import functools
 import time
@@ -728,7 +744,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
         self.proc = None
         if not self.quiet:
-            print "Running " + " ".join(cmd)
+            print("Running " + " ".join(cmd))
 
             sublime.status_message("Building")
 
@@ -825,10 +841,14 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
             sublime.status_message(("Build finished with %d errors") % len(errs))
 
         # Set the selection to the start, so that next_result will work as expected
-        edit = self.output_view.begin_edit()
-        self.output_view.sel().clear()
-        self.output_view.sel().add(sublime.Region(0))
-        self.output_view.end_edit(edit)
+        
+        if is_st3:
+            self.output_view.run_coomand("text1")
+        else:
+            edit = self.output_view.begin_edit()
+            self.output_view.sel().clear()
+            self.output_view.sel().add(sublime.Region(0))
+            self.output_view.end_edit(edit)
 
     def on_data(self, proc, data):
         sublime.set_timeout(lambda : log(data), 0)
@@ -836,3 +856,9 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
     def on_finished(self, proc):
         sublime.set_timeout(functools.partial(self.finish, proc), 0)
+
+
+class Text1Command(sublime_plugin.TextCommand):
+    def run(self, edit, user_input=None):
+        self.output_view.sel().clear()
+        self.output_view.sel().add(sublime.Region(0))
