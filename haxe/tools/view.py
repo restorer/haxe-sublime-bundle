@@ -1,4 +1,4 @@
-import sublime
+import sublime, sublime_plugin
 import os
 
 is_st3 = int(sublime.version()) >= 3000
@@ -7,6 +7,37 @@ if is_st3:
 	import Haxe.haxe.config as hxconfig
 else:
 	import haxe.config as hxconfig
+
+
+# convert edit operation into a async operation with a callback
+
+_async_edit_id = 0
+_async_edit_dict = dict()
+
+def async_edit(view, do_edit):
+	if is_st3:
+	    def start():
+	        global _async_edit_id
+	        global _async_edit_dict
+	        id = str(_async_edit_id)
+	        _async_edit_id += 1
+	        _async_edit_dict[id] = do_edit
+	        print("run_text_edit_command: " + id)
+	        view.run_command("haxe_text_edit", { "id" : id })
+	        
+	    sublime.set_timeout(start, 10)
+	else:
+		edit = view.begin_edit()
+		sublime.set_timeout(lambda: do_edit(view, edit), 10)
+
+class HaxeTextEditCommand (sublime_plugin.TextCommand):
+    def run (self, edit, id):
+        print("run_text_edit: " + id)
+        global _async_edit_dict
+        if id in _async_edit_dict:
+            fun = _async_edit_dict[id]
+            del _async_edit_dict[id]
+            fun(self.view, edit)
 
 def find_view_by_name (name):
 	windows = sublime.windows()

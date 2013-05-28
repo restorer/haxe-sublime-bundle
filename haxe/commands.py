@@ -8,6 +8,7 @@ from sublime import Region
 is_st3 = int(sublime.version()) >= 3000
 
 if is_st3:
+    import Haxe.haxe.tools.view as view_tools
     import Haxe.haxe.project as hxproject
     import Haxe.haxe.codegen as hxcodegen
     import Haxe.haxe.tools.path as path_tools
@@ -20,6 +21,7 @@ if is_st3:
     from Haxe.haxe.log import log
     from Haxe.haxe.completion.hx.types import CompletionOptions
 else:
+    import haxe.tools.view as view_tools
     import haxe.project as hxproject
     import haxe.codegen as hxcodegen
     import haxe.tools.path as path_tools
@@ -546,6 +548,9 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
         None
 
 
+
+
+
 class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
     def on_post_save(self, view):
         log("on_post_save")
@@ -567,8 +572,9 @@ class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
 class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 
 
-    def on_activated( self, view ) : 
-        self.create_file(view)      
+    #def on_activated( self, view ) : 
+    #    pass
+        #self.create_file(view)      
 
     def on_load (self, view):
         self.create_file(view)
@@ -576,13 +582,19 @@ class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 
     def create_file(self, view):
         if view is not None and view.file_name() != None and view.file_name() in current_create_type_info and view.size() == 0 :
-            e = view.begin_edit()
-            view.insert(e,0,current_create_type_info[view.file_name()])
-            view.end_edit(e)
-            sel = view.sel()
-            sel.clear()
-            pt = view.text_point(5,1)
-            sel.add( sublime.Region(pt,pt) )
+            data = current_create_type_info[view.file_name()];
+            
+            def run_edit(v, edit):
+                v.insert(edit,0,data)
+                v.end_edit(edit)
+                sel = v.sel()
+                sel.clear()
+                pt = v.text_point(5,1)
+                sel.add( sublime.Region(pt,pt) )
+
+            view_tools.async_edit(view, run_edit)
+         
+
 
 
 
@@ -608,107 +620,152 @@ class ProcessListener(object):
 
 # Encapsulates subprocess.Popen, forwarding stdout to a supplied
 # ProcessListener (on a separate thread)
-class AsyncProcess(object):
-    def __init__(self, arg_list, env, listener,
-            # "path" is an option in build systems
-            path="",
-            # "shell" is an options in build systems
-            shell=False):
+#class AsyncProcess(object):
+#    def __init__(self, arg_list, env = {}, listener,
+#            # "path" is an option in build systems
+#            path="",
+#            # "shell" is an options in build systems
+#            shell=False):
+#
+#        self.listener = listener
+#        self.killed = False
+#
+#        self.start_time = time.time()
+#
+#        # Hide the console window on Windows
+#        startupinfo = None
+#        if os.name == "nt":
+#            startupinfo = subprocess.STARTUPINFO()
+#            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+#
+#        # Set temporary PATH to locate executable in arg_list
+#        if path:
+#            old_path = os.environ["PATH"]
+#            # The user decides in the build system whether he wants to append $PATH
+#            # or tuck it at the front: "$PATH;C:\\new\\path", "C:\\new\\path;$PATH"
+#            
+#            ##### Dirty FIX 1 for umlauts, please clean up
+#            try:
+#                val = str(path)
+#            except:
+#                val = path.encode(sys.getfilesystemencoding())
+#            os.environ["PATH"] = os.path.expandvars(val)
+#            #os.environ["PATH"] = path.encode(sys.getfilesystemencoding())
+#            ##### END FIX 1
+#        
+#        env_new = dict()
+#        print("ENV: " + str(env_new))
+#        env_items = env.items() if is_st3  else env.iteritems()
+#        print("ENV: " + str(env))
+#        for k, v in env_items:
+#            env_new[k] = str(v, "utf-8")
+#
+#        print("ENV_NEW: " + str(env_new))
+#        env = env_new
+#
+#        proc_env = os.environ.copy()
+#        proc_env.update(env)
+#        items = proc_env.items() if is_st3  else proc_env.iteritems()
+#        for k, v in items:
+#            ##### Dirty FIX 2, for umlauts please clean up
+#            try:
+#                if is_st3:
+#                    print(v)
+#
+#                    val = str(v,sys.getfilesystemencoding())
+#                    print(val)
+#                else: 
+#                    val = unicode(v, "ISO-8859-1").encode(sys.getfilesystemencoding())
+#            except:
+#                if is_st3:
+#                    val = v.encode(sys.getfilesystemencoding())
+#                else:
+#                    val = v.encode(sys.getfilesystemencoding())
+#            proc_env[k] = os.path.expandvars(val)
+#
+#
+#        print(str(arg_list))
+#        print(str(proc_env))
+#        print(str(shell))
+#
+#        self.proc = subprocess.Popen(args=arg_list, stdout=subprocess.PIPE,
+#            stderr=subprocess.PIPE, 
+#            startupinfo=startupinfo, 
+#            env=proc_env, 
+#            shell=shell)
+#
+#        if path:
+#            os.environ["PATH"] = old_path
+#
+#        if self.proc.stdout:
+#            thread.start_new_thread(self.read_stdout, ())
+#
+#        if self.proc.stderr:
+#            thread.start_new_thread(self.read_stderr, ())
+#
+#    def kill(self):
+#        if not self.killed:
+#            self.killed = True
+#            try:
+#                self.proc.terminate()
+#            except:
+#                pass
+#            self.listener = None
+#
+#    def poll(self):
+#        return self.proc.poll() == None
+#
+#    def exit_code(self):
+#        return self.proc.poll()
+#
+#    def read_stdout(self):
+#        while True:
+#            data = os.read(self.proc.stdout.fileno(), 2**15)
+#
+#            if data != "":
+#                if self.listener:
+#                    self.listener.on_data(self, data)
+#            else:
+#                self.proc.stdout.close()
+#                if self.listener:
+#                    self.listener.on_finished(self)
+#                break
+#
+#    def read_stderr(self):
+#        while True:
+#            data = os.read(self.proc.stderr.fileno(), 2**15)
+#
+#            if data != "":
+#                if self.listener:
+#                    self.listener.on_data(self, data)
+#            else:
+#                self.proc.stderr.close()
+#                break
+#
 
-        self.listener = listener
-        self.killed = False
-
-        self.start_time = time.time()
-
-        # Hide the console window on Windows
-        startupinfo = None
-        if os.name == "nt":
-            startupinfo = subprocess.STARTUPINFO()
-            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-
-        # Set temporary PATH to locate executable in arg_list
-        if path:
-            old_path = os.environ["PATH"]
-            # The user decides in the build system whether he wants to append $PATH
-            # or tuck it at the front: "$PATH;C:\\new\\path", "C:\\new\\path;$PATH"
-            
-            ##### Dirty FIX 1 for umlauts, please clean up
-            try:
-                val = unicode(path, "ISO-8859-1").encode(sys.getfilesystemencoding())
-            except:
-                val = path.encode(sys.getfilesystemencoding())
-            os.environ["PATH"] = os.path.expandvars(val)
-            #os.environ["PATH"] = path.encode(sys.getfilesystemencoding())
-            ##### END FIX 1
-        proc_env = os.environ.copy()
-        proc_env.update(env)
-        for k, v in proc_env.iteritems():
-            ##### Dirty FIX 2, for umlauts please clean up
-            try:
-                val = unicode(v, "ISO-8859-1").encode(sys.getfilesystemencoding())
-            except:
-                val = v.encode(sys.getfilesystemencoding())
-            proc_env[k] = os.path.expandvars(val)
-            #proc_env[k] = os.path.expandvars(v).encode(sys.getfilesystemencoding())
-            ##### END FIX 2
-        self.proc = subprocess.Popen(arg_list, stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE, startupinfo=startupinfo, env=proc_env, shell=shell)
-
-        if path:
-            os.environ["PATH"] = old_path
-
-        if self.proc.stdout:
-            thread.start_new_thread(self.read_stdout, ())
-
-        if self.proc.stderr:
-            thread.start_new_thread(self.read_stderr, ())
-
-    def kill(self):
-        if not self.killed:
-            self.killed = True
-            try:
-                self.proc.terminate()
-            except:
-                pass
-            self.listener = None
-
-    def poll(self):
-        return self.proc.poll() == None
-
-    def exit_code(self):
-        return self.proc.poll()
-
-    def read_stdout(self):
-        while True:
-            data = os.read(self.proc.stdout.fileno(), 2**15)
-
-            if data != "":
-                if self.listener:
-                    self.listener.on_data(self, data)
-            else:
-                self.proc.stdout.close()
-                if self.listener:
-                    self.listener.on_finished(self)
-                break
-
-    def read_stderr(self):
-        while True:
-            data = os.read(self.proc.stderr.fileno(), 2**15)
-
-            if data != "":
-                if self.listener:
-                    self.listener.on_data(self, data)
-            else:
-                self.proc.stderr.close()
-                break
-
-
-
+try :
+    stexec = __import__("exec")
+    ExecCommand = stexec.ExecCommand
+    AsyncProcess = stexec.AsyncProcess 
+except ImportError as e :
+    import Default
+    stexec = getattr( Default , "exec" )
+    ExecCommand = stexec.ExecCommand
+    AsyncProcess = stexec.AsyncProcess
+    
 class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
     def run(self, cmd = [], file_regex = "", line_regex = "", working_dir = "",
-            encoding = "utf-8", env = {}, quiet = False, kill = False,
+            encoding = None, env = {}, quiet = False, kill = False,
             # Catches "path" and "shell"
             **kwargs):
+
+        print("ENV1: " + str(env))
+
+        if encoding is None :
+            if is_st3 :
+                encoding = sys.getfilesystemencoding()
+            else:
+                encoding = "utf-8"
 
         log("run haxe exec")
         if kill:
@@ -771,8 +828,13 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
         try:
             # Forward kwargs to AsyncProcess
-            
-            self.proc = AsyncProcess(cmd, merged_env, self, **kwargs)
+            if is_st3:
+                print("CMD:" + str(cmd))
+                print("ENV:" + str(merged_env))
+                self.proc = AsyncProcess(cmd, None, merged_env, self, **kwargs)
+            else:
+                self.proc = AsyncProcess(cmd, merged_env, self, **kwargs)
+
             self.append_data(self.proc, "Running " + " ".join(cmd) + "\n")
         except err_type as e:
             self.append_data(None, str(e) + "\n")
@@ -812,13 +874,16 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
         selection_was_at_end = (len(self.output_view.sel()) == 1
             and self.output_view.sel()[0]
                 == sublime.Region(self.output_view.size()))
-        self.output_view.set_read_only(False)
-        edit = self.output_view.begin_edit()
-        self.output_view.insert(edit, self.output_view.size(), str)
-        if selection_was_at_end:
-            self.output_view.show(self.output_view.size())
-        self.output_view.end_edit(edit)
-        self.output_view.set_read_only(True)
+        
+        if not is_st3:
+            self.output_view.set_read_only(False)
+            edit = self.output_view.begin_edit()
+            self.output_view.insert(edit, self.output_view.size(), str)
+            if selection_was_at_end:
+                self.output_view.show(self.output_view.size())
+            self.output_view.end_edit(edit)
+
+            self.output_view.set_read_only(True)
 
     def finish(self, proc):
         if not self.quiet:
@@ -843,7 +908,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
         # Set the selection to the start, so that next_result will work as expected
         
         if is_st3:
-            self.output_view.run_coomand("text1")
+            self.output_view.run_command("text1")
         else:
             edit = self.output_view.begin_edit()
             self.output_view.sel().clear()

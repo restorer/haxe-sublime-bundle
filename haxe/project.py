@@ -91,22 +91,28 @@ def haxe_build_env (project_dir):
 
     paths = list()
 
+    def do_encode(s):
+        if is_st3:
+            return s
+        else:
+            return s.encode(sys.getfilesystemencoding())
+
     if libPath != None:
         path = os.path.normpath(os.path.join(project_dir, libPath))
-        env["HAXE_LIBRARY_PATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
-        env["HAXE_STD_PATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
+        env["HAXE_LIBRARY_PATH"] = do_encode(os.sep.join(path.split("/")))
+        env["HAXE_STD_PATH"] = do_encode(os.sep.join(path.split("/")))
     
     
 
     if haxe_inst_path != None:
         path = os.path.normpath(os.path.join(project_dir, haxe_inst_path))
-        env["HAXEPATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
-        paths.append(os.sep.join(path.split("/")).encode(sys.getfilesystemencoding()))
+        env["HAXEPATH"] = do_encode(os.sep.join(path.split("/")))
+        paths.append(do_encode(os.sep.join(path.split("/"))))
 
     if neko_inst_path != None:
         path = os.path.normpath(os.path.join(project_dir, neko_inst_path))
-        env["NEKO_INSTPATH"] = os.sep.join(path.split("/")).encode(sys.getfilesystemencoding())
-        paths.append(os.sep.join(path.split("/")).encode(sys.getfilesystemencoding()))
+        env["NEKO_INSTPATH"] = do_encode(os.sep.join(path.split("/")))
+        paths.append(do_encode(os.sep.join(path.split("/"))))
 
     
     if len(paths) > 0:

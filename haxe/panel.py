@@ -24,6 +24,13 @@ def _haxe_file_regex():
 def timestamp_msg (msg):
 	return datetime.now().strftime("%H:%M:%S") + " " + msg;
 
+class SlidePanelReplaceCommand(sublime_plugin.TextCommand):
+	def run(self, edit, text):
+		print("run panel replace")
+		panel = self.view
+		region = sublime.Region(panel.size(),panel.size() + len(text))
+		panel.insert(edit, panel.size(), text)
+
 class SlidePanel ():
 
 	def __init__ (self, win):
@@ -48,10 +55,13 @@ class SlidePanel ():
 		
 		text = timestamp_msg(text);
 		
-		edit = panel.begin_edit()
-		region = sublime.Region(panel.size(),panel.size() + len(text))
-		panel.insert(edit, panel.size(), text)
-		panel.end_edit( edit )
+		if is_st3:
+			panel.run_command("slide_panel_replace", text)
+		else:
+			edit = panel.begin_edit()
+			region = sublime.Region(panel.size(),panel.size() + len(text))
+			panel.insert(edit, panel.size(), text)
+			panel.end_edit( edit )
 		
 		if scope is not None :
 			icon = "dot"
@@ -141,7 +151,7 @@ class TabPanel():
 				if (v != None):
 					#v.set_read_only(False)
 					if is_st3:
-						v.run_command("text2", msg1)
+						v.run_command("tab_text", { "msg" : msg1 })
 					else:
 						edit = v.begin_edit()
 						v.insert(edit, 0, msg1)
@@ -160,9 +170,17 @@ class TabPanel():
 			self.writeln(title + ": " + msg)
 
 
-class Text2Command(sublime_plugin.TextCommand):
-    def run(self, edit, msg):
-    	self.view.insert(edit, 0, msg1)
+
+class CustomEditCommand(sublime_plugin.TextCommand):
+
+	def run(self, edit, do_edit):
+		do_edit(self.view, edit)
+
+
+class TabTextCommand(sublime_plugin.TextCommand):
+
+	def run(self, edit, msg):
+		self.view.insert(edit, 0, msg)
 
 
 class PanelCloseListener (sublime_plugin.EventListener):

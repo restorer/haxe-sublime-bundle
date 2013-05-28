@@ -18,6 +18,7 @@ def run_cmd_async(args, callback, input=None, cwd=None, env=None):
 
 	def in_thread ():
 		out, err = run_cmd(args, input, cwd, env)
+		
 		sublime.set_timeout(lambda : callback(out, err), 10)
 
 	thread.start_new_thread(in_thread, ())
@@ -26,7 +27,6 @@ def _decoded(x):
 		return x.decode('utf-8') if x else ''
 
 def run_cmd( args, input=None, cwd=None, env=None ):
-	
 	if cwd == None: 
 		cwd = "."
 
@@ -64,12 +64,9 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 			except:
 				a = a.encode(sys.getfilesystemencoding())
 			return a
-
 		encoded_args = [encode_arg(a) for a in args]
-
 		p = Popen(encoded_args, cwd=cwd, stdout=PIPE, stderr=PIPE, stdin=PIPE, 
 				startupinfo=STARTUP_INFO, env=env)
-		
 		if not is_st3 and isinstance(input, unicode):
 			input = input.encode('utf-8')
 		out, err = p.communicate(input=input)

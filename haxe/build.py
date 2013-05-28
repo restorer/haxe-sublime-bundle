@@ -452,7 +452,10 @@ class HaxeBuild :
 			
 			cmd_and_env = " "
 			for k in env:
-				cmd_and_env = cmd_and_env + "\nset " + k + "=" + env[k]
+				if is_st3:
+					cmd_and_env = cmd_and_env + "\nset " + k + "=" + str(env[k])
+				else:
+					cmd_and_env = cmd_and_env + "\nset " + k + "=" + env[k]
 			cmd_and_env = cmd_and_env + "\n" + " ".join(cmd);
 			log(cmd_and_env)
 			log("---------cmd------------")

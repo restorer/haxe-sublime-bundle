@@ -2,13 +2,10 @@ import sublime
 import re
 import os
 from xml.etree import ElementTree
-#from xml.etree.ElementTree import XMLTreeBuilder
+from xml.etree.ElementTree import XMLTreeBuilder
 
 is_st3 = int(sublime.version()) >= 3000
 
-if not is_st3:
-    from elementtree import SimpleXMLTreeBuilder # part of your codebase
-    ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
 if is_st3:
 	import Haxe.haxe.panel as hxpanel
@@ -17,6 +14,9 @@ if is_st3:
 
 	from Haxe.haxe.log import log
 else:
+	from elementtree import SimpleXMLTreeBuilder # part of your codebase
+	ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
+
 	import haxe.panel as hxpanel
 	import haxe.hxtools as hxtools
 	import haxe.settings as hxsettings
@@ -215,7 +215,10 @@ def get_completion_output(temp_file, orig_file, output, commas):
 def parse_completion_output(temp_file, orig_file, output):
 
 	try :
-		x = "<root>"+output.encode('utf-8')+"</root>";
+		if is_st3:
+			x = "<root>"+output+"</root>";
+		else:
+			x = "<root>"+output.encode('utf-8')+"</root>";
 		tree = ElementTree.XML(x);
 		
 	except Exception as e:
@@ -227,6 +230,8 @@ def parse_completion_output(temp_file, orig_file, output):
 
 		hints = get_type_hint(tree.getiterator("type"))
 		comps = collect_completion_fields(tree.find("list"))
+		log("hints:" + str(hints))
+		log("comps:" + str(comps))
 	else:
 		hints = []
 		comps = []

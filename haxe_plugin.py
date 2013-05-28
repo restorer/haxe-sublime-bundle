@@ -194,14 +194,18 @@ else:
         ,HaxeExecCommand
         ,HaxeBuildOnSaveListener
         ,HaxeFindDeclarationListener
-
     ) 
-
+    
+    # only st3 relevant
+    from Haxe.haxe.tools.view import (
+        HaxeTextEditCommand
+    )
     from Haxe.haxe.panel import (
 
          PanelCloseListener
         ,TabPanel
         ,SlidePanel
+        ,TabTextCommand
     )
 
     from Haxe.haxe.codegen import (

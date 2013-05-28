@@ -270,7 +270,7 @@ def completion_finished(ctx, ret_, err_, temp_file, toplevel_comps, cache):
         
         trigger_manual_completion(view, ctx.options)
     else:
-        log("ignore background completion")    
+        log("ignore background completion on finished")    
 
 
 def run_completion(ctx, run_compiler_completion, cb):
@@ -287,7 +287,7 @@ def run_completion(ctx, run_compiler_completion, cb):
             log("completion time: " + str(run_time))
             cb(out, err)
         else:
-            log("ignore background completion")
+            log("ignore background completion on result")
         project.completion_context.running.delete(comp_id)
 
     def on_result(out, err):
