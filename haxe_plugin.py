@@ -205,7 +205,6 @@ else:
          PanelCloseListener
         ,TabPanel
         ,SlidePanel
-        ,TabTextCommand
     )
 
     from Haxe.haxe.codegen import (

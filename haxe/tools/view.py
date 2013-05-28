@@ -9,10 +9,11 @@ else:
 	import haxe.config as hxconfig
 
 
-# convert edit operation into a async operation with a callback
+# convert edit operation into a async operation with a callback, use global map (cannot pass function to command)
 
 _async_edit_id = 0
 _async_edit_dict = dict()
+
 
 def async_edit(view, do_edit):
 	if is_st3:
@@ -20,19 +21,21 @@ def async_edit(view, do_edit):
 	        global _async_edit_id
 	        global _async_edit_dict
 	        id = str(_async_edit_id)
-	        _async_edit_id += 1
+	        if _async_edit_id > 1000000:
+	        	_async_edit_id = 0
+	        else:
+	        	_async_edit_id += 1
 	        _async_edit_dict[id] = do_edit
-	        print("run_text_edit_command: " + id)
 	        view.run_command("haxe_text_edit", { "id" : id })
 	        
 	    sublime.set_timeout(start, 10)
 	else:
+		# no need for text command in st2
 		edit = view.begin_edit()
 		sublime.set_timeout(lambda: do_edit(view, edit), 10)
 
 class HaxeTextEditCommand (sublime_plugin.TextCommand):
     def run (self, edit, id):
-        print("run_text_edit: " + id)
         global _async_edit_dict
         if id in _async_edit_dict:
             fun = _async_edit_dict[id]

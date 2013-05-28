@@ -24,12 +24,7 @@ def _haxe_file_regex():
 def timestamp_msg (msg):
 	return datetime.now().strftime("%H:%M:%S") + " " + msg;
 
-class SlidePanelReplaceCommand(sublime_plugin.TextCommand):
-	def run(self, edit, text):
-		print("run panel replace")
-		panel = self.view
-		region = sublime.Region(panel.size(),panel.size() + len(text))
-		panel.insert(edit, panel.size(), text)
+
 
 class SlidePanel ():
 
@@ -55,30 +50,24 @@ class SlidePanel ():
 		
 		text = timestamp_msg(text);
 		
-		if is_st3:
-			panel.run_command("slide_panel_replace", text)
-		else:
-			edit = panel.begin_edit()
-			region = sublime.Region(panel.size(),panel.size() + len(text))
-			panel.insert(edit, panel.size(), text)
-			panel.end_edit( edit )
+		def do_edit(v, edit):
+			region = sublime.Region(v.size(),v.size() + len(text))
+			v.insert(edit, v.size(), text)
+			v.end_edit( edit )
+			if scope is not None :
+				icon = "dot"
+				key = "haxe-" + scope
+				regions = panel.get_regions( key );
+				regions.append(region)
+				panel.add_regions( key , regions , scope , icon )
+			
+			win.run_command("show_panel",{"panel":"output.haxe"})
+			def f ():
+				panel.show(sublime.Region(panel.size()+1000, panel.size()+1000))
+			sublime.set_timeout(f, 800)
 		
-		if scope is not None :
-			icon = "dot"
-			key = "haxe-" + scope
-			regions = panel.get_regions( key );
-			regions.append(region)
-			panel.add_regions( key , regions , scope , icon )
+		view_tools.async_edit(panel, do_edit)
 		
-		win.run_command("show_panel",{"panel":"output.haxe"})
-		
-
-		
-		def f ():
-			panel.show(sublime.Region(panel.size()+1000, panel.size()+1000))
-
-		sublime.set_timeout(f, 800)
-
 		return panel
 
 	def writeln (self, msg, scope = None):
@@ -125,10 +114,7 @@ class TabPanel():
 	
 	def write (self, msg):
 		
-
 		def f () : 
-			
-
 			self.all = self.all[0:300]
 			msg1 = timestamp_msg(msg)
 
@@ -149,14 +135,11 @@ class TabPanel():
 					print("output_view_id:" + str(self.output_view_id))
 
 				if (v != None):
-					#v.set_read_only(False)
-					if is_st3:
-						v.run_command("tab_text", { "msg" : msg1 })
-					else:
-						edit = v.begin_edit()
+					def do_edit(v, edit):
 						v.insert(edit, 0, msg1)
 						v.end_edit( edit )
-					#v.set_read_only(True)
+					view_tools.async_edit(v, do_edit)
+					
 
 		sublime.set_timeout(f,40)
 
@@ -170,17 +153,6 @@ class TabPanel():
 			self.writeln(title + ": " + msg)
 
 
-
-class CustomEditCommand(sublime_plugin.TextCommand):
-
-	def run(self, edit, do_edit):
-		do_edit(self.view, edit)
-
-
-class TabTextCommand(sublime_plugin.TextCommand):
-
-	def run(self, edit, msg):
-		self.view.insert(edit, 0, msg)
 
 
 class PanelCloseListener (sublime_plugin.EventListener):

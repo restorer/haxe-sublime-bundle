@@ -862,28 +862,36 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
             return
 
         try:
-            str = data.decode(self.encoding)
+            if not is_st3 or isinstance(data, bytes):
+                st = data.decode(self.encoding)
+            else:
+                st = data
+                    
         except:
-            str = "[Decode error - output not " + self.encoding + "]\n"
+            st = "[Decode error - output not " + self.encoding + "]\n"
             proc = None
 
         # Normalize newlines, Sublime Text always uses a single \n separator
         # in memory.
-        str = str.replace('\r\n', '\n').replace('\r', '\n')
+        st = st.replace('\r\n', '\n').replace('\r', '\n')
 
         selection_was_at_end = (len(self.output_view.sel()) == 1
             and self.output_view.sel()[0]
                 == sublime.Region(self.output_view.size()))
         
-        if not is_st3:
-            self.output_view.set_read_only(False)
-            edit = self.output_view.begin_edit()
-            self.output_view.insert(edit, self.output_view.size(), str)
-            if selection_was_at_end:
-                self.output_view.show(self.output_view.size())
-            self.output_view.end_edit(edit)
+        
+        def do_edit(v, edit):
 
-            self.output_view.set_read_only(True)
+            v.set_read_only(False)
+            
+            v.insert(edit, self.output_view.size(), st)
+            if selection_was_at_end:
+                v.show(self.output_view.size())
+            v.end_edit(edit)
+
+            v.set_read_only(True)
+            
+        view_tools.async_edit(self.output_view, do_edit)
 
     def finish(self, proc):
         if not self.quiet:
@@ -907,13 +915,13 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
         # Set the selection to the start, so that next_result will work as expected
         
-        if is_st3:
-            self.output_view.run_command("text1")
-        else:
-            edit = self.output_view.begin_edit()
-            self.output_view.sel().clear()
-            self.output_view.sel().add(sublime.Region(0))
-            self.output_view.end_edit(edit)
+        def do_edit(v, edit):
+            v.sel().clear()
+            v.sel().add(sublime.Region(0))
+            v.end_edit(edit)
+
+        view_tools.async_edit(self.output_view, do_edit)
+            
 
     def on_data(self, proc, data):
         sublime.set_timeout(lambda : log(data), 0)
@@ -923,7 +931,3 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
         sublime.set_timeout(functools.partial(self.finish, proc), 0)
 
 
-class Text1Command(sublime_plugin.TextCommand):
-    def run(self, edit, user_input=None):
-        self.output_view.sel().clear()
-        self.output_view.sel().add(sublime.Region(0))
