@@ -155,11 +155,9 @@ TOP_LEVEL_KEYWORDS = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("su
 
 def get_toplevel_keywords (ctx):
 
-    res = None
-    
     return [] if ctx.is_new else TOP_LEVEL_KEYWORDS
     
-    return res
+    
 
 def get_build_target(ctx):
     return "neko" if ctx.options.macro_completion else ctx.build.target
@@ -317,14 +315,18 @@ def get_type_comps (ctx, cl, imported):
     build_target = get_build_target(ctx)
     comps = []
     packs = []
+    inserted = dict()
     for c in cl :
         ht = HxType(c)
         if ht.can_be_ignored:
             continue
         
-        cm = get_snippet(ht, imported)
-        
-        if cm not in comps and is_package_available(build_target, ht.toplevel_pack):
+        full = ht.full_pack_with_optional_module_type_and_enum_value
+        if not full in inserted and is_package_available(build_target, ht.toplevel_pack):
+            
+            inserted[full] = True
+            cm = get_snippet(ht, imported)
+
             if len(ht.pack) > 0:
                 packs.append(ht.pack_joined)
 
@@ -333,7 +335,8 @@ def get_type_comps (ctx, cl, imported):
 
 
 def get_toplevel_completion( ctx  ) :
-    comps = get_toplevel_keywords(ctx)
+    comps = []
+    comps.extend(get_toplevel_keywords(ctx))
     
     packs, cl, imported = get_packs_and_types(ctx)
     
