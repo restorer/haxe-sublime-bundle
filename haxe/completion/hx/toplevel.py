@@ -84,7 +84,7 @@ class HxType:
     def type_name_with_optional_enum_value (self):
         res = self.type_name
         if self.is_enum_value:
-            res += "." + self.enum_value_name
+            res = res + "." + self.enum_value_name
         return res
 
     @lazyprop
@@ -303,7 +303,7 @@ def type_is_imported_as(import_list, type):
 
 def get_snippet_insert(type, import_list):
     r = type_is_imported_as(import_list, type)
-    if r == None:
+    if not r:
         r = type.full_pack_with_optional_module_type_and_enum_value
     return r
 
