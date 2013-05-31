@@ -34,14 +34,9 @@ def get_async_completions(comp_result, view):
 
     has_results = comp_result.has_results()
 
-    comps = None
+    discard_results = not has_results and (hxsettings.no_fuzzy_completion() or ctx.options.types.has_hint())
 
-    if (not has_results and (hxsettings.no_fuzzy_completion() or ctx.options.types.has_hint())):
-        comps = cancel_completion(view)
-    else:
-        comps = combine_hints_and_comps(comp_result)
-
-    return comps
+    return cancel_completion(view) if discard_results else combine_hints_and_comps(comp_result)
 
 
 def auto_complete(project, view, offset):
