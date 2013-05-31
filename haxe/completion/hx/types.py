@@ -358,3 +358,19 @@ class CompletionResult:
         res = list(self.toplevel)
         res.extend(self.comps)
         return res
+
+
+class CompletionBuild:
+
+    def __init__(self, ctx, temp_path, temp_file, toplevel_comps, cache):
+        self.build = ctx.build.copy()
+        self.build.add_classpath(temp_path)
+        self.ctx = ctx
+        self.temp_path = temp_path
+        self.temp_file = temp_file
+        self.toplevel_comps = toplevel_comps
+        self.cache = cache
+
+    @lazyprop
+    def display(self):
+        return self.temp_file + "@0"
