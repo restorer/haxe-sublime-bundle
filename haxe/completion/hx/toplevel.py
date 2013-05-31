@@ -378,7 +378,7 @@ def filter_top_level_completions (offset_char, all_comps):
                 or (is_lower and offset_upper in id)):
                 comps.append(c)
     else:
-        comps = all_comps
+        comps = list(all_comps)
 
     log("number of top level completions (all: " + str(len(all_comps)) + ", filtered: " + str(len(comps)) + ")")
     return comps

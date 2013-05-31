@@ -34,7 +34,9 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 	for path in cp :
 
-		c, p = extract_types( os.path.join( base_path, path ), filtered_classes, filtered_packages, 0, [], include_private_types )
+		p = os.path.join( base_path, path )
+
+		c, p = extract_types( p, filtered_classes, filtered_packages, 0, [], include_private_types )
 
 		classes.extend( c )
 		packs.extend( p )
@@ -49,6 +51,8 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 
 
+import re
+valid_package = re.compile("^[_a-z][a-zA-Z0-9_]*$")
 
 def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [], include_private_types = True) :
 
@@ -74,7 +78,7 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 	
 			
 	for f in os.listdir( path ) :
-		if f not in hxconfig.ignored_folders:
+		if valid_package.match(f):
 			cl, ext = os.path.splitext( f )
 			
 			cur_pack = ".".join(pack) + "." + f

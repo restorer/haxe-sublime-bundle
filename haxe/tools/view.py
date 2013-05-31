@@ -31,8 +31,13 @@ def async_edit(view, do_edit):
 	    sublime.set_timeout(start, 10)
 	else:
 		# no need for text command in st2
-		edit = view.begin_edit()
-		sublime.set_timeout(lambda: do_edit(view, edit), 10)
+		
+		def on_run():
+			edit = view.begin_edit()
+			do_edit(view, edit)
+			view.end_edit(edit)	
+		sublime.set_timeout(on_run, 10)
+		
 
 class HaxeTextEditCommand (sublime_plugin.TextCommand):
     def run (self, edit, id):
@@ -86,10 +91,13 @@ def is_nmml(view):
 	return view.score_selector(0,hxconfig.SOURCE_NMML) > 0
 
 def replace_content (view, new_content):
+	def do_edit(view, edit):
+		view.replace(edit, sublime.Region(0, view.size()), new_content)
+		view.end_edit(edit)	
+
 	view.set_read_only(False)
-	edit = view.begin_edit()
-	view.replace(edit, sublime.Region(0, view.size()), new_content)
-	view.end_edit(edit)
+	async_edit(view, do_edit)
+	
 
 def in_haxe_code (view, caret):
 	return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"string") == 0 and view.score_selector(caret,"comment") == 0

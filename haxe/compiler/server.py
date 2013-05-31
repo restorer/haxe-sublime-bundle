@@ -71,9 +71,11 @@ class Server ():
 					log("Server starting error")
 					hxpanel.default_panel().writeln(msg)
 					#sublime.error_message(msg)
-			except e:
+			except Exception as e:
 				log(str(e))
-			
+		
+
+	
 	def stop( self, completeCallback = None) :
 		try:
 			proc = self._server_proc
