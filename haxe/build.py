@@ -472,7 +472,16 @@ class HaxeBuild :
 		
 		
 
-	def run (self, project, view):
+	def run(self, project, view, async, callback):
+		if async:
+			log("RUN ASYNC COMPLETION")
+			self.run_async( project, view, callback )
+		else:
+			log("RUN SYNC COMPLETION")
+			out, err = self.run_sync( project, view )
+			callback(out, err)
+
+	def run_sync (self, project, view):
 		# get environment
 		server_mode = project.is_server_mode()
 		

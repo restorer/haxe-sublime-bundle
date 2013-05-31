@@ -50,6 +50,30 @@ class ProjectCompletionContext:
             "output" : None
         }
 
+    def add_completion_result (self, comp_result):
+        self.async.insert(comp_result.ctx.view_id, comp_result)
+
+
+    def is_equivalent_completion_already_running(self, ctx):
+        complete_offset = ctx.complete_offset
+        view_id = ctx.view_id
+
+        last_completion_id = self.current_id
+        running_completion = self.running.get_or_default(last_completion_id, None)    
+        return running_completion is not None and running_completion[0] == complete_offset and running_completion[1] == view_id
+
+    def run_if_still_up_to_date (self, comp_id, run):
+        if self.current_id == comp_id:
+            run()
+        #  it should be deleted anyway
+        self.running.delete(comp_id)
+
+    def set_new_completion (self, ctx):
+        # store current completion 
+        self.running.insert(ctx.id, (ctx.complete_offset, ctx.view_id))
+        self.current_id = ctx.id
+
+        self.set_errors([])
 
     def set_trigger(self, view, options):
         self.trigger.insert(view.id(), options)
@@ -333,25 +357,30 @@ class Project:
             self.extract_build_args(view)
             build = self.get_build(view)
 
-        out, err = build.run(self, view)
-        
-        if (err != None and err != ""):
-            msg = "build finished with errors"
-            cmd = " ".join(build.get_command_args(haxe_exec))
-            hxpanel.default_panel().writeln( "cmd: " + cmd)
-            hxpanel.default_panel().writeln( msg)
-            view.set_status( "haxe-status" , msg )
-            hxpanel.default_panel().writeln(err)
-            
-        else:
-            msg = "build finished successfull"
-            view.set_status( "haxe-status" , msg )
-            hxpanel.default_panel().writeln( msg )
+        def cb (out, err):
+            if (err != None and err != ""):
+                msg = "build finished with errors"
+                cmd = " ".join(build.get_command_args(haxe_exec))
+                hxpanel.default_panel().writeln( "cmd: " + cmd)
+                hxpanel.default_panel().writeln( msg)
+                view.set_status( "haxe-status" , msg )
+                hxpanel.default_panel().writeln(err)
+                
+            else:
+                msg = "build finished successfull"
+                view.set_status( "haxe-status" , msg )
+                hxpanel.default_panel().writeln( msg )
 
-        if (out != None):
-            hxpanel.default_panel().writeln("---output----")
-            hxpanel.default_panel().writeln( out )
-            hxpanel.default_panel().writeln("-------------")
+            if (out != None):
+                hxpanel.default_panel().writeln("---output----")
+                hxpanel.default_panel().writeln( out )
+                hxpanel.default_panel().writeln("-------------")    
+        
+        build.run(self, view, True, cb)
+        
+        
+
+
         
     def run_sublime_build( self, view ) :
         

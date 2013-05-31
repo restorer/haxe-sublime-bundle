@@ -73,7 +73,7 @@ def hx_normal_auto_complete(project, view, offset, cache):
     # running as a background process, starting it
     # again would result in multiple queries for
     # the same view and src position
-    if is_same_completion_already_running(ctx):
+    if is_equivalent_completion_already_running(ctx):
         log("cancel completion, same is running")
         res = cancel_completion(ctx.view)
     elif should_trigger_manual_hint_completion(ctx.options.manual_completion, ctx.complete_char):
@@ -95,11 +95,8 @@ def hx_normal_auto_complete(project, view, offset, cache):
         log("only_top_level: " + str(only_top_level))
         
 
-        def get_toplevel_completions (): 
-            return get_toplevel_completion_if_reasonable(ctx)
-
         if only_top_level:
-            res = get_toplevel_completions()
+            res = get_toplevel_completions(ctx)
         else:
 
             last_ctx = cache["input"]
@@ -112,18 +109,14 @@ def hx_normal_auto_complete(project, view, offset, cache):
                 
                 if supported_compiler_completion_char(ctx.complete_char):
 
-
-                    toplevel_comps = get_toplevel_completions()
+                    toplevel_comps = get_toplevel_completions(ctx)
                     
-
-                    log("USE ASYNC COMPLETION: " + str(ctx.settings.is_async_completion))
-
                     comp_result = get_fresh_completions(ctx, toplevel_comps, cache)
                     
                     # we don't show any completions at this point
                     res = cancel_completion(view, True)
                 else:
-                    toplevel_comps = get_toplevel_completions()
+                    toplevel_comps = get_toplevel_completions(ctx)
                     comp_result = CompletionResult.empty_result(ctx)
                     comp_result.toplevel = toplevel_comps
                     res = combine_hints_and_comps(comp_result)
@@ -166,14 +159,8 @@ def should_trigger_manual_hint_completion(manual_completion, complete_char):
     return not manual_completion and complete_char in "(,"
 
 
-def is_same_completion_already_running(ctx):
-    project = ctx.project
-    complete_offset = ctx.complete_offset
-    view = ctx.view
-
-    last_completion_id = project.completion_context.current_id
-    running_completion = project.completion_context.running.get_or_default(last_completion_id, None)    
-    return running_completion is not None and running_completion[0] == complete_offset and running_completion[1] == view.id()
+def is_equivalent_completion_already_running(ctx):
+    return ctx.project.completion_context.is_equivalent_completion_already_running(ctx)
 
 def should_include_top_level_completion(ctx):
     
@@ -183,7 +170,7 @@ def should_include_top_level_completion(ctx):
     return toplevel_complete
 
 
-def get_toplevel_completion_if_reasonable(ctx):
+def get_toplevel_completions(ctx):
     if should_include_top_level_completion( ctx ):
         all_comps = toplevel.get_toplevel_completion( ctx )
         comps = toplevel.filter_top_level_completions(ctx.offset_char, all_comps)
@@ -225,11 +212,9 @@ def log_completion_status(status, comps, hints):
 
 def get_fresh_completions(ctx, toplevel_comps, cache):
     
-    build = ctx.build
-    
     tmp_src = ctx.temp_completion_src
 
-    temp_path, temp_file = hxtemp.create_temp_path_and_file(build, ctx.orig_file, tmp_src)
+    temp_path, temp_file = hxtemp.create_temp_path_and_file(ctx.build, ctx.orig_file, tmp_src)
 
 
     if temp_path is None or temp_file is None:
@@ -241,7 +226,7 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
         def cb (out, err):
             # remove temporary files
             hxtemp.remove_path(temp_path)
-            completion_finished(ctx, out, err, comp_build.temp_file, comp_build.toplevel_comps, comp_build.cache)
+            completion_finished(comp_build, out, err)
 
         run_completion_async(comp_build, cb)
 
@@ -251,7 +236,7 @@ def get_fresh_completions(ctx, toplevel_comps, cache):
 def run_completion_async(comp_build, cb):
     ctx = comp_build.ctx
     project = ctx.project
-    view_id = ctx.view.id()
+
     start_time = time.time()
 
     display = comp_build.display
@@ -265,23 +250,23 @@ def run_completion_async(comp_build, cb):
     async = ctx.settings.is_async_completion
 
     def in_main (out, err):
-        # only use completion data if it's still desired, 
-        if project.completion_context.current_id == comp_id:
+        
+        def run ():
             run_time = time.time() - start_time;
             log("completion time: " + str(run_time))
             cb(out, err)
-        else:
-            log("ignore background completion on result")
-        project.completion_context.running.delete(comp_id)
+        
+        # because of async completion, the current completion could be 
+        # out of date, because a newer completion was triggered, so run should
+        # only be called if this completion is still up to date
+        project.completion_context.run_if_still_up_to_date(comp_id, run)
+        
 
     def on_result(out, err):
         sublime.set_timeout(lambda : in_main(out, err), 20)
 
     # store the data of the currently running completion operation in cache to fetch it later
-    project.completion_context.running.insert(comp_id, (ctx.complete_offset, view_id))
-    project.completion_context.current_id = comp_id
-
-    project.completion_context.set_errors([])
+    project.completion_context.set_new_completion(ctx);
 
 
     # prepare build options
@@ -289,31 +274,28 @@ def run_completion_async(comp_build, cb):
     if ctx.settings.show_completion_times(view):
         build.set_times()
 
-    if async:
-        log("RUN ASYNC COMPLETION")
-        build.run_async( project, view, cb )
-    else:
-        log("RUN SYNC COMPLETION")
-        out, err = build.run( project, view )
-        cb(out, err)
+    build.run(project, view, async, cb)
 
 
-def completion_finished(ctx, ret_, err_, temp_file, toplevel_comps, cache):
+def completion_finished(comp_build, out, err):
+
+    ctx = comp_build.ctx
+    temp_file = comp_build.temp_file
+    toplevel_comps = comp_build.toplevel_comps
+    cache = comp_build.cache
 
     project = ctx.project
     view = ctx.view
     
-    
 
-    comp_result = output_to_result(ctx, temp_file, err_, ret_, list(toplevel_comps))
+    comp_result = output_to_result(ctx, temp_file, err, out, list(toplevel_comps))
     update_completion_cache(cache, comp_result)
 
     # do we still need this completion, does it have any results
     has_results = comp_result.has_results()
     
     if has_results:
-        project.completion_context.async.insert(ctx.view_id, comp_result)
-        
+        project.completion_context.add_completion_result(comp_result)
         trigger_manual_completion(view, ctx.options)
     else:
         log("ignore background completion on finished")    
@@ -332,8 +314,6 @@ def use_completion_cache (last_input, current_input):
 
 def supported_compiler_completion_char (char):
     return char in "(.,"
-
-
 
 
 def highlight_errors( errors , view ) :
