@@ -34,7 +34,8 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		base_env =os.environ.copy() 
 		# if env == None:
 		# 	env = os.environ.copy()
-		base_env.update(env)
+		if env is not None:
+			base_env.update(env)
 		env = base_env
 		for k in env:
 			

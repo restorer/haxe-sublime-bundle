@@ -82,7 +82,7 @@ def get_completion_info (view, offset, src):
         else :
             complete_offset = max( prev_dot + 1, prev_par + 1 , prev_colon + 1, prev_brace + 1, prev_semi + 1 )
             
-
+    log("COMPLETE_CHAR:" + src[complete_offset-1])
     return (commas, complete_offset, prev_symbol_is_comma, is_new)
 
 
@@ -246,6 +246,13 @@ class CompletionContext:
    
 
     @lazyprop
+    def complete_offset_in_bytes(self):
+        s = self.src_until_complete_offset
+
+        s_bytes = s.encode()
+        return len(s_bytes)
+
+    @lazyprop
     def orig_file(self):
         return self.view.file_name()
 
@@ -375,4 +382,4 @@ class CompletionBuild:
 
     @lazyprop
     def display(self):
-        return self.temp_file + "@0"
+        return self.temp_file + "@" + str(self.ctx.complete_offset_in_bytes)

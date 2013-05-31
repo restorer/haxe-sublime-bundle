@@ -130,85 +130,137 @@ def find_hxmls( folder ) :
 	builds = []
 	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
 	for hxml in hxmls:
-		mtime = os.path.getmtime(hxml)
-		if hxml in hxml_cache:
-			
-			if (mtime > hxml_cache[hxml][1]): # modified
+		log(hxml)
+		if not hxml.startswith(os.path.join(folder,  "_nme__")):
+			mtime = os.path.getmtime(hxml)
+			if hxml in hxml_cache:
+				
+				if (mtime > hxml_cache[hxml][1]): # modified
+					current = hxml_to_builds(hxml, folder)
+					hxml_cache[hxml] = (current, mtime)
+				else: # already in cache
+					current = hxml_cache[hxml][0]
+
+			else: # not in cache
 				current = hxml_to_builds(hxml, folder)
 				hxml_cache[hxml] = (current, mtime)
-			else: # already in cache
-				current = hxml_cache[hxml][0]
 
-		else: # not in cache
-			current = hxml_to_builds(hxml, folder)
-			hxml_cache[hxml] = (current, mtime)
-
-		builds.extend(current)
+			builds.extend(current)
 		
 	return builds
 
 extract_tag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
 
 
-def find_nmmls( folder ) :
+def find_nmml_files( folder ) :
 	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
+	return nmmls
 
-	builds = []
 
-	for build in nmmls:
-		current_build = HaxeBuild()
-		current_build.hxml = build
-		current_build.nmml = build
-		build_path = os.path.dirname(build)
+def create_haxe_build_from_nmml (target, nmml):
 
-		# TODO delegate compiler options extractions to NME 3.2:
-		# runcmd("nme diplay project.nmml nme_target")
+	cmd = ["nme", "display"]
+	cmd.append(target.target)
+	cmd.extend(target.args)
 
-		outp = "NME"
-		f = codecs.open( build , "r+", "utf-8" , "ignore" )
-		while 1:
-			l = f.readline() 
-			if not l : 
-				break;
-			m = extract_tag.search(l)
-			if not m is None:
-				#print(m.groups())
-				tag = m.group(1)
-				name = m.group(3)
-				if (tag == "app"):
-					current_build.main = name
-					mFile = re.search("\\b(file|title)=\"([a-z0-9_-]+)\"", l, re.I)
-					if not mFile is None:
-						outp = mFile.group(2)
-				elif (tag == "haxelib"):
-					current_build.libs.append( hxlib.HaxeLib.get( name ) )
-					current_build.args.append( ("-lib" , name) )
-				elif (tag == "classpath"):
-					current_build.classpaths.append( os.path.join( build_path , name ) )
-					current_build.args.append( ("-cp" , os.path.join( build_path , name ) ) )
-			else: # NME 3.2
-				mPath = re.search("\\bpath=\"([a-z0-9_-]+)\"", l, re.I)
-				if not mPath is None:
-					#print(mPath.groups())
-					path = mPath.group(1)
-					current_build.classpaths.append( os.path.join( build_path , path ) )
-					current_build.args.append( ("-cp" , os.path.join( build_path , path ) ) )
+	nmml_dir = os.path.dirname(nmml)
+
+	log("CMD: " + " ".join(cmd))
+
+	out, err = run_cmd( cmd, cwd=nmml_dir )
+
+	log("OUT: " + out)
+
+
+
+
+	#f = codecs.open( hxml_file , "wb" , "utf-8" , "ignore" )
+
+	# write out to file
+	hxml_file = os.path.join(nmml_dir, target.hxml_name)
+	f = codecs.open( hxml_file , "wb" , "utf-8" , "ignore" )
+	f.write( out )
+	f.close()
+	
+
+	hx_build = hxml_to_builds(hxml_file, nmml_dir)[0]
+	hx_build.nmml = nmml
+	return hx_build
+
+
+class NmeBuild :
+
+
+	def __init__(self, nmml, target, cb = None):
+		self.current_target = target
+		self.nmml = nmml
+		self._current_build = cb
+
+		log("CLASSPATHS:" + str(self.current_build.classpaths))
+
+	@property
+	def build_file(self):
+		return self.nmml
+
+
+	@property
+	def target(self):
+		return self.current_build.target
+
+	@property
+	def current_build (self):
+		if self._current_build == None:
+			self._current_build = create_haxe_build_from_nmml(self.current_target, self.nmml)
+
+		return self._current_build
+	
+	def to_string(self) :
+		out = os.path.basename(self.current_build.output)
+		return "{out} ({target})".format(out=out, target=self.current_target.name);
 		
-		outp = os.path.join( folder , outp )
-		current_build.target = "cpp"
-		current_build.args.append( ("--remap", "flash:nme") )
-		current_build.args.append( ("-cpp", outp) )
-		current_build.output = outp
+	def get_types(self):
+		return self._current_build.get_types()
 
-		if current_build.main is not None :
-			builds.append( current_build )
-	return builds
+	def copy (self):
+		r = NmeBuild(self.nmml, self.current_target, self._current_build.copy())
+		
+		return r
 
+	def get_relative_path(self, file):
+		return self.current_build.get_relative_path(file)
 
+	def get_build_folder(self):
+		return self.current_build.get_build_folder()
 
+	
+
+	def set_auto_completion(self, display, macro_completion):
+		self.current_build.set_auto_completion(display, macro_completion)
+
+	def set_times(self):
+		self.current_build.set_times()
+
+	def is_nme (self):
+		return True
+
+	def add_classpath(self, cp):
+		self.current_build.add_classpath(cp)
+
+	def run(self, project, view, async, on_result):
+		self.current_build.run(project, view, async, on_result)
+
+	def prepare_run(self, project, server_mode, view):
+		return self.current_build.prepare_run(project, server_mode, view)
+
+	@property
+	def classpaths (self):
+		return self.current_build.classpaths
+
+	@property
+	def args (self):
+		return self.current_build.args
 
 class HaxeBuild :
-
 
 	def __init__(self) :
 		self.std_classes = []
@@ -220,12 +272,24 @@ class HaxeBuild :
 		self.output = "dummy.js"
 		self.hxml = None
 		self.nmml = None
+		self.openfl = False
 		self.classpaths = []
 		self.libs = []
 		self.classes = None
 		self.packages = None
 		self.update_time = None
+		self.mode_completion = False
  
+	@property
+	def build_file(self):
+		return self.hxml
+
+	def is_nme (self):
+		return self.nmml != None
+
+	def is_openfl (self):
+		return self.openfl == True
+
 	def set_main(self, main):
 		self.main = main
 	
@@ -251,7 +315,8 @@ class HaxeBuild :
 			and self.nmml == other.nmml
 			and self.classpaths == other.classpaths
 			and self.libs == other.libs
-			and self.show_times == other.show_times)
+			and self.show_times == other.show_times
+			and self.mode_completion == other.mode_completion)
 		   
 		
 
@@ -268,6 +333,7 @@ class HaxeBuild :
 		hb.classes = list(self.classes) if self.classes is not None else None
 		hb.packages = list(self.packages) if self.packages is not None else None
 		hb.show_times = self.show_times
+		hb.mode_completion = self.mode_completion
 		return hb
 
 	def get_build_folder (self):
@@ -289,12 +355,16 @@ class HaxeBuild :
 	
 	def get_classpath (self, file):
 		cps = list(self.classpaths)
-		build_folder = self.get_build_folder()
-		cps.append(build_folder)
+		
+		
 		for cp in cps:
 			if file.startswith(cp):
 				return cp
 
+		build_folder = self.get_build_folder()
+		if file.startswith(build_folder):
+			return build_folder
+		
 		return None
 
 	def is_file_in_classpath (self, file):
@@ -302,6 +372,7 @@ class HaxeBuild :
 
 	def get_relative_path (self, file):
 		cp = self.get_classpath(file)
+
 		if cp is not None:
 			return file.replace(cp, "")[1:]
 		else:
@@ -359,7 +430,10 @@ class HaxeBuild :
 		self.args.append(("--connect" , str(server_port)))
 
 	def get_command_args (self, haxe_path):
-		cmd = [haxe_path]
+		cmd = list(haxe_path)
+
+		
+
 		for a in self.args :
 			cmd.extend( list(a) )
 
@@ -372,6 +446,8 @@ class HaxeBuild :
 
 	def set_auto_completion (self, display, macro_completion = False, no_output = True):
 		
+		self.mode_completion = True
+
 		args = self.args
 		print(args)
 		self.main = None
@@ -420,7 +496,8 @@ class HaxeBuild :
 		return self.classes, self.packages
 
 	
-	def prepare_run (self, haxe_exec, server_mode, view, project):
+	def prepare_run (self, project, server_mode, view):
+		run_exec = self.get_run_exec(project)
 		b = self.copy()
 		
 		nekox_file_name = None
@@ -436,24 +513,26 @@ class HaxeBuild :
 
 		
 		b.set_build_cwd()
-		cmd = b.get_command_args(haxe_exec)
+		cmd = b.get_command_args(run_exec)
 
-
-
-		
 		return (cmd, self.get_build_folder(), nekox_file_name)
+
+	def get_run_exec(self, project):
+		return project.nme_exec() if (self.is_nme and not self.mode_completion) else project.haxe_exec()
 
 	def run_async (self, project, view, callback):
 
 		# get environment
 		server_mode = project.is_server_mode()
 		
-		haxe_exec = project.haxe_exec(view)
+		
+
 		env = project.haxe_env(view)
 
     	
 
-		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
+
+		cmd, build_folder, nekox_file_name = self.prepare_run(project, server_mode, view)
 		
 		def cb (out, err):
 
@@ -493,9 +572,9 @@ class HaxeBuild :
 		# get environment
 		server_mode = project.is_server_mode()
 		
-		haxe_exec = project.haxe_exec(view)
+		
 		env = project.haxe_env(view)
-		cmd, build_folder, nekox_file_name = self.prepare_run(haxe_exec, server_mode, view, project)
+		cmd, build_folder, nekox_file_name = self.prepare_run(project, server_mode, view)
 		
 		
 		log("" + " ".join(cmd))

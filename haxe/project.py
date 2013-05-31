@@ -15,11 +15,13 @@ if is_st3:
     import Haxe.haxe.settings as hxsettings
     import Haxe.haxe.tools.path as path_tools
     import Haxe.haxe.compiler.server as hxserver
-
+    import Haxe.haxe.config as hxconfig
     from Haxe.haxe.execute import run_cmd
     from Haxe.haxe.log import log
     from Haxe.haxe.tools.cache import Cache
+
 else:
+    import haxe.config as hxconfig
     import haxe.build as hxbuild
     import haxe.panel as hxpanel
     import haxe.hxtools as hxsrctools
@@ -188,12 +190,18 @@ class Project:
             p = self.project_path
         return p
 
+    def nme_exec (self, view = None):
+        return ["nme"]
+
+    def nme_display_exec (self, view = None):
+        return ["nme", "display"]
+
     def haxe_exec (self, view = None):
         haxe_exec = hxsettings.haxe_exec(view)
         if (haxe_exec != "haxe"):
             cwd = self.project_dir(".")
             haxe_exec = os.path.normpath(os.sep.join(os.path.join(cwd, hxsettings.haxe_exec(view)).split("/")))
-        return haxe_exec
+        return [haxe_exec]
 
     
     def haxe_env (self, view = None):
@@ -202,7 +210,7 @@ class Project:
     
     def start_server(self, view):
         cwd = self.project_dir(".")
-        haxe_exec = self.haxe_exec(view)
+        haxe_exec = self.haxe_exec(view)[0]
         
         env = haxe_build_env(self.project_dir("."))
         
@@ -268,14 +276,19 @@ class Project:
         
 
         folders = win.folders()
+       
+
         
         for f in folders:
             self.builds.extend(hxbuild.find_hxmls(f))
-            self.builds.extend(hxbuild.find_nmmls(f))
+            #self.builds.extend(hxbuild.find_nmmls(f))
                 
-
+            for nmml in hxbuild.find_nmml_files(f):
+                for t in hxconfig.nme_targets:
+                    self.builds.append(hxbuild.NmeBuild(nmml, t))
         
         log( "num builds:" + str(len(self.builds)))
+        
 
         # settings.set("haxe-complete-folder", folder)
         
@@ -292,7 +305,7 @@ class Project:
 
             self.set_current_build( view , int(0), force_panel )
 
-        elif len(self.builds) == 0 and force_panel :
+        elif len(self.builds) == 0  and force_panel :
             sublime.status_message("No hxml or nmml file found")
 
             f = os.path.join(folder,"build.hxml")
@@ -308,14 +321,25 @@ class Project:
 
         elif len(self.builds) > 1 and force_panel :
             buildsView = []
+            log("do show panel")
+            
             for b in self.builds :
                 #for a in b.args :
                 #   v.append( " ".join(a) )
-                buildsView.append( [b.to_string(), os.path.basename( b.hxml ) ] )
+                                
+                buildsView.append( [b.to_string(), os.path.basename( b.build_file ) ] )
+
+
 
             self.selecting_build = True
             sublime.status_message("Please select your build")
-            win.show_quick_panel( buildsView , lambda i : self.set_current_build(view, int(i), force_panel) , sublime.MONOSPACE_FONT )
+
+            def on_selected (i):
+                #selected = i
+                #selected_build = candidates[selected]
+                self.set_current_build(view, i, force_panel)   
+
+            win.show_quick_panel( buildsView , on_selected  , sublime.MONOSPACE_FONT )
 
         elif settings.has("haxe-build-id"):
             self.set_current_build( view , int(settings.get("haxe-build-id")), force_panel )
@@ -340,14 +364,14 @@ class Project:
             
         self.selecting_build = False
 
-        if force_panel and self.current_build is not None: # choose NME target
-            if self.current_build.nmml is not None:
-                sublime.status_message("Please select a NME target")
-                nme_targets = []
-                for t in hxbuild.HaxeBuild.nme_targets :
-                    nme_targets.append( t[0] )
+        # if force_panel and self.current_build is not None: # choose NME target
+        #     if self.current_build.nmml is not None:
+        #         sublime.status_message("Please select a NME target")
+        #         nme_targets = []
+        #         for t in hxbuild.HaxeBuild.nme_targets :
+        #             nme_targets.append( t[0] )
 
-                view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.current_build, i, view))
+        #         view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.current_build, i, view))
 
     def has_build (self):
         return self.current_build != None
@@ -357,7 +381,11 @@ class Project:
         if view is None: 
             view = sublime.active_window().active_view()
 
-        haxe_exec = self.haxe_exec(view)
+
+
+        
+
+
         
         if (self.has_build()):
             build = self.get_build(view)
@@ -365,10 +393,15 @@ class Project:
             self.extract_build_args(view)
             build = self.get_build(view)
 
+        if build.is_nme():
+            run_exec = self.nme_exec(view)
+        else:
+            run_exec = self.haxe_exec(view)
+
         def cb (out, err):
             if (err != None and err != ""):
                 msg = "build finished with errors"
-                cmd = " ".join(build.get_command_args(haxe_exec))
+                cmd = " ".join(build.get_command_args(run_exec))
                 hxpanel.default_panel().writeln( "cmd: " + cmd)
                 hxpanel.default_panel().writeln( msg)
                 view.set_status( "haxe-status" , msg )
@@ -399,7 +432,7 @@ class Project:
         log("start sublime build")
 
 
-        haxe_exec = self.haxe_exec(view)
+        #haxe_exec = self.haxe_exec(view)
         env = haxe_build_env(self.project_dir("."))
         
         if (self.has_build()):
@@ -408,7 +441,7 @@ class Project:
             self.extract_build_args(view)
             build = self.get_build(view)
 
-        cmd, build_folder, nekox_file_name = build.prepare_run(haxe_exec, self.serverMode, view, self)
+        cmd, build_folder, nekox_file_name = build.prepare_run(self, self.serverMode, view)
         
         
         log(env)
