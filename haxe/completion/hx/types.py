@@ -242,9 +242,8 @@ class CompletionContext:
 
         self.view_id = view.id()
 
-    @lazyprop
-    def id(self):
-        return get_completion_id()
+        self.id = get_completion_id()
+   
 
     @lazyprop
     def orig_file(self):

@@ -25,18 +25,21 @@ else:
 
 # ------------------- FUNCTIONS ----------------------------------
 
-def get_completions_from_background_run(background_result, view):
 
-    ctx = background_result.ctx
 
-    has_results = background_result.has_results()
+
+def get_async_completions(comp_result, view):
+
+    ctx = comp_result.ctx
+
+    has_results = comp_result.has_results()
 
     comps = None
 
     if (not has_results and (hxsettings.no_fuzzy_completion() or ctx.options.types.has_hint())):
         comps = cancel_completion(view)
     else:
-        comps = combine_hints_and_comps(background_result)
+        comps = combine_hints_and_comps(comp_result)
 
     return comps
 
@@ -45,10 +48,10 @@ def auto_complete(project, view, offset):
 
     # if completion is triggered by a background completion process
     # completion return the result
-    background_result = project.completion_context.get_and_delete_async(view)
+    async_result = project.completion_context.get_and_delete_async(view)
 
-    if background_result is not None:
-        comps = get_completions_from_background_run(background_result, view)
+    if async_result is not None and async_result.has_results():
+        comps = get_async_completions(async_result, view)
     else:
         # get build and maybe use cache
         comps = get_completions_regular(project, view, offset)
@@ -274,7 +277,7 @@ def run_completion_async(comp_build, cb):
     if ctx.settings.show_completion_times(view):
         build.set_times()
 
-    build.run(project, view, async, cb)
+    build.run(project, view, async, on_result)
 
 
 def completion_finished(comp_build, out, err):
