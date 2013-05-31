@@ -117,7 +117,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
         build.add_classpath(temp_path)
 
-        build.add_classpath(plugin_path)
+        build.add_classpath(os.path.join(plugin_path, "haxetools"))
         
         if use_display:
             build.set_auto_completion(temp_file + "@0", False, False)
@@ -125,7 +125,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         server_mode = project.is_server_mode()
 
 
-        out, err = build.run(project.haxe_exec(), project.haxe_env(), server_mode, view, project)
+        out, err = build.run(project, view )
 
         hxtemp.remove_path(temp_path)
         

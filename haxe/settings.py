@@ -82,6 +82,9 @@ def show_completion_times (view = None):
 def haxe_exec (view = None):
 	return get_string("haxe_exec", "haxe", view)
 
+def use_haxe_servermode_wrapper (view = None):
+	return get_bool("haxe_use_servermode_wrapper", False, view)
+
 def haxe_sdk_path (view = None):
 	return get_string("haxe_sdk_path", None, view)
 

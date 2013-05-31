@@ -1,28 +1,36 @@
 import sublime
 import sys
 import os
-import atexit
-from subprocess import Popen
 
+from subprocess import Popen, PIPE
+import time 
 is_st3 = int(sublime.version()) >= 3000
+
 
 if is_st3:
 	from Haxe.haxe.startup import STARTUP_INFO
 	from Haxe.haxe.log import log
+	import Haxe.haxe.plugin as hxplugin
 	import Haxe.haxe.panel as hxpanel
+	import Haxe.haxe.settings as hxsettings
 else:
 	from haxe.startup import STARTUP_INFO
 	from haxe.log import log
+	import haxe.plugin as hxplugin
 	import haxe.panel as hxpanel
+	import haxe.settings as hxsettings
+
+
 
 class Server ():
 	def __init__ (self, port):
+
+		self._use_wrapper = hxsettings.use_haxe_servermode_wrapper()
 
 		self._server_proc = None
 		self._server_port = port
 		self._orig_server_port = port
 
-		atexit.register(lambda: self.stop())
 
 	def get_server_port (self):
 		return self._server_port
@@ -33,8 +41,17 @@ class Server ():
 		
 		if self._server_proc is None : 
 			try:
-				cmd = [haxe_path , "--wait" , str(self._server_port) ]
-
+				
+				if self._use_wrapper:
+					wrapper = hxplugin.plugin_base_dir() + "/wrapper"
+					cmd = ["neko", wrapper]
+				else:
+					cmd = list()
+				
+				cmd.extend([haxe_path , "--wait" , str(self._server_port) ])
+				log("start server:")
+				
+				log(" ".join(cmd))
 				full_env = os.environ.copy()
 
 				if env != None:
@@ -50,8 +67,11 @@ class Server ():
 						full_env[k] = os.path.expandvars(val)
 				
 
-				self._server_proc = Popen(cmd, cwd=cwd, env = full_env, startupinfo=STARTUP_INFO)
+				self._server_proc = Popen(cmd, cwd=cwd, env = full_env, stdin=PIPE, stdout=PIPE, startupinfo=STARTUP_INFO)
+				
 				self._server_proc.poll()
+
+				time.sleep(0.1)
 				#self._server_proc.stderr.close()
 				#self._server_proc.stdout.close()
 				
@@ -72,7 +92,7 @@ class Server ():
 					hxpanel.default_panel().writeln(msg)
 					#sublime.error_message(msg)
 			except Exception as e:
-				log(str(e))
+				log("ERROR : " + str(e))
 		
 
 	
@@ -83,7 +103,12 @@ class Server ():
 			if proc is not None :
 				self._server_proc = None
 				del self._server_proc
-				proc.terminate()
+				if self._use_wrapper:
+					proc.stdin.write("x")
+					time.sleep(0.2)
+				else:
+					proc.terminate()
+					time.sleep(0.2)
 				proc.kill()
 				proc.wait()
 				proc = None
@@ -92,11 +117,14 @@ class Server ():
 				# increment the server port to avoid this
 				self._server_port = self._server_port + 1
 			
-			if completeCallback != None:
-				completeCallback()
+			
 			
 		except:
-			pass
+			self._server_proc = None
+		
+		if completeCallback != None:
+			completeCallback()
+
 	def __del__(self):
 		self.stop()
 		

@@ -398,10 +398,9 @@ class Project:
 
 
     def destroy (self) :
-        log( "kill server")
-        def empty():
-            pass
-        self.server.stop(empty)
+        
+        file_log("destroy server")
+        self.server.stop()
 
 
     def get_build( self, view ) :
@@ -610,20 +609,48 @@ def select_nme_target( build, i, view ):
 
 _projects = Cache()
 
+import sublime
+from os.path import expanduser
+user_home = expanduser("~")
+log_file = os.path.join(user_home, str("st3_haxe_log.txt"))
+
 def destroy ():
+    
+    file_log("destroy called")
+
     global _projects
-    for p in _projects.data:
+    file_log("keys " + str(list(_projects.data.keys())))
+    for p in _projects.data.keys():
+        
         project = _projects.data[p][1]
+        file_log("project " + project.project_file)
         project.destroy()
     _projects = Cache()
+
+
+
+def file_log (msg):
+    f = open(log_file , "a+" )
+    f.write( str(msg) + str("\n") )
+    f.close()
+
+def plugin_unloaded_handler():
+    pass
+    #destroy()
+    
+
+
+def plugin_unloaded():
+    plugin_unloaded_handler()
+
+def unload_handler():
+    plugin_unloaded_handler()
+
+
 
 _next_server_port = [6000]
 def current_project(view = None):
 
-
-    
-
-    log("next server port: " + str(_next_server_port[0]))
 
     win_ids = [w.id() for w in sublime.windows()]
 

@@ -18,7 +18,6 @@ else:
 def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None, include_private_types = True):
 
 
-
 	
 
 	classes = []

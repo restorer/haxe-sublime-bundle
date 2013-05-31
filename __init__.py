@@ -10,7 +10,7 @@ def plugin_unloaded_handler():
 	else:
 		import haxe.project as hxproject
 	print("destroy")
-	hxproject.destroy()
+	#hxproject.destroy()
 	
 import atexit
 atexit.register(plugin_unloaded_handler)

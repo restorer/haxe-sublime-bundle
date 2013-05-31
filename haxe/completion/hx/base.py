@@ -137,7 +137,7 @@ def hints_to_sublime_completions(hints):
             params2 = params if not only_next else h[0:1]
             show = "" + ",".join([param for param in params]) + ""
             insert = ",".join(["${" + str(index+1) + ":" + param + "}" for index, param in enumerate(params2)])
-            log(insert)
+            
             res = (show, insert)
         return res
 
@@ -172,7 +172,8 @@ def is_same_completion_already_running(ctx):
 
 def should_include_top_level_completion(ctx):
     
-    toplevel_complete = ctx.complete_char in ":(,{;" or ctx.in_control_struct or ctx.is_new
+
+    toplevel_complete = ctx.complete_char in ":(,{;})" or ctx.in_control_struct or ctx.is_new
     
     return toplevel_complete
 
