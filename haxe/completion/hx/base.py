@@ -109,18 +109,23 @@ def hx_normal_auto_complete(project, view, offset, cache):
                 out = cache["output"]
                 res = combine_hints_and_comps(out)
             else :
-                toplevel_comps = get_toplevel_completions()
-                async = hxsettings.is_async_completion()
-
-                log("USE ASYNC COMPLETION: " + str(async))
-
-                comp_result = get_fresh_completions(ctx, toplevel_comps, cache)
-                comp_result.toplevel = toplevel_comps
-
+                
                 if supported_compiler_completion_char(ctx.complete_char):
+
+
+                    toplevel_comps = get_toplevel_completions()
+                    
+
+                    log("USE ASYNC COMPLETION: " + str(ctx.settings.is_async_completion))
+
+                    comp_result = get_fresh_completions(ctx, toplevel_comps, cache)
+                    
                     # we don't show any completions at this point
                     res = cancel_completion(view, True)
                 else:
+                    toplevel_comps = get_toplevel_completions()
+                    comp_result = CompletionResult.empty_result(ctx)
+                    comp_result.toplevel = toplevel_comps
                     res = combine_hints_and_comps(comp_result)
     return res
 
@@ -216,39 +221,32 @@ def log_completion_status(status, comps, hints):
 
 def get_fresh_completions(ctx, toplevel_comps, cache):
     
-    complete_char = ctx.complete_char
     build = ctx.build
     
-    if supported_compiler_completion_char(complete_char): 
+    tmp_src = ctx.temp_completion_src
 
-        tmp_src = ctx.temp_completion_src
+    temp_path, temp_file = hxtemp.create_temp_path_and_file(build, ctx.orig_file, tmp_src)
 
-        temp_path, temp_file = hxtemp.create_temp_path_and_file(build, ctx.orig_file, tmp_src)
+    res = None
 
-        res = None
-
-        if temp_path is None or temp_file is None:
-            # this should never happen, todo proper error message
-            log("ERROR: cannot create temp_path or file")
-            res = CompletionResult.empty_result(ctx)
-        else:
-            build.add_classpath(temp_path)
-            display = temp_file + "@0"
-            
-
-            def run_compiler_completion (cb):
-                return get_compiler_completion( ctx, display, cb )
-            
-            def cb (out, err):
-                # remove temporary files
-                hxtemp.remove_path(temp_path)
-                completion_finished(ctx, out, err, temp_file, toplevel_comps, cache)
-
-            run_completion(ctx, run_compiler_completion, cb)
-            res = CompletionResult.empty_result(ctx)
-            
+    if temp_path is None or temp_file is None:
+        # this should never happen, todo proper error message
+        log("ERROR: cannot create temp_path or file")
+        res = CompletionResult.empty_result(ctx)
     else:
-        log("not supported completion char")
+        build.add_classpath(temp_path)
+        display = temp_file + "@0"
+        
+
+        def run_compiler_completion (cb):
+            return get_compiler_completion( ctx, display, cb )
+        
+        def cb (out, err):
+            # remove temporary files
+            hxtemp.remove_path(temp_path)
+            completion_finished(ctx, out, err, temp_file, toplevel_comps, cache)
+
+        run_completion(ctx, run_compiler_completion, cb)
         res = CompletionResult.empty_result(ctx)
 
     return res
