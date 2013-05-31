@@ -120,9 +120,8 @@ def hxml_to_builds (build, folder):
 		log("no classpaths")
 		current_build.classpaths.append( build_path )
 		current_build.args.append( ("-cp" , build_path ) )
-	
-	if current_build.main is not None :
-		builds.append( current_build )
+
+	builds.append( current_build )
 
 	return builds
 
@@ -227,6 +226,15 @@ class HaxeBuild :
 		self.packages = None
 		self.update_time = None
  
+	def set_main(self, main):
+		self.main = main
+	
+	def get_name (self):
+		if self.main == None:
+			return "[No Main]"
+		else:
+		 	return self.main
+
 	def set_std_classes(self, std_classes):
 		self.std_classes = std_classes
 
@@ -304,7 +312,7 @@ class HaxeBuild :
 		if self.nmml is not None:
 			return "{out} ({target})".format(self=self, out=out, target=hxconfig.nme_target[0]);
 		else:
-			return "{main} ({target}:{out})".format(self=self, out=out, main=self.main, target=self.target);
+			return "{main} ({target}:{out})".format(self=self, out=out, main=self.get_name(), target=self.target);
 		#return "{self.main} {self.target}:{out}".format(self=self, out=out);
 	
 	def make_hxml( self ) :
