@@ -360,15 +360,18 @@ class CompletionResult:
 
 
 class CompletionBuild:
-
-    def __init__(self, ctx, temp_path, temp_file, toplevel_comps, cache):
+    def __init__(self, ctx, temp_path, temp_file):
         self.build = ctx.build.copy()
+        # add the temp_path to the classpath of the build
         self.build.add_classpath(temp_path)
+        # the completion context
         self.ctx = ctx
+        # stores the temporary classpath which contains the temp_file
         self.temp_path = temp_path
+        # stores the temporary file path which is used for completion
         self.temp_file = temp_file
-        self.toplevel_comps = toplevel_comps
-        self.cache = cache
+
+        self.cache = ctx.project.completion_context.current
 
     @lazyprop
     def display(self):
