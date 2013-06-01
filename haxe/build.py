@@ -222,7 +222,7 @@ class NmeBuild :
 
 
 	def __init__(self, title, nmml, target, cb = None):
-		self.title = title
+		self._title = title
 		self.current_target = target
 		self.nmml = nmml
 		self._current_build = cb
@@ -231,7 +231,7 @@ class NmeBuild :
 
 	@property
 	def title(self):
-		return self.title
+		return self._title
 	@property
 	def build_file(self):
 		return self.nmml
@@ -365,8 +365,8 @@ class HaxeBuild :
 		self.packages = None
 		self.update_time = None
 		self.mode_completion = False
- 	
- 	@property
+		
+	@property
 	def title(self):
 		return self.output
 
