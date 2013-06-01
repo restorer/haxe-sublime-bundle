@@ -40,12 +40,14 @@ def hxml_to_builds (build, folder):
 	current_build.hxml = build
 	build_path = os.path.dirname(build);
 
+	log("read build file:" + build)
 	# print("build file exists")
 	f = codecs.open( build , "r+" , "utf-8" , "ignore" )
 	while 1:
 		l = f.readline() 
 		if not l : 
 			break;
+		log(l)
 		if l.startswith("--next") :
 			builds.append( current_build )
 			current_build = HaxeBuild()
@@ -82,7 +84,7 @@ def hxml_to_builds (build, folder):
 					"-js-namespace" , "-interp" , "-dead-code-elimination" , 
 					"-php-front" , "-php-lib", "dce" , "-js-modern", "-times" ] :
 			if l.startswith( "-"+flag ) :
-				current_build.args.append( tuple(l.split(" ") ) )
+				current_build.add_arg( tuple(l.split(" ") ) )
 				
 				break
 		
@@ -149,12 +151,40 @@ def find_hxmls( folder ) :
 		
 	return builds
 
-extract_tag = re.compile("<([a-z0-9_-]+).*\s(name|main)=\"([a-z0-9_./-]+)\"", re.I)
+extract_tag = re.compile("<([a-z0-9_-]+).*?\s(name|main|title|file)=\"([ a-z0-9_./-]+)\"", re.I)
 
 
-def find_nmml_files( folder ) :
+def find_nmml_title(nmml):
+	f = codecs.open( nmml , "r+", "utf-8" , "ignore" )
+	title = ["No Title"]
+	while 1:
+		l = f.readline()
+		if not l :
+			break
+		m = extract_tag.search(l)
+		if not m is None:
+			log(m.groups())
+			#print(m.groups())
+			tag = m.group(1)
+			
+			if tag == "meta" or tag == "app" :
+				mFile = re.search("\\b(file|title)=\"([ a-z0-9_-]+)\"", l, re.I)
+				if not mFile is None:
+					title = mFile.group(2)
+					break
+	f.close()
+	return title
+			
+
+def find_nmmls( folder ) :
 	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
-	return nmmls
+	builds = []
+	for nmml in nmmls:
+		title = find_nmml_title(nmml)
+		for t in hxconfig.nme_targets:
+
+			builds.append(NmeBuild(title, nmml, t))
+	return builds
 
 
 def create_haxe_build_from_nmml (target, nmml):
@@ -191,13 +221,17 @@ def create_haxe_build_from_nmml (target, nmml):
 class NmeBuild :
 
 
-	def __init__(self, nmml, target, cb = None):
+	def __init__(self, title, nmml, target, cb = None):
+		self.title = title
 		self.current_target = target
 		self.nmml = nmml
 		self._current_build = cb
 
-		log("CLASSPATHS:" + str(self.current_build.classpaths))
+		#log("CLASSPATHS:" + str(self.current_build.classpaths))
 
+	@property
+	def title(self):
+		return self.title
 	@property
 	def build_file(self):
 		return self.nmml
@@ -215,14 +249,40 @@ class NmeBuild :
 		return self._current_build
 	
 	def to_string(self) :
-		out = os.path.basename(self.current_build.output)
+		#out = os.path.basename(self.current_build.output)
+		out = self.title
 		return "{out} ({target})".format(out=out, target=self.current_target.name);
 		
+
+
+	def filter_platform_specific(self, packs_or_classes):
+		res = []
+		for c in packs_or_classes:
+			if not c.startswith("native") and not c.startswith("browser") and not c.startswith("flash") and not c.startswith("flash9") and not c.startswith("flash8"):
+				res.append(c)
+
+		return res
+
 	def get_types(self):
-		return self._current_build.get_types()
+		classes, packages = self._current_build.get_types()
+
+		res = self.filter_platform_specific(classes), self.filter_platform_specific(packages)
+
+		log(str(res))
+		return res
+		
+
+	@property
+	def std_classes(self):
+		return self.filter_platform_specific(self._current_build.std_classes)
+		
+
+	@property
+	def std_packs(self):
+		return self.filter_platform_specific(self._current_build.std_packs)
 
 	def copy (self):
-		r = NmeBuild(self.nmml, self.current_target, self._current_build.copy())
+		r = NmeBuild(self.title, self.nmml, self.current_target, self.current_build.copy())
 		
 		return r
 
@@ -243,11 +303,36 @@ class NmeBuild :
 	def is_nme (self):
 		return True
 
+
+
 	def add_classpath(self, cp):
 		self.current_build.add_classpath(cp)
 
 	def run(self, project, view, async, on_result):
 		self.current_build.run(project, view, async, on_result)
+
+	def run_sync (self, project, view):
+		return self.current_build.run_sync(project, view)		
+	
+	def prepare_sublime_build_cmd (self, project, server_mode, view):
+		
+		
+
+		cmd = ["nme"]
+		cmd.append(self.current_target.build_command)
+		cmd.append(self.current_target.target)
+		cmd.extend(self.current_target.args)
+		
+
+		# if server_mode:
+		# 	project.start_server( view )
+		# 	cmd.append("--connect")
+		# 	cmd.append(str(project.server.get_server_port()))
+		
+
+
+		return (cmd, self.get_build_folder())
+
 
 	def prepare_run(self, project, server_mode, view):
 		return self.current_build.prepare_run(project, server_mode, view)
@@ -263,8 +348,9 @@ class NmeBuild :
 class HaxeBuild :
 
 	def __init__(self) :
-		self.std_classes = []
+		
 		self.show_times = False
+		self.std_classes = []
 		self.std_packs = []
 		self.args = []
 		self.main = None
@@ -279,7 +365,11 @@ class HaxeBuild :
 		self.packages = None
 		self.update_time = None
 		self.mode_completion = False
- 
+ 	
+ 	@property
+	def title(self):
+		return self.output
+
 	@property
 	def build_file(self):
 		return self.hxml
@@ -335,6 +425,9 @@ class HaxeBuild :
 		hb.show_times = self.show_times
 		hb.mode_completion = self.mode_completion
 		return hb
+
+	def add_arg(self, arg):
+		self.args.append(arg)
 
 	def get_build_folder (self):
 		r = None
@@ -408,14 +501,7 @@ class HaxeBuild :
 		return outp.strip()
 
 
-	def update_types(self):
-
-		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
-		log("update types for " + str(self.classpaths))		
-		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ), [], [], include_private_types = False )
-
-		self.classes = classes;
-		self.packages = packages;
+	
 
 	def set_cwd (self, cwd):
 		self.args.append(("--cwd" , cwd ))
@@ -436,6 +522,9 @@ class HaxeBuild :
 
 		for a in self.args :
 			cmd.extend( list(a) )
+
+		#for l in self.libs :
+		#	cmd.append( ("-lib", l) )
 
 		if self.main != None:
 			cmd.append("-main")
@@ -484,18 +573,31 @@ class HaxeBuild :
 		self.args = args
 
 
+	def update_types(self):
+
+		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
+		log("update types for " + str(self.classpaths))		
+		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ), [], [], include_private_types = False )
+
+		self.classes = classes;
+		self.packages = packages;
+
+
 	def get_types( self ) :
 		now = time.time()
-		log("get_types" + str(now))
-		log("get_types" + str(self.update_time))
+		
 		if self.classes is None or self.packages is None or self.update_time is None or (now - self.update_time) > 10:
-			log("update types")
+
 			self.update_time = now
 			self.update_types()
 
 		return self.classes, self.packages
 
 	
+	def prepare_sublime_build_cmd (self, project, server_mode, view):
+		r = self.prepare_run(project, server_mode, view)
+		return (r[0], r[1])
+
 	def prepare_run (self, project, server_mode, view):
 		run_exec = self.get_run_exec(project)
 		b = self.copy()
@@ -518,7 +620,7 @@ class HaxeBuild :
 		return (cmd, self.get_build_folder(), nekox_file_name)
 
 	def get_run_exec(self, project):
-		return project.nme_exec() if (self.is_nme and not self.mode_completion) else project.haxe_exec()
+		return project.haxe_exec()
 
 	def run_async (self, project, view, callback):
 

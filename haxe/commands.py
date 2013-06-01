@@ -66,7 +66,8 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         project = hxproject.current_project(view)
         build = project.get_build(view).copy()
         build.args.append(("-D", "no-inline"))
-
+        log("ARGS:" + str(build.args))
+        log("ARGS2" + str(project.get_build(view).args))
         src = view_tools.get_content(view)
 
         file_name = os.path.basename(view.file_name())
@@ -120,12 +121,12 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         build.add_classpath(os.path.join(plugin_path, "haxetools"))
         
         if use_display:
-            build.set_auto_completion(temp_file + "@0", False, False)
+            build.set_auto_completion(temp_file + "@0", False)
 
         server_mode = project.is_server_mode()
 
 
-        out, err = build.run(project, view )
+        out, err = build.run_sync(project, view )
 
         hxtemp.remove_path(temp_path)
         

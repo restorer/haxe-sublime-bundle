@@ -281,11 +281,8 @@ class Project:
         
         for f in folders:
             self.builds.extend(hxbuild.find_hxmls(f))
-            #self.builds.extend(hxbuild.find_nmmls(f))
-                
-            for nmml in hxbuild.find_nmml_files(f):
-                for t in hxconfig.nme_targets:
-                    self.builds.append(hxbuild.NmeBuild(nmml, t))
+            self.builds.extend(hxbuild.find_nmmls(f))
+            
         
         log( "num builds:" + str(len(self.builds)))
         
@@ -327,7 +324,7 @@ class Project:
                 #for a in b.args :
                 #   v.append( " ".join(a) )
                                 
-                buildsView.append( [b.to_string(), os.path.basename( b.build_file ) ] )
+                buildsView.append( [b.to_string(), os.path.basename(b.build_file) ] )
 
 
 
@@ -429,6 +426,11 @@ class Project:
         if view is None: 
             view = sublime.active_window().active_view()
 
+        win = view.window()
+
+        if win is None:
+            win = sublime.active_window()
+
         log("start sublime build")
 
 
@@ -441,17 +443,9 @@ class Project:
             self.extract_build_args(view)
             build = self.get_build(view)
 
-        cmd, build_folder, nekox_file_name = build.prepare_run(self, self.serverMode, view)
+        cmd, build_folder = build.prepare_sublime_build_cmd(self, self.serverMode, view)
         
         
-        log(env)
-
-        log(cmd)
-
-        win = view.window()
-
-        if win is None:
-            win = sublime.active_window()
         
         win.run_command("haxe_exec", {
             "cmd": cmd,

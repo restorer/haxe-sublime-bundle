@@ -62,18 +62,58 @@ class FindDeclaration {
 		function fromField (x, field) {
 			var check = function (x) return x.name == field;
 			var pos = try {
-				out("hey51");
 				
 				var t = Context.typeof( x );
-				out("hey5");
+
 				switch (t) {
 					case Type.TInst( t , _ ):
 						
-						//var statics = t.get().statics.get().filter( check );
-						var fields = t.get().fields.get().filter( check );
-						if (fields.length == 1) 
-							fields[0].pos;
-						else null;
+						var cur = t;
+
+						var res = null;
+						var interf1 = [];
+
+						while (true) {
+							var fields = cur.get().fields.get().filter( check );
+							if (fields.length == 1)  {
+								res = fields[0].pos;	
+								break;
+							}
+							var x = cur.get().superClass;
+							if (x == null) break;
+
+							cur = x.t;
+
+							for (i in cur.get().interfaces) {
+
+								interf1.push(i);
+							}
+						}
+						if (res == null) {
+							var interf = t.get().interfaces.concat(interf1);
+							while (interf.length > 0) {
+								var new_interf = []
+								for (i in interf) {
+									var fields = i.t.get().fields.get().filter( check );
+									if (fields.length == 1)  {
+										res = fields[0].pos;	
+										break;
+									}
+									for (i in i.t.get().interfaces) {
+										new_interf.push(i)
+									}
+								}
+								if (res != null) break;
+
+
+
+								interf = new_interf
+								
+							}
+						}
+
+						res;
+
 						
 					case Type.TType( t , _ ):
 

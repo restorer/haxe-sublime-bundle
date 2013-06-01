@@ -8,7 +8,7 @@ import_line = re.compile("^([ \t]*)import\s+([a-z0-9._]+);", re.I | re.M)
 using_line = re.compile("^([ \t]*)using\s+([a-z0-9._]+);", re.I | re.M)
 package_line = re.compile("package\s*([a-z0-9.]*);", re.I)
 
-type_decl_with_scope = re.compile("(private\s+)?(class|typedef|enum|typedef|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
+type_decl_with_scope = re.compile("(private\s+)?(?:extern\s+)?(class|typedef|enum|typedef|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
 
 type_decl = re.compile("(class|typedef|enum|typedef|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
 

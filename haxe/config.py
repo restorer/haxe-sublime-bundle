@@ -1,4 +1,4 @@
-target_packages = ["flash","flash8","neko","js","php","cpp","cs","java","nme", "sys"]
+target_packages = ["flash","flash8","neko","js","php","cpp","cs","java", "sys"]
 
 targets = ["js","cpp","swf8","swf","neko","php","java","cs"]
 
@@ -10,8 +10,7 @@ target_std_packages = {
 	"java" : ["java", "sys"],
 	"cs" : ["cs", "sys"],
 	"swf" : ["flash"],
-	"swf8" : ["flash8"],
-	"nme" : ["nme"]
+	"swf8" : ["flash8"]
 }
 
 ignored_folders_list =  [".git", ".svn"]
@@ -29,7 +28,7 @@ ignored_types = ["haxe.io.BytesData.Unsigned_char__"]
 
 
 class NmeTarget:
-    def __init__(self, name, target, build_command, args, hxml_name):
+    def __init__(self, name, target, build_command, hxml_name, args):
         self.name = name
         self.target = target
         self.build_command = build_command
@@ -37,9 +36,35 @@ class NmeTarget:
         self.hxml_name = hxml_name
 
 nme_targets = [
-    NmeTarget("Flash - test", "flash", "test", ["-debug"], "_nme__flash.hxml"),
-    NmeTarget("HTML5 - test", "html5", "test", ["-debug"], "_nme__html5.hxml")
-]
+    NmeTarget("Flash - test",                      "flash", "test",     "_nme__flash_1.hxml",     ["-debug"]),
+    NmeTarget("Flash - build only",                "flash", "build",    "_nme__flash_2.hxml",     ["-debug"]),
+    NmeTarget("HTML5 - test",                      "html5", "test",     "_nme__html5_1.hxml",     ["-debug"]),
+    NmeTarget("HTML5 - build only",                "html5", "build",    "_nme__html5_2.hxml",     ["-debug"]),
+    NmeTarget("C++ - test",                        "cpp",   "test",     "_nme__cpp1.hxml",       ["-debug"]),
+    NmeTarget("C++ - build only",                  "cpp",   "build",    "_nme__cpp2.hxml",       ["-debug"]),
+    NmeTarget("Linux - test",                      "linux",   "test",   "_nme__linux1.hxml",     ["-debug"]),
+    NmeTarget("Linux - build only",                "linux",   "build",  "_nme__linux2.hxml",     ["-debug"]),
+    NmeTarget("Linux 64 - test",                   "linux",   "test",   "_nme__linux64_1.hxml",   ["-64 -debug"]),
+    NmeTarget("Linux 64 - build only",             "linux",   "build",  "_nme__linux64_2.hxml",   ["-64 -debug"]),
+    NmeTarget("iOs - test in iPhone simulator",    "ios",   "test",     "_nme__ios_ipod.hxml",  ["-simulator -debug"]),
+    NmeTarget("iOs - test in iPad simulator",      "ios",   "test",     "_nme__ios_ipad.hxml",  ["-simulator -ipad -debug"]),
+    NmeTarget("iOs - update XCode project",        "ios",   "update",   "_nme__ios_xcode.hxml", ["-ipad -debug"]),
+
+    NmeTarget("Neko - test",                      "neko",   "test",   "_nme__neko1.hxml",     ["-debug"]),
+    NmeTarget("Neko - build only",                "neko",   "build",  "_nme__neko2.hxml",     ["-debug"]),
+    NmeTarget("Neko 64 - test",                   "neko",   "test",   "_nme__neko64_1.hxml",   ["-64 -debug"]),
+    NmeTarget("Neko 64 - build only",             "neko",   "build",  "_nme__neko64_2.hxml",   ["-64 -debug"]),
+
+    NmeTarget("WebOs - test",                   "webos",   "test",   "_nme__webos1.hxml",   ["-debug"]),
+    NmeTarget("WebOs - build only",             "webos",   "build",  "_nme__webos2.hxml",   ["-debug"]),
+
+    NmeTarget("BlackBerry - test",                   "blackberry",   "test",   "_nme__blackberry1.hxml",   ["-debug"]),
+    NmeTarget("BlackBerry - build only",             "blackberry",   "build",  "_nme__blackberry2.hxml",   ["-debug"]),
+
+    NmeTarget("Android - test",                   "android",   "test",   "_nme__android1.hxml",   ["-debug"]),
+    NmeTarget("Android - build only",             "android",   "build",  "_nme__android2.hxml",   ["-debug"])
+]   
+
 
 # nme_targets = [
 #     ("Flash - test","flash -debug","test"),
