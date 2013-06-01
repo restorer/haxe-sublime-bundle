@@ -280,8 +280,8 @@ class Project:
 
         
         for f in folders:
-            self.builds.extend(hxbuild.find_hxmls(f))
-            self.builds.extend(hxbuild.find_nmmls(f))
+            self.builds.extend(hxbuild.find_hxml_projects(f))
+            self.builds.extend(hxbuild.find_nme_projects(f))
             
         
         log( "num builds:" + str(len(self.builds)))

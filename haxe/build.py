@@ -127,7 +127,7 @@ def hxml_to_builds (build, folder):
 
 	return builds
 
-def find_hxmls( folder ) :
+def find_hxml_projects( folder ) :
 	
 	builds = []
 	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
@@ -154,7 +154,7 @@ def find_hxmls( folder ) :
 extract_tag = re.compile("<([a-z0-9_-]+).*?\s(name|main|title|file)=\"([ a-z0-9_./-]+)\"", re.I)
 
 
-def find_nmml_title(nmml):
+def find_nme_project_title(nmml):
 	f = codecs.open( nmml , "r+", "utf-8" , "ignore" )
 	title = ["No Title"]
 	while 1:
@@ -176,14 +176,26 @@ def find_nmml_title(nmml):
 	return title
 			
 
-def find_nmmls( folder ) :
+def find_nme_projects( folder ) :
 	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
 	builds = []
 	for nmml in nmmls:
-		title = find_nmml_title(nmml)
+		title = find_nme_project_title(nmml)
 		for t in hxconfig.nme_targets:
 
 			builds.append(NmeBuild(title, nmml, t))
+	return builds
+
+def find_openfl_projects( folder ) :
+	nmmls = glob.glob( os.path.join( folder , "*.xml" ) )
+	builds = []
+	for nmml in nmmls:
+		title = find_nme_project_title(nmml)
+		if title != None:
+			for t in hxconfig.nme_targets:
+				builds.append(OpenFlBuild(title, nmml, t))
+
+
 	return builds
 
 
@@ -216,6 +228,8 @@ def create_haxe_build_from_nmml (target, nmml):
 	hx_build = hxml_to_builds(hxml_file, nmml_dir)[0]
 	hx_build.nmml = nmml
 	return hx_build
+
+
 
 
 class NmeBuild :
@@ -314,11 +328,15 @@ class NmeBuild :
 	def run_sync (self, project, view):
 		return self.current_build.run_sync(project, view)		
 	
+
+	def get_build_command(self):
+		return ["nme"]
+
 	def prepare_sublime_build_cmd (self, project, server_mode, view):
 		
 		
 
-		cmd = ["nme"]
+		cmd = self.get_build_command()
 		cmd.append(self.current_target.build_command)
 		cmd.append(self.current_target.target)
 		cmd.extend(self.current_target.args)
@@ -344,6 +362,23 @@ class NmeBuild :
 	@property
 	def args (self):
 		return self.current_build.args
+
+class OpenFlBuild (NmeBuild):
+
+	def __init__(self, title, nmml, target, cb = None):
+		super(title, nmml, target, cb)
+
+	def filter_platform_specific(self, packs_or_classes):
+		res = []
+		for c in packs_or_classes:
+			# allow only flash package
+			if not c.startswith("native") and not c.startswith("browser"):
+				res.append(c)
+
+		return res
+
+	def get_build_command(self):
+		return ["openfl"]
 
 class HaxeBuild :
 
