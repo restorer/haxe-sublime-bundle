@@ -95,6 +95,38 @@ def get_type_hint (types):
 		hints.append( hint_types )
 	return hints
 
+
+type_parameter_name = re.compile("^([A-Z][_a-zA-Z0-9]*)")
+
+def get_function_type_params(name, signature_types):
+
+	
+	new_args = []
+	type_params = dict()
+	name_len = len(name)
+	for t in signature_types:
+		new_args.append("".join(t.split(name + ".")))
+		while True:
+			index = t.find(name)
+			if index == -1:
+				break
+			type_start_index = index + name_len + 1
+			t = t[type_start_index:]
+			m = type_parameter_name.match(t)
+			if m != None:
+				param_name = m.group(1)
+				type_params[param_name] = True
+			else:
+				break
+
+	type_param_list = list(reversed(list(type_params.keys())))
+	return new_args, type_param_list
+
+
+
+
+
+
 def completion_field_to_entry(name, sig, doc):
 	insert = name
 	label = name
@@ -105,20 +137,33 @@ def completion_field_to_entry(name, sig, doc):
 	if sig is not None :
 		types = split_signature(sig) 
 		
+		types, type_params = get_function_type_params(name, types)
+
+		params_sig = ""
+
+		if len(type_params) > 0:
+			params_sig = "<" + ",".join(type_params) + ">"
+
+
+		log(str(types))
+		log(str(type_params))
 		
 		
 		ret = types.pop()
 
+		signature_separator = " : " if is_st3 else "\t"
+
 		if( len(types) > 0 ) :
 			
 			if len(types) == 1 and types[0] == "Void" :
-				label = name + "()\t"+ ret if not_smart else name + "()\t"+ ret
+
+				label = (name + params_sig + "()" + signature_separator + ret) if not_smart else (name + "()" + signature_separator+ ret)
 				insert = name if not_smart else "" + name + "${1:()}"
 			else:
 				def escape_type (x):
 					return x.replace("}", "\}").replace("{", "\{")
 
-				label = name + "( " + " , ".join( types ) + " )\t" + ret if not_smart else "" + name + "( " + " , ".join( types ) + " )\t" + ret
+				label = name + params_sig + "( " + " , ".join( types ) + " )" + signature_separator + ret if not_smart else "" + name + "( " + " , ".join( types ) + " )" + signature_separator + ret
 				
 				if not is_st3 and len(label) > 40: # compact arguments
 					label = hxtools.compact_func.sub("(...)", label);
@@ -129,7 +174,7 @@ def completion_field_to_entry(name, sig, doc):
 
 				insert = name if not_smart else name + "${1:( " + " , ".join( new_types ) + " )}"
 		else :
-			label = name + "\t" + ret
+			label = name + params_sig + signature_separator + ret
 	else :
 		label = name + "\tclass" if re.match("^[A-Z]",name ) else name + "\tpackage"
 			
