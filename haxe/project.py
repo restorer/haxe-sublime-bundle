@@ -109,7 +109,9 @@ classpath_line = re.compile("Classpath : (.*)")
 haxe_version = re.compile("haxe_([0-9]{3})",re.M)
 
 # allow windows drives
-haxe_file_regex = "^((?:(?:[A-Za-z][:]))?(?:[^:]*)):([0-9]+): (?:character(?:s?)|line(?:s?)|)? ([0-9]+)-?[0-9]* :(.*)$"
+win_start = "(?:(?:[A-Za-z][:])"
+unix_start = "(?:[/]?)" 
+haxe_file_regex = "^(" + win_start + "|" + unix_start + ")?(?:[^:]*)):([0-9]+): (?:character(?:s?)|line(?:s?))? ([0-9]+)-?[0-9]*\s?:(.*)$"
 
 def haxe_build_env (project_dir):
         

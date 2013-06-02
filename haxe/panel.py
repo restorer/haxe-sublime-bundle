@@ -18,7 +18,7 @@ def _haxe_file_regex():
 		from Haxe.haxe.project import haxe_file_regex
 	else:
 		from haxe.project import haxe_file_regex
-	return "^[0-9]{2}:[0-9]{2}:[0-9]{2} " + haxe_file_regex[1:]
+	return "^[0-9]{2}:[0-9]{2}:[0-9]{2}[ ]Error:[ ]" + haxe_file_regex[1:]
 
 
 def timestamp_msg (msg):
@@ -40,34 +40,48 @@ class SlidePanel ():
 		
 		win = self.win
 
+
 		if self.output_view is None :
 			self.output_view = win.get_output_panel("haxe")
 			
-			self.output_view.settings().set("result_file_regex", _haxe_file_regex())
-			
-
-		panel = self.output_view
 		
+
+		self.output_view.settings().set("result_file_regex", _haxe_file_regex())
+		# force result buffer
+		win.get_output_panel("haxe")
+		
+		panel = self.output_view
+			
 		text = timestamp_msg(text);
+
+		
+			
+		
+		win.run_command("show_panel",{"panel":"output.haxe"})
 		
 		def do_edit(v, edit):
 			region = sublime.Region(v.size(),v.size() + len(text))
 			v.insert(edit, v.size(), text)
 			v.end_edit( edit )
+			
 			if scope is not None :
 				icon = "dot"
 				key = "haxe-" + scope
-				regions = panel.get_regions( key );
+				regions = v.get_regions( key );
 				regions.append(region)
-				panel.add_regions( key , regions , scope , icon )
-			
-			win.run_command("show_panel",{"panel":"output.haxe"})
-			def f ():
-				panel.show(sublime.Region(panel.size()+1000, panel.size()+1000))
-			sublime.set_timeout(f, 800)
+				v.add_regions( key , regions , scope , icon )
+
+			# set seletion to the begin of the document, allows navigating
+			# through errors from the start
+			v.sel().clear()
+			v.sel().add(sublime.Region(0))
+
+			region = sublime.Region(v.size()+1000, v.size()+1000)
+			sublime.set_timeout(lambda:v.show(region), 800)
+		
 		
 		view_tools.async_edit(panel, do_edit)
-		
+
 		return panel
 
 	def writeln (self, msg, scope = None):
@@ -86,7 +100,9 @@ def make_tab_panel (win, name, syntax):
 	v.set_name(name)
 	#v.set_read_only(True)
 	v.settings().set('word_wrap', True)
+	
 	v.settings().set("result_file_regex", _haxe_file_regex())
+	#v.settings().set("result_line_regex", _haxe_file_regex())
 	v.settings().set("haxe_panel_win_id", win.id())
 	v.set_scratch(True)
 	v.set_syntax_file(syntax)
