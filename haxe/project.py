@@ -191,8 +191,9 @@ class Project:
     def nme_exec (self, view = None):
         return ["nme"]
 
-    def nme_display_exec (self, view = None):
-        return ["nme", "display"]
+    def openfl_exec (self, view = None):
+        return ["openfl"]
+
 
     def haxe_exec (self, view = None):
         haxe_exec = hxsettings.haxe_exec(view)
@@ -274,7 +275,7 @@ class Project:
             for f in folders:
                 self.builds.extend(hxbuild.find_hxml_projects(f))
                 self.builds.extend(hxbuild.find_nme_projects(f))
-                
+                self.builds.extend(hxbuild.find_openfl_projects(f))
             
             
             
@@ -383,10 +384,9 @@ class Project:
             self.extract_build_args(view)
             build = self.get_build(view)
 
-        if build.is_nme():
-            run_exec = self.nme_exec(view)
-        else:
-            run_exec = self.haxe_exec(view)
+
+        run_exec = self.get_run_exec(self, view)
+        
 
         def cb (out, err):
             if (err != None and err != ""):
@@ -526,19 +526,19 @@ _last_project = None
 
 
 
-def run_nme( view, build ) :
-
-    cmd = [ hxsettings.haxelib_exec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
-    target = hxbuild.HaxeBuild.nme_target[1].split(" ")
-    cmd.extend(target)
-    cmd.append("-debug")
-
-    view.window().run_command("haxe_exec", {
-        "cmd": cmd,
-        "working_dir": os.path.dirname(build.nmml),
-        "file_regex": "^([^:]*):([0-9]+): (?:characters|lines): [0-9]+-([0-9]+) :.*$"
-    })
-    return ("" , [], "" )
+#def run_nme( view, build ) :
+#
+#    cmd = [ hxsettings.haxelib_exec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
+#    target = hxbuild.HaxeBuild.nme_target[1].split(" ")
+#    cmd.extend(target)
+#    cmd.append("-debug")
+#
+#    view.window().run_command("haxe_exec", {
+#        "cmd": cmd,
+#        "working_dir": os.path.dirname(build.nmml),
+#        "file_regex": "^([^:]*):([0-9]+): (?:characters|lines): [0-9]+-([0-9]+) :.*$"
+#    })
+#    return ("" , [], "" )
 
 
 
@@ -653,13 +653,6 @@ def _get_project_file(win_id = None):
         _last_project = project
         return project
 
-
-def select_nme_target( build, i, view ):
-    target = hxbuild.HaxeBuild.nme_targets[i]
-    if build.nmml is not None:
-        hxbuild.HaxeBuild.nme_target = target
-        view.set_status( "haxe-build" , build.to_string() )
-        hxpanel.default_panel().status( "haxe-build" , build.to_string() )
 
 
 _projects = Cache()

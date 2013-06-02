@@ -133,7 +133,7 @@ def find_hxml_projects( folder ) :
 	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
 	for hxml in hxmls:
 		
-		if not hxml.startswith(os.path.join(folder,  "_nme__")):
+		if not hxml.startswith(os.path.join(folder,  "_nme__")) and not hxml.startswith(os.path.join(folder,  "_openfl__")):
 			mtime = os.path.getmtime(hxml)
 			if hxml in hxml_cache:
 				
@@ -192,16 +192,16 @@ def find_openfl_projects( folder ) :
 	for nmml in nmmls:
 		title = find_nme_project_title(nmml)
 		if title != None:
-			for t in hxconfig.nme_targets:
+			for t in hxconfig.openfl_targets:
 				builds.append(OpenFlBuild(title, nmml, t))
 
 
 	return builds
 
 
-def create_haxe_build_from_nmml (target, nmml):
+def create_haxe_build_from_nmml (target, nmml, display_cmd):
 
-	cmd = ["nme", "display"]
+	cmd = list(display_cmd)
 	cmd.append(target.target)
 	cmd.extend(target.args)
 
@@ -254,14 +254,16 @@ class NmeBuild :
 	@property
 	def current_build (self):
 		if self._current_build == None:
-			self._current_build = create_haxe_build_from_nmml(self.current_target, self.nmml)
+			display_cmd = list(self.get_build_command())
+			display_cmd.append("display")
+			self._current_build = create_haxe_build_from_nmml(self.current_target, self.nmml, display_cmd)
 
 		return self._current_build
 	
 	def to_string(self) :
 		#out = os.path.basename(self.current_build.output)
 		out = self.title
-		return "{out} ({target})".format(out=out, target=self.current_target.name);
+		return "{out} (NME - {target})".format(out=out, target=self.current_target.name);
 		
 	def set_std_classes(self, std_classes):
 		self.current_build.set_std_classes(std_classes)
@@ -328,6 +330,9 @@ class NmeBuild :
 		return self.current_build.run_sync(project, view)		
 	
 
+	def get_run_exec(self, project, view):
+		return project.nme_exec(view)
+
 	def get_build_command(self):
 		return ["nme"]
 
@@ -365,7 +370,16 @@ class NmeBuild :
 class OpenFlBuild (NmeBuild):
 
 	def __init__(self, title, nmml, target, cb = None):
-		super(title, nmml, target, cb)
+		super(OpenFlBuild, self).__init__(title, nmml, target, cb)
+		
+
+	def copy (self):
+		r = OpenFlBuild(self.title, self.nmml, self.current_target, self.current_build.copy())
+		
+		return r
+
+	def get_run_exec(self, project, view):
+		return project.openfl_exec(view)
 
 	def filter_platform_specific(self, packs_or_classes):
 		res = []
@@ -378,6 +392,11 @@ class OpenFlBuild (NmeBuild):
 
 	def get_build_command(self):
 		return ["openfl"]
+
+	def to_string(self) :
+		#out = os.path.basename(self.current_build.output)
+		out = self.title
+		return "{out} (OpenFL - {target})".format(out=out, target=self.current_target.name);
 
 class HaxeBuild :
 
@@ -635,7 +654,7 @@ class HaxeBuild :
 		return (r[0], r[1])
 
 	def prepare_run (self, project, server_mode, view):
-		run_exec = self.get_run_exec(project)
+		run_exec = self.get_run_exec(project, view)
 		b = self.copy()
 		
 		nekox_file_name = None
@@ -655,8 +674,8 @@ class HaxeBuild :
 
 		return (cmd, self.get_build_folder(), nekox_file_name)
 
-	def get_run_exec(self, project):
-		return project.haxe_exec()
+	def get_run_exec(self, project, view):
+		return project.haxe_exec(view)
 
 	def run_async (self, project, view, callback):
 
