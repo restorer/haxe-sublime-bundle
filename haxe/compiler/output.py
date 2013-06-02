@@ -166,9 +166,12 @@ def completion_field_to_entry(name, sig, doc):
 				def escape_type (x):
 					return x.replace("}", "\}").replace("{", "\{")
 
-				label = name + params_sig + "( " + ", ".join( types ) + " )" + signature_separator + ret if not_smart else "" + name + "( " + " , ".join( types ) + " )" + signature_separator + ret
+				params = "( " + ", ".join( types ) + " )"
+				label = name + params_sig + params + signature_separator + ret
 				
-				if not is_st3 and len(label) > 40: # compact arguments
+				hint_to_long = not is_st3 and len(label) > 40
+
+				if hint_to_long: # compact arguments
 					label = hxtools.compact_func.sub("(...)", label);
 				
 				new_types = list(types)
