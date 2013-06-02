@@ -17,7 +17,7 @@ class Utils
 {
 
 
-	@:macro public static function getEnumConstructors (expr:Expr, pretty:Bool):Expr {
+	macro public static function getEnumConstructors (expr:Expr, pretty:Bool):Expr {
 
 		var t = Context.typeof(expr);
 		var res = [];
@@ -82,7 +82,7 @@ class Utils
 		return Context.makeExpr(str, Context.currentPos());
 	}
 
-	@:macro public static function findOccurences (e:Expr):Expr {
+	macro public static function findOccurences (e:Expr):Expr {
 		
 		
 		var type = Context.typeof(e);
@@ -113,13 +113,13 @@ class Utils
 		return macro null;
 	}
 
-	@:macro public static function getTypeOfExpr (e:Expr):Expr {
+	macro public static function getTypeOfExpr (e:Expr):Expr {
 		
 		return Context.makeExpr("<type>" + haxe.macro.TypeTools.toString(haxe.macro.Context.typeof(e)) + "</type>", Context.currentPos());
 
 	}
 
-	@:macro public static function checkEField (e:Expr, method:String):Expr 
+	macro public static function checkEField (e:Expr, method:String):Expr 
 	{
 		var infos = Context.getPosInfos(e.pos);
 		var str = "@" + infos.file + "|"+(infos.max + 1)+"-"+(infos.max + 1 + method.length);
@@ -130,7 +130,7 @@ class Utils
 		return e;
 	}
 
-	#if !macro @:macro #end 
+	#if !macro macro #end 
 	public static function find (module:String, className:String, method:String, expr:Expr):Expr {
 
 		function f (ex:Expr):Expr {
@@ -237,7 +237,7 @@ class Utils
 
 	}
 
-	@:macro public static function register ():Array<haxe.macro.Expr.Field>
+	macro public static function register ():Array<haxe.macro.Expr.Field>
 	{
 		var fields = Context.getBuildFields();
 		

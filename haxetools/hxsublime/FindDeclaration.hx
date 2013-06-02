@@ -10,6 +10,7 @@ import haxe.macro.Expr;
 import haxe.macro.Expr.ExprOf;
 import haxe.macro.Type;
 import neko.Lib;
+using StringTools;
 #end
 
 class FindDeclaration {
@@ -59,8 +60,69 @@ class FindDeclaration {
 			}
 		}
 
-		function fromField (x, field) {
-			var check = function (x) return x.name == field;
+		function findInInstance (t:Ref<ClassType>, check) {
+			var cur = t;
+
+			var res = null;
+			var interf1 = [];
+
+			while (true) {
+
+				var fields = cur.get().fields.get().filter( check );
+				
+				if (fields.length == 1)  {
+					res = fields[0].pos;	
+					break;
+				}
+				var x = cur.get().superClass;
+				if (x == null) break;
+
+				cur = x.t;
+
+
+				for (i in cur.get().interfaces) {
+
+					interf1.push(i);
+				}
+			}
+			if (res == null) {
+				var interf = t.get().interfaces.concat(interf1);
+				while (interf.length > 0) {
+					var new_interf = [];
+					for (i in interf) {
+						var fields = i.t.get().fields.get().filter( check );
+						if (fields.length == 1)  {
+							res = fields[0].pos;	
+							break;
+						}
+						for (i in i.t.get().interfaces) {
+							new_interf.push(i);
+						}
+					}
+					if (res != null) break;
+
+
+
+					interf = new_interf;
+					
+				}
+			}
+
+			return res;
+		}
+
+		function fromField (x, field:String) {
+			out(field);
+			function check (x:ClassField) {
+
+				if (field.startsWith("get_") || field.startsWith("set_")) {
+					return x.name == field.substr(4);
+				} else {
+					return x.name == field;
+				}
+			}
+
+
 			var pos = try {
 				
 				var t = Context.typeof( x );
@@ -68,51 +130,7 @@ class FindDeclaration {
 				switch (t) {
 					case Type.TInst( t , _ ):
 						
-						var cur = t;
-
-						var res = null;
-						var interf1 = [];
-
-						while (true) {
-							var fields = cur.get().fields.get().filter( check );
-							if (fields.length == 1)  {
-								res = fields[0].pos;	
-								break;
-							}
-							var x = cur.get().superClass;
-							if (x == null) break;
-
-							cur = x.t;
-
-							for (i in cur.get().interfaces) {
-
-								interf1.push(i);
-							}
-						}
-						if (res == null) {
-							var interf = t.get().interfaces.concat(interf1);
-							while (interf.length > 0) {
-								var new_interf = []
-								for (i in interf) {
-									var fields = i.t.get().fields.get().filter( check );
-									if (fields.length == 1)  {
-										res = fields[0].pos;	
-										break;
-									}
-									for (i in i.t.get().interfaces) {
-										new_interf.push(i)
-									}
-								}
-								if (res != null) break;
-
-
-
-								interf = new_interf
-								
-							}
-						}
-
-						res;
+						findInInstance(t, check);
 
 						
 					case Type.TType( t , _ ):
@@ -209,6 +227,13 @@ class FindDeclaration {
 								//trace(e);
 								
 						}
+					case ECall({expr : EField(e,field)}, args) if (args.length == 0):
+						var p = fromField(e,field);
+
+						if (p != null)
+							out( formatPos(p) );
+						else out(error());
+
 					case _:
 						out(error());
 				}
