@@ -3,11 +3,15 @@ import os
 import codecs
 import sublime
 
+
+
 is_st3 = int(sublime.version()) >= 3000
 
 if is_st3:
+	from Haxe.haxe.log import log
 	import Haxe.haxe.tools.path as path_tools
 else:
+	from haxe.log import log
 	import haxe.tools.path as path_tools
 def get_temp_path(build):
 
@@ -52,7 +56,8 @@ def create_file(temp_path, build, orig_file, content):
 def create_temp_path_and_file(build, orig_file, content):
 	temp_path = create_temp_path(build)
 	if temp_path is None:
-		return None
+
+		return None,None
 	
 	temp_file = create_file(temp_path, build, orig_file, content)
 	return temp_path, temp_file
