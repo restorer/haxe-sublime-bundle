@@ -262,6 +262,7 @@ def get_packs_and_types (ctx):
 
     build_classes = filter_duplicate_types(build_classes, cl)
 
+
     cl.extend( ctx.build.std_classes )
     
     cl.extend( build_classes )

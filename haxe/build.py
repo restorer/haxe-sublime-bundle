@@ -47,7 +47,7 @@ def hxml_to_builds (build, folder):
 		l = f.readline() 
 		if not l : 
 			break;
-		log(l)
+		
 		if l.startswith("--next") :
 			builds.append( current_build )
 			current_build = HaxeBuild()
@@ -132,7 +132,7 @@ def find_hxml_projects( folder ) :
 	builds = []
 	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
 	for hxml in hxmls:
-		log(hxml)
+		
 		if not hxml.startswith(os.path.join(folder,  "_nme__")):
 			mtime = os.path.getmtime(hxml)
 			if hxml in hxml_cache:
@@ -163,7 +163,7 @@ def find_nme_project_title(nmml):
 			break
 		m = extract_tag.search(l)
 		if not m is None:
-			log(m.groups())
+			
 			#print(m.groups())
 			tag = m.group(1)
 			
@@ -207,13 +207,9 @@ def create_haxe_build_from_nmml (target, nmml):
 
 	nmml_dir = os.path.dirname(nmml)
 
-	log("CMD: " + " ".join(cmd))
+
 
 	out, err = run_cmd( cmd, cwd=nmml_dir )
-
-	log("OUT: " + out)
-
-
 
 
 	#f = codecs.open( hxml_file , "wb" , "utf-8" , "ignore" )
@@ -267,7 +263,11 @@ class NmeBuild :
 		out = self.title
 		return "{out} ({target})".format(out=out, target=self.current_target.name);
 		
+	def set_std_classes(self, std_classes):
+		self.current_build.set_std_classes(std_classes)
 
+	def set_std_packs(self, std_packs):
+		self.current_build.set_std_packs(std_packs)
 
 	def filter_platform_specific(self, packs_or_classes):
 		res = []
@@ -280,15 +280,14 @@ class NmeBuild :
 	def get_types(self):
 		classes, packages = self._current_build.get_types()
 
-		res = self.filter_platform_specific(classes), self.filter_platform_specific(packages)
+		return self.filter_platform_specific(classes), self.filter_platform_specific(packages)
 
-		log(str(res))
-		return res
-		
+	
 
 	@property
 	def std_classes(self):
 		return self.filter_platform_specific(self._current_build.std_classes)
+		#return self._current_build.std_classes
 		
 
 	@property
@@ -453,6 +452,8 @@ class HaxeBuild :
 		hb.output = self.output
 		hb.hxml = self.hxml
 		hb.nmml = self.nmml
+		hb.std_packs = self.std_packs
+		hb.std_classes = self.std_classes
 		hb.classpaths = list(self.classpaths)
 		hb.libs = list(self.libs)
 		hb.classes = list(self.classes) if self.classes is not None else None

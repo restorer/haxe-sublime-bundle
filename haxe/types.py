@@ -53,6 +53,9 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 import re
 valid_package = re.compile("^[_a-z][a-zA-Z0-9_]*$")
 
+def is_valid_package (pack):
+	return valid_package.match(pack) and pack != "_std"
+
 def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [], include_private_types = True) :
 
 
@@ -77,10 +80,12 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 	
 			
 	for f in os.listdir( path ) :
-		if valid_package.match(f):
+		if is_valid_package(f):
 			cl, ext = os.path.splitext( f )
 			
-			cur_pack = ".".join(pack) + "." + f
+			cur_pack_base = ".".join(pack) + "." if len(pack) > 0 else ""
+
+			cur_pack = cur_pack_base + f
 
 			if os.path.isdir( os.path.join( path , f ) ) and cur_pack not in filtered_packages and cur_pack not in hxconfig.ignored_packages:
 				next_pack = list(pack)
