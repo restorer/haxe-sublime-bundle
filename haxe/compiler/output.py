@@ -145,7 +145,7 @@ def completion_field_to_entry(name, sig, doc):
 		params_sig = ""
 
 		if len(type_params) > 0:
-			params_sig = "<" + ",".join(type_params) + ">"
+			params_sig = "<" + ", ".join(type_params) + ">"
 
 
 		log(str(types))
@@ -166,7 +166,7 @@ def completion_field_to_entry(name, sig, doc):
 				def escape_type (x):
 					return x.replace("}", "\}").replace("{", "\{")
 
-				label = name + params_sig + "( " + " , ".join( types ) + " )" + signature_separator + ret if not_smart else "" + name + "( " + " , ".join( types ) + " )" + signature_separator + ret
+				label = name + params_sig + "( " + ", ".join( types ) + " )" + signature_separator + ret if not_smart else "" + name + "( " + " , ".join( types ) + " )" + signature_separator + ret
 				
 				if not is_st3 and len(label) > 40: # compact arguments
 					label = hxtools.compact_func.sub("(...)", label);
@@ -175,7 +175,7 @@ def completion_field_to_entry(name, sig, doc):
 				for i in range(0, len(new_types)):
 					new_types[i] = "${" + str(i+2) + ":" + escape_type(new_types[i]) + "}"
 
-				insert = name if not_smart else name + "${1:( " + " , ".join( new_types ) + " )}"
+				insert = name if not_smart else name + "${1:( " + ", ".join( new_types ) + " )}"
 		else :
 			label = name + params_sig + signature_separator + ret
 	else :

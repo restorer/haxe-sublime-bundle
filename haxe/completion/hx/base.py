@@ -205,7 +205,7 @@ def hints_to_sublime_completions(hints):
 
             params = h[0:len(h)-1];
             params2 = params if not only_next else h[0:1]
-            show = "" + ",".join([param for param in params]) + ""
+            show = "" + ", ".join([param for param in params]) + ""
             insert = ",".join(["${" + str(index+1) + ":" + param + "}" for index, param in enumerate(params2)])
             
             res = (show, insert)
