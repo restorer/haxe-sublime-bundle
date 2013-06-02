@@ -25,6 +25,9 @@ else:
 
 
 compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
+
+no_classes_found = re.compile("^No classes found in ", re.M)
+
 haxe_compiler_line = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
 
 
@@ -233,6 +236,8 @@ def extract_errors( str ):
 			"message" : m
 		}) 
 
+	if no_classes_found.match(str):
+		errors.append({ "file:" : "", "line" : 0, "from" : 0, "to" : 0, "message" : "".join(str.split("\n")) + " ( are you referencing a variable that doesn't exist?)"})
 	#print(errors)
 	if len(errors) > 0:
 		log("should show panel")
