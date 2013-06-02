@@ -338,24 +338,27 @@ class NmeBuild :
 	def get_build_command(self):
 		return ["nme"]
 
-	def prepare_sublime_build_cmd (self, project, server_mode, view):
-		
-		
+	def prepare_sublime_check_cmd(self, project, server_mode, view):
+		cmd, folder = self.prepare_sublime_compile_cmd(project, server_mode, view)
+		cmd.append("--no-output")
+		return cmd, folder
 
+	def prepare_sublime_compile_cmd(self, project, server_mode, view):
+		return self._prepare_sublime_cmd(project, server_mode, view, "build")
+
+
+	def _prepare_sublime_cmd(self, project, server_mode, view, command):
 		cmd = self.get_build_command()
-		cmd.append(self.current_target.build_command)
+		cmd.append(command)
 		cmd.append(self.current_target.target)
 		cmd.extend(self.current_target.args)
 		
 
-		# if server_mode:
-		# 	project.start_server( view )
-		# 	cmd.append("--connect")
-		# 	cmd.append(str(project.server.get_server_port()))
-		
-
-
 		return (cmd, self.get_build_folder())
+
+	def prepare_sublime_build_cmd (self, project, server_mode, view):
+		
+		return self._prepare_sublime_cmd(project, server_mode, view, self.current_target.build_command)
 
 
 	def prepare_run(self, project, server_mode, view):
@@ -678,7 +681,15 @@ class HaxeBuild :
 
 		return self.classes, self.packages
 
+	def prepare_sublime_check_cmd(self, project, server_mode, view):
+		cmd, build_folder, x_file = self.prepare_sublime_build_cmd(project, server_mode, view)
+		cmd.append("--no-output")
+		return c
 	
+	def prepare_sublime_compile_cmd (self, project, server_mode, view):
+		return self.prepare_sublime_build_cmd(project, server_mode, view)
+
+
 	def prepare_sublime_build_cmd (self, project, server_mode, view):
 		r = self.prepare_run(project, server_mode, view)
 		return (r[0], r[1])

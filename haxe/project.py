@@ -349,35 +349,20 @@ class Project:
             self.current_build.set_std_classes(list(self.std_classes))
             self.current_build.set_std_packs(list(self.std_packages))
             #log( "set_current_build - 2")
-            hxpanel.default_panel().writeln( "building " + self.current_build.to_string() )
+            hxpanel.default_panel().writeln( "build selected: " + self.current_build.to_string() )
         else:
             hxpanel.default_panel().writeln( "No build found/selected" )
             
-        
-
-        # if force_panel and self.current_build is not None: # choose NME target
-        #     if self.current_build.nmml is not None:
-        #         sublime.status_message("Please select a NME target")
-        #         nme_targets = []
-        #         for t in hxbuild.HaxeBuild.nme_targets :
-        #             nme_targets.append( t[0] )
-
-        #         view.window().show_quick_panel(nme_targets, lambda i : select_nme_target(self.current_build, i, view))
-
     def has_build (self):
         return self.current_build != None
 
-    def run_build( self, view ) :
+
+
+    def run_build( self, view, additional_args = [] ) :
         
         if view is None: 
             view = sublime.active_window().active_view()
 
-
-
-        
-
-
-        
         if (self.has_build()):
             build = self.get_build(view)
         else:
@@ -391,7 +376,9 @@ class Project:
         def cb (out, err):
             if (err != None and err != ""):
                 msg = "build finished with errors"
-                cmd = " ".join(build.get_command_args(run_exec))
+                cmd_args = build.get_command_args(run_exec)
+                cmd_args.extend(additional_args)
+                cmd = " ".join(cmd_args)
                 hxpanel.default_panel().writeln( "cmd: " + cmd)
                 hxpanel.default_panel().writeln( msg)
                 view.set_status( "haxe-status" , msg )
@@ -411,10 +398,23 @@ class Project:
         
         
 
+    
 
+    def check_sublime_build(self, view):
+        self._sublime_build(view, "check")
+
+    def compile_sublime_build(self, view):
+        self._sublime_build(view, "build")
         
     def run_sublime_build( self, view ) :
+        self._sublime_build(view, "run")
         
+
+        
+    def _sublime_build(self, view, type = "run"):
+
+
+
 
         if view is None: 
             view = sublime.active_window().active_view()
@@ -424,7 +424,7 @@ class Project:
         if win is None:
             win = sublime.active_window()
 
-        log("start sublime build")
+        
 
 
         #haxe_exec = self.haxe_exec(view)
@@ -436,12 +436,21 @@ class Project:
             self.extract_build_args(view)
             build = self.get_build(view)
 
-        cmd, build_folder = build.prepare_sublime_build_cmd(self, self.serverMode, view)
+        if type == "run":
+            # does the default
+            cmd, build_folder = build.prepare_sublime_build_cmd(self, self.serverMode, view)
+        elif type == "build":
+            cmd, build_folder = build.prepare_sublime_compile_cmd(self, self.serverMode, view)
+        else:
+            cmd, build_folder = build.prepare_sublime_check_cmd(self, self.serverMode, view)
         
         
         
+        hxpanel.default_panel().writeln("running: " + " ".join(cmd))
+
         win.run_command("haxe_exec", {
             "cmd": cmd,
+            "is_check_run" : type == "check",
             "working_dir": build_folder,
             "file_regex": haxe_file_regex,
             "env" : env
