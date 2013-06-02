@@ -354,8 +354,11 @@ def get_toplevel_completion( ctx  ) :
         cm = (p + "\tpackage",p)
         if cm not in comps :
             comps.append(cm)
-
     return comps
+
+def get_toplevel_completion_filtered(ctx):
+    comps = get_toplevel_completion(ctx)
+    return filter_top_level_completions(ctx.offset_char, comps)
 
 def filter_top_level_completions (offset_char, all_comps):
         
@@ -383,3 +386,5 @@ def filter_top_level_completions (offset_char, all_comps):
 
     log("number of top level completions (all: " + str(len(all_comps)) + ", filtered: " + str(len(comps)) + ")")
     return comps
+
+

@@ -243,8 +243,7 @@ def should_include_top_level_completion(ctx):
 
 def get_toplevel_completions(ctx):
     if should_include_top_level_completion( ctx ):
-        all_comps = toplevel.get_toplevel_completion( ctx )
-        comps = toplevel.filter_top_level_completions(ctx.offset_char, all_comps)
+        comps = toplevel.get_toplevel_completion_filtered( ctx )
     else:
         comps = []
     return comps
