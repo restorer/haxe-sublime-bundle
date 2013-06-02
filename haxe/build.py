@@ -16,6 +16,7 @@ if is_st3:
 	import Haxe.haxe.panel as hxpanel
 	from Haxe.haxe.execute import run_cmd, run_cmd_async
 	from Haxe.haxe.log import log
+	
 else:
 	import haxe.config as hxconfig
 	import haxe.types as hxtypes
@@ -25,6 +26,7 @@ else:
 	import haxe.panel as hxpanel
 	from haxe.execute import run_cmd, run_cmd_async
 	from haxe.log import log
+	
 
 
 hxml_cache = {}
@@ -367,6 +369,20 @@ class NmeBuild :
 	def args (self):
 		return self.current_build.args
 
+	def is_package_available (self, pack):
+		target = self.current_build.target
+		cls = hxconfig
+		res = True
+
+		tp = list(cls.target_packages)
+		tp.extend(["native", "browser", "nme"])
+
+		if target != None and pack in tp:
+			if pack not in ["nme"]:
+				res = False;
+
+		return res
+
 class OpenFlBuild (NmeBuild):
 
 	def __init__(self, title, nmml, target, cb = None):
@@ -397,6 +413,20 @@ class OpenFlBuild (NmeBuild):
 		#out = os.path.basename(self.current_build.output)
 		out = self.title
 		return "{out} (OpenFL - {target})".format(out=out, target=self.current_target.name);
+
+	def is_package_available (self, pack):
+		target = self.current_build.target
+		cls = hxconfig
+		res = True
+
+		tp = list(cls.target_packages)
+		tp.extend(["native", "browser"])
+
+		if target != None and pack in tp:
+			if pack not in ["flash"]:
+				res = False;
+
+		return res
 
 class HaxeBuild :
 
@@ -758,4 +788,15 @@ class HaxeBuild :
 		hxpanel.default_panel().writeln(err1)
 		
 
+	def is_package_available (self, pack):
+		target = self.target
+		cls = hxconfig
+		res = True
+
+		if target != None and pack in cls.target_packages:
+			if target in cls.target_std_packages:
+				if pack not in cls.target_std_packages[target]:
+					res = False;
+
+		return res
 

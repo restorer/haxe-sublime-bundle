@@ -139,16 +139,7 @@ class HxType:
         return self.path in hxconfig.ignored_types
 
 
-def is_package_available (target, pack):
-    cls = hxconfig
-    res = True
-    
-    if target != None and pack in cls.target_packages:
-        if target in cls.target_std_packages:
-            if pack not in cls.target_std_packages[target]:
-                res = False;
 
-    return res
 
 
 TOP_LEVEL_KEYWORDS = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
@@ -214,7 +205,7 @@ def get_packages (ctx, build_packs):
     std_packages = []
     build_target = get_build_target(ctx)
     for p in ctx.project.std_packages :
-        if is_package_available(build_target, p):
+        if ctx.build.is_package_available(p):
             if p == "flash9" or p == "flash8" :
                 p = "flash"
             std_packages.append(p)
@@ -323,7 +314,7 @@ def get_type_comps (ctx, cl, imported):
             continue
         
         full = ht.full_pack_with_optional_module_type_and_enum_value
-        if not full in inserted and is_package_available(build_target, ht.toplevel_pack):
+        if not full in inserted and ctx.build.is_package_available(ht.toplevel_pack):
             
             inserted[full] = True
             cm = get_snippet(ht, imported)
