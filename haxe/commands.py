@@ -36,17 +36,7 @@ else:
 
 plugin_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
-#class HaxelibExecCommand(stexec.ExecCommand):
-#
-#   def run(self, *args, **kwargs):
-#
-#       print "hello running"
-#       super(HaxelibExecCommand, self).run(*args, **kwargs)
-#
-#   def finish(self, *args, **kwargs):
-#       super(HaxelibExecCommand, self).finish(*args, **kwargs)  
-#       print "haxelibExec"
-#       hxlib.HaxeLib.scan()
+
 
 word_chars = re.compile("[a-z0-9_]", re.I)
 
@@ -431,6 +421,8 @@ class HaxeGenerateImportCommand( sublime_plugin.TextCommand ):
 # stores the info for file creation, is shared between the command and listener instances.
 current_create_type_info = {}
 
+# TODO Cleanup HaxeCreateTypeCommand
+
 class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
 
     
@@ -488,8 +480,6 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
                                 pack.append(p)
                                
                                 found = True
-                        if found:
-                            break
                     if found:
                         break
                 if found:
@@ -572,11 +562,6 @@ class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
 
 class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 
-
-    #def on_activated( self, view ) : 
-    #    pass
-        #self.create_file(view)      
-
     def on_load (self, view):
         self.create_file(view)
 
@@ -599,7 +584,7 @@ class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 
 
 
-############# Copy of Default exec.py including a temporary fix for umlauts in AsyncProcess ##########
+############# Copy of Default exec.py with some modifications ##########
 
 import sublime, sublime_plugin
 import os, sys
@@ -630,6 +615,19 @@ except ImportError as e :
     ExecCommand = stexec.ExecCommand
     AsyncProcess = stexec.AsyncProcess
     
+
+
+#class HaxelibScanCommand(sublime_plugin.WindowCommand):
+#
+#    def __init__ (self, win):
+#        
+#        self.win = win
+# 
+#    def run(self):
+#        hxlib.HaxeLib.scan()
+   
+       
+       
 class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
     def run(self, cmd = [], file_regex = "", line_regex = "", working_dir = "",
             encoding = None, env = {}, quiet = False, kill = False, is_check_run = False,
@@ -737,7 +735,10 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
             # a second call to exec has been made before the first one
             # finished, ignore it instead of intermingling the output.
             if proc:
-                proc.kill()
+                try:
+                    proc.kill()
+                except:
+                    pass
             return
 
         try:
@@ -752,7 +753,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
         # quick and dirty workaround, nme and openfl display errors when --no-output is defined, 
         # maybe we should move to normal haxe/hxml run with --no-output, this way we can also use server_mode caching
-        if not self.is_check_run or st.find("Embedding assets failed! We encountered an error accessing") > -1:
+        if self.is_check_run and st.find("Embedding assets failed! We encountered an error accessing") > -1:
             return
 
         # Normalize newlines, Sublime Text always uses a single \n separator
@@ -794,24 +795,11 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
         if proc != self.proc:
             return
 
-        errs = v.find_all_results()
-        if len(errs) == 0:
-            self.append_data(proc, "Build finished")
-        else:
-            self.append_data(proc, "Build finished with " + str(len(errs)) + " errors" )
-
         # Set the selection to the start, so that next_result will work as expected
         
-        
-
         v.sel().clear()
         v.sel().add(sublime.Region(0))
         
-        
-
-        #region = sublime.Region(v.size()+1000, v.size()+1000)
-        #sublime.set_timeout(lambda:v.show(region), 800)
-            
 
     def on_data(self, proc, data):
         

@@ -63,6 +63,7 @@ class HaxeLib :
 
 	@staticmethod
 	def scan() :
+		log("do scan")
 		hlout, hlerr = run_cmd( [hxsettings.haxelib_exec() , "config" ] )
 		HaxeLib.basePath = hlout.strip()
 

@@ -339,7 +339,7 @@ class NmeBuild :
 		return ["nme"]
 
 	def prepare_sublime_check_cmd(self, project, server_mode, view):
-		cmd, folder = self.prepare_sublime_compile_cmd(project, server_mode, view)
+		cmd, folder, x = self.prepare_sublime_compile_cmd(project, server_mode, view)
 		cmd.append("--no-output")
 		return cmd, folder
 
@@ -682,9 +682,9 @@ class HaxeBuild :
 		return self.classes, self.packages
 
 	def prepare_sublime_check_cmd(self, project, server_mode, view):
-		cmd, build_folder, x_file = self.prepare_sublime_build_cmd(project, server_mode, view)
+		cmd, build_folder = self.prepare_sublime_build_cmd(project, server_mode, view)
 		cmd.append("--no-output")
-		return c
+		return cmd, build_folder
 	
 	def prepare_sublime_compile_cmd (self, project, server_mode, view):
 		return self.prepare_sublime_build_cmd(project, server_mode, view)
