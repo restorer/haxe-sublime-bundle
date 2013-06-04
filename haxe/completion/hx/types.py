@@ -135,6 +135,9 @@ class CompletionTypes:
     def add (self, val):
         self._opt |= val
 
+    def add_hint (self):
+        self._opt = self._opt | hcc.COMPLETION_TYPE_HINT
+
     def has_regular (self):
         return (self._opt & hcc.COMPLETION_TYPE_REGULAR) > 0
 
