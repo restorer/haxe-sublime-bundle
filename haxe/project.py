@@ -80,6 +80,7 @@ class ProjectCompletionContext:
         self.set_errors([])
 
     def set_trigger(self, view, options):
+        log("SET TRIGGER")
         self.trigger.insert(view.id(), options)
 
     def clear_completion (self):

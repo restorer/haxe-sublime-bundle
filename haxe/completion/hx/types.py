@@ -101,11 +101,17 @@ class CompletionOptions:
     def copy_as_manual(self):
         return CompletionOptions(hcc.COMPLETION_TRIGGER_MANUAL, self._context, self.types.val, self._toplevel.val)
 
+    def copy_as_async(self):
+        return CompletionOptions(hcc.COMPLETION_TRIGGER_ASYNC, self._context, self.types.val, self._toplevel.val)
+
     @property
     def types(self):
         return self._types
 
-    
+
+    @lazyprop
+    def async_trigger(self):
+        return self._trigger == hcc.COMPLETION_TRIGGER_ASYNC
 
     @lazyprop
     def manual_completion(self):
@@ -165,13 +171,13 @@ class TopLevelOptions:
     def set (self, val):
         self._opt |= val
 
-    def hasTypes (self):
+    def has_types (self):
         return (self._opt & hcc.TOPLEVEL_OPTION_TYPES) > 0
 
-    def hasLocals (self):
+    def has_locals (self):
         return (self._opt & hcc.TOPLEVEL_OPTION_LOCALS) > 0
     
-    def hasKeywords (self):
+    def has_keywords (self):
         return (self._opt & hcc.TOPLEVEL_OPTION_KEYWORDS) > 0
 
     def eq (self, other):

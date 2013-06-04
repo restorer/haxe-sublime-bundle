@@ -75,7 +75,7 @@ class HaxeCompleteListener( sublime_plugin.EventListener ):
     # locations describes the cursor positions (multiple cursor)
     # but only the first one is handled for completion
     def on_query_completions(self, view, prefix, locations):
-        log("on_query_completions triggered")
+        log("HERE: on_query_completions triggered")
 
         project = hxproject.current_project(view)
         return dispatch_auto_complete(project, view, prefix, locations[0])

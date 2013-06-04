@@ -1,6 +1,8 @@
 [
-    { "keys": ["ctrl+space"], "command": "haxe_display_completion",
-      "context":
+    {   
+        "keys": ["ctrl+space"], 
+        "command": "haxe_display_completion",
+        "context":
         [
             {
                 "key": "selector",
@@ -9,8 +11,10 @@
             }
         ]
     },
-    { "keys": ["ctrl+shift+h", "ctrl+shift+f"], "command": "haxe_find_declaration",
-      "context":
+    { 
+        "keys": ["ctrl+shift+h", "ctrl+shift+f"], 
+        "command": "haxe_find_declaration",
+        "context":
         [
             {
                 "key": "selector",
@@ -19,8 +23,10 @@
             }
         ]
     },
-    { "keys": ["ctrl+shift+space"], "command": "haxe_display_macro_completion",
-      "context":
+    { 
+        "keys": ["ctrl+shift+space"], 
+        "command": "haxe_display_completion",
+        "context":
         [
             {
                 "key": "selector",
@@ -29,15 +35,17 @@
             }
         ]
     },
-    { "keys": ["ctrl+shift+h","ctrl+shift+h"], "command": "haxe_hint_display_completion",
-      "context":
-        [
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
-            }
-        ]
+    { 
+        "keys": ["ctrl+shift+h","ctrl+shift+space"], 
+        "command": "haxe_display_completion",
+        "context":
+            [
+                {
+                    "key": "selector",
+                    "operator": "equal",
+                    "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
+                }
+            ]
     },
     // {
     //     "keys": ["ctrl+shift+ö", "ctrl+shift+t"],
@@ -65,11 +73,7 @@
     },
     {
         "keys": ["ctrl+enter"],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/Haxe/Macros/SaveAllAndBuild.sublime-macro"
-        },
+        "command": "haxe_save_all_and_build",
         "context":
         [
             {
@@ -127,153 +131,7 @@
             }
         ]
     },
-    {
-        "keys": [" "],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/Haxe/Macros/input/SpaceCompletion.sublime-macro"
-        },
-        "context":
-        [
-            {
-                "key": "auto_complete_visible",
-                "operator": "equal",
-                "operand": true
-            },
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.haxe.2"
-            }
-        ]
-    },
     
-    {
-        "keys": ["-"],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/Haxe/Macros/input/Hyphen.sublime-macro"
-        },
-        "context":
-        [
-            {
-                "key": "auto_complete_visible",
-                "operator": "equal",
-                "operand": false
-            },
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.hxml"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "string"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "comment"
-            }
-        ]
-    },  
-     {
-        "keys": ["("],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/Haxe/Macros/input/OpenPar.sublime-macro"
-        },
-        "context":
-        [
-            {
-                "key": "auto_complete_visible",
-                "operator": "equal",
-                "operand": false
-            },
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.haxe.2"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "string"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "comment"
-            }
-        ]
-    },  
-      {
-        "keys": ["("],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/Haxe/Macros/input/OpenParCompletion.sublime-macro"
-        },
-        "context":
-        [
-            {
-                "key": "auto_complete_visible",
-                "operator": "equal",
-                "operand": true
-            },
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.haxe.2"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "string"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "comment"
-            }
-        ]
-    },
-   
-    {
-        "keys": [","],
-        "command": "run_macro_file",
-        "args":
-        {
-            "file": "Packages/Haxe/Macros/input/Comma.sublime-macro"
-        },
-        "context":
-        [
-            {
-                "key": "auto_complete_visible",
-                "operator": "equal",
-                "operand": false
-            },
-            {
-                "key": "selector",
-                "operator": "equal",
-                "operand": "source.haxe.2"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "string"
-            },
-            {
-                "key": "selector",
-                "operator": "not_equal",
-                "operand": "comment"
-            }
-        ]
-    },
     {
         "keys": ["ctrl+shift+h","ctrl+shift+c"],
         "command": "haxe_create_type",
@@ -298,5 +156,176 @@
         "keys": ["ctrl+shift+h","ctrl+shift+r"],
         "command": "haxe_restart_server",
         "args" : {}
+    },
+
+
+////////////////////////////////////// AUTO COMPLETION ////////////////////////////////////////
+
+    {
+        "keys": [" "],
+        "command": "haxe_display_completion",
+        "args" : { "input_char" : " " },
+        "context":
+        [
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": false
+            },
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            },
+             {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "string"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "comment"
+            }
+        ]
+    },
+    
+    {
+        "keys": ["-"],
+        "command": "haxe_display_completion",
+        "args" : { "input_char" : "-" },
+        "context":
+        [
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": false
+            },
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.hxml"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "string"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "comment"
+            }
+        ]
+    },  
+    
+    {
+        "keys": ["."],
+
+        "command": "haxe_display_completion",
+        "args" : { "input_char" : "." },
+        "context":
+        [
+            //{
+            //    "key": "auto_complete_visible",
+            //    "operator": "equal",
+            //    "operand": false
+            //},
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "string"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "comment"
+            }
+        ]
+    }, 
+    {
+        "keys": ["("],
+        "command": "haxe_display_completion",
+        "args" : { "input_char" : "(" },
+        "context":
+        [
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": false
+            },
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "string"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "comment"
+            }
+        ]
+    },
+   
+    {
+        "keys": [","],
+        "command": "haxe_display_completion",
+        "args" : { "input_char" : "," },
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "string"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "comment"
+            }
+        ]
+    },
+    {
+        "keys": [":"],
+        "command": "haxe_display_completion",
+        "args" : { "input_char" : ":" },
+        "context":
+        [
+            {
+                "key": "auto_complete_visible",
+                "operator": "equal",
+                "operand": false
+            },
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "string"
+            },
+            {
+                "key": "selector",
+                "operator": "not_equal",
+                "operand": "comment"
+            }
+        ]
     }
 ]

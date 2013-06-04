@@ -108,11 +108,12 @@ if not is_st3:
         ,HaxeDisplayMacroCompletionCommand
         ,HaxeHintDisplayCompletionCommand
         ,HaxeMacroHintDisplayCompletionCommand
-        ,HaxeInsertCompletionCommand
+        ,HaxeSelectBuildCommand 
+        ,HaxeAsyncTriggeredCompletionCommand
         ,HaxeSaveAllAndBuildCommand
         ,HaxeRunBuildCommand
         ,HaxeRunBuildAltCommand
-        ,HaxeSelectBuildCommand 
+        
         ,HaxeRestartServerCommand
         ,HaxeGenerateUsingCommand
         ,HaxeGenerateImportCommand
@@ -122,6 +123,8 @@ if not is_st3:
         ,HaxeExecCommand
         ,HaxeBuildOnSaveListener
         ,HaxeFindDeclarationListener
+        #,HaxeSublimeTriggeredCompletionCommand
+        
 
     ) 
 
@@ -180,11 +183,12 @@ else:
         ,HaxeDisplayMacroCompletionCommand
         ,HaxeHintDisplayCompletionCommand
         ,HaxeMacroHintDisplayCompletionCommand
-        ,HaxeInsertCompletionCommand
         ,HaxeSaveAllAndBuildCommand
+        ,HaxeSelectBuildCommand 
+        ,HaxeAsyncTriggeredCompletionCommand
         ,HaxeRunBuildCommand
         ,HaxeRunBuildAltCommand
-        ,HaxeSelectBuildCommand 
+        
         ,HaxeRestartServerCommand
         ,HaxeGenerateUsingCommand
         ,HaxeGenerateImportCommand

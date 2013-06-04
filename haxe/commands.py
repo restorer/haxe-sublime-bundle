@@ -15,11 +15,13 @@ if is_st3:
     import Haxe.haxe.hxtools as hxsrctools
     import Haxe.haxe.settings as hxsettings
     import Haxe.haxe.completion.hx.constants as hxcc
+
     import Haxe.haxe.tools.view as view_tools
     import Haxe.haxe.temp as hxtemp
 
     from Haxe.haxe.log import log
     from Haxe.haxe.completion.hx.types import CompletionOptions
+    from Haxe.haxe.completion.hx.base import trigger_completion
 else:
     import haxe.tools.view as view_tools
     import haxe.project as hxproject
@@ -33,6 +35,7 @@ else:
 
     from haxe.log import log
     from haxe.completion.hx.types import CompletionOptions
+    from haxe.completion.hx.base import trigger_completion
 
 plugin_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
@@ -286,70 +289,62 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
         view.run_command("undo")
 
 
+class HaxeAsyncTriggeredCompletionCommand( sublime_plugin.TextCommand ):
+    def run( self , edit) :
+
+        options = CompletionOptions(
+            hxcc.COMPLETION_TRIGGER_ASYNC, 
+            hxcc.COMPILER_CONTEXT_REGULAR, 
+            hxcc.COMPLETION_TYPE_REGULAR)
+        trigger_completion(self.view, options)
+
+
 class HaxeDisplayCompletionCommand( sublime_plugin.TextCommand ):
-    def run( self , edit ) :
+    def run( self , edit, input_char = None) :
+        log("RUN - HaxeDisplayCompletionCommand")
+        if input_char != None:
+            self.view.run_command("insert" , {
+                "characters" : input_char
+            })
+        log("RUN - HaxeDisplayCompletionCommand")
         options = CompletionOptions(
             hxcc.COMPLETION_TRIGGER_MANUAL, 
             hxcc.COMPILER_CONTEXT_REGULAR, 
             hxcc.COMPLETION_TYPE_REGULAR)
         trigger_completion(self.view, options)
-        #trigger_completion(self.view, False, "regular")
 
 
 class HaxeDisplayMacroCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
+        log("RUN - HaxeDisplayMacroCompletionCommand")
         options = CompletionOptions(
             hxcc.COMPLETION_TRIGGER_MANUAL, 
             hxcc.COMPILER_CONTEXT_REGULAR, 
             hxcc.COMPLETION_TYPE_REGULAR)
         trigger_completion(self.view, options)
         
-        #trigger_completion(self.view, True, "macro")
         
 
 class HaxeHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
+        log("RUN - HaxeHintDisplayCompletionCommand")
         options = CompletionOptions(
             hxcc.COMPLETION_TRIGGER_MANUAL, 
             hxcc.COMPILER_CONTEXT_REGULAR, 
             hxcc.COMPLETION_TYPE_HINT)
         trigger_completion(self.view, options)
-        #trigger_completion(self.view, False, "hint")
 
 class HaxeMacroHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
+        log("RUN - HaxeMacroHintDisplayCompletionCommand")
         options = CompletionOptions(
             hxcc.COMPLETION_TRIGGER_MANUAL, 
             hxcc.COMPILER_CONTEXT_MACRO, 
             hxcc.COMPLETION_TYPE_HINT)
         trigger_completion(self.view, options)
-        #trigger_completion(self.view, True, "hint")    
         
 
-def trigger_completion (view, options):
-    #log("run HaxeCompletionCommand (macro:" + str(macro) + ", type:" + str(type) + ")")
-        
-    project = hxproject.current_project(view)
-    
-    project.completion_context.set_trigger(view, options)
-    
-    view.run_command( "auto_complete" , {
-        "api_completions_only" : True,
-        "disable_auto_insert" : True,
-        "next_completion_if_showing" : True,
-        'auto_complete_commit_on_tab': True
-    } )
 
-class HaxeInsertCompletionCommand( sublime_plugin.TextCommand ):
-    
-    def run( self , edit ) :
-        log("run HaxeInsertCompletion")
-        view = self.view
-
-        view.run_command( "insert_best_completion" , {
-            "default" : ".",
-            "exact" : True
-        } )
 
 class HaxeSaveAllAndBuildCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
