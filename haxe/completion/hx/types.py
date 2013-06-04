@@ -248,8 +248,10 @@ class CompletionContext:
     @lazyprop
     def complete_offset_in_bytes(self):
         s = self.src_until_complete_offset
-
-        s_bytes = s.encode()
+        if is_st3:
+            s_bytes = s.encode()
+        else:
+            s_bytes = s.encode("utf-8")
         return len(s_bytes)
 
     @lazyprop
