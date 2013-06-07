@@ -75,6 +75,49 @@ class HaxeLibManager:
 
 				self._available[ name ] = lib
 
+	def install_lib(self, lib):
+		cmd = self.project.haxelib_exec()
+		cmd.append("install")
+		cmd.append(lib)
+		run_cmd(cmd)
+		self.scan()
+
+	def remove_lib(self, lib):
+		cmd = self.project.haxelib_exec()
+		cmd.append("remove")
+		cmd.append(lib)
+		run_cmd(cmd)
+		self.scan()
+
+
+	def upgrade_all(self):
+		cmd = self.project.haxelib_exec()
+		cmd.append("upgrade")
+		run_cmd(cmd)
+		self.scan()
+
+	def self_update(self):
+		cmd = self.project.haxelib_exec()
+		cmd.append("selfupdate")
+		run_cmd(cmd)
+		self.scan()
+
+	def search_libs(self):
+		cmd = self.project.haxelib_exec()
+		cmd.append("search")
+		cmd.append(" ")
+		out,err = run_cmd(cmd);
+		return self._collect_libraries(out)
+
+	def _collect_libraries(self, out):
+		return out.splitlines()[0:-1]
+
+	def is_lib_installed(self, lib):
+		return lib in self.available
+	
+	def get_lib(self, lib):
+		return self.available[lib]
+
 class HaxeLib :
 
 	def __init__( self , manager, name , dev , version ):
@@ -105,17 +148,16 @@ class HaxeLib :
 
 
 
+
 class HaxeInstallLib( sublime_plugin.WindowCommand ):
 
-	def collect_libraries(self, out):
-		return out.splitlines()[0:-1]
+	
 
 	def prepare_menu (self, libs, manager):
-
 		menu = []
 		for l in libs :
-			if l in manager.available :
-				menu.append( [ l + " [" + manager.available[l].version + "]" , "Remove" ] )
+			if manager.is_lib_installed(l):
+				menu.append( [ l + " [" + manager.get_lib(l).version + "]" , "Remove" ] )
 			else :
 				menu.append( [ l , 'Install' ] )
 
@@ -132,15 +174,8 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 
 		project = hxproject.current_project(sublime.active_window().active_view())
 		manager = project.haxelib_manager
-		cmd = project.haxelib_exec()
-		cmd.append("search")
-		cmd.append(" ")
 		
-
-		out,err = run_cmd(cmd);
-		
-
-		libs = self.collect_libraries(out)
+		libs = manager.search_libs()
 
 		menu = self.prepare_menu(libs, manager)
 
@@ -150,37 +185,19 @@ class HaxeInstallLib( sublime_plugin.WindowCommand ):
 
 	def install( self, libs, project, i ):
 
-
 		if i < 0 :
 			return
-
-		upgrade_cmd = project.haxelib_exec()
-		upgrade_cmd.append("upgrade")
-
-		self_update_cmd = project.haxelib_exec()
-		self_update_cmd.append("selfupdate")
-
-
 		manager = project.haxelib_manager
-
 		if i == len(libs) :
-			cmd = upgrade_cmd
+			manager.upgrade_all()
+			
 		if i == len(libs)+1 :
-			cmd = self_update_cmd
+			manager.self_update()
 		else :
 			lib = libs[i]
-			print("lib to install: " + lib)
 			if lib in manager.available :
-				remove_cmd = project.haxelib_exec()
-				remove_cmd.append("remove")
-				remove_cmd.append(lib)
-				cmd = remove_cmd
-
+				manager.remove_lib(lib)
 			else :
-				install_cmd = project.haxelib_exec()
-				install_cmd.append("install")
-				install_cmd.append(lib)
-				cmd = install_cmd
+				manager.install_lib(lib)
+		
 
-		run_cmd(cmd)
-		manager.scan()
