@@ -35,7 +35,7 @@ hxml_cache = {}
 # should we really support this, or how can we handle this?
 # should the user be able to select a part of the build for completion/build
 
-def hxml_to_builds (build, folder):
+def hxml_to_builds (project, build, folder):
 	builds = []
 
 	current_build = HaxeBuild()
@@ -67,7 +67,8 @@ def hxml_to_builds (build, folder):
 		if l.startswith("-lib") :
 			spl = l.split(" ")
 			if len( spl ) == 2 :
-				lib = hxlib.HaxeLib.get( spl[1] )
+				lib = project.haxelib_manager.get( spl[1] )
+				log("lib to build:" + str(lib))
 				current_build.add_lib( lib )
 			else :
 				sublime.status_message( "Invalid build.hxml : lib not found" )
@@ -129,7 +130,7 @@ def hxml_to_builds (build, folder):
 
 	return builds
 
-def find_hxml_projects( folder ) :
+def find_hxml_projects( project, folder ) :
 	
 	builds = []
 	hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
@@ -140,13 +141,13 @@ def find_hxml_projects( folder ) :
 			if hxml in hxml_cache:
 				
 				if (mtime > hxml_cache[hxml][1]): # modified
-					current = hxml_to_builds(hxml, folder)
+					current = hxml_to_builds(project, hxml, folder)
 					hxml_cache[hxml] = (current, mtime)
 				else: # already in cache
 					current = hxml_cache[hxml][0]
 
 			else: # not in cache
-				current = hxml_to_builds(hxml, folder)
+				current = hxml_to_builds(project, hxml, folder)
 				hxml_cache[hxml] = (current, mtime)
 
 			builds.extend(current)
@@ -178,30 +179,30 @@ def find_nme_project_title(nmml):
 	return title
 			
 
-def find_nme_projects( folder ) :
+def find_nme_projects( project, folder ) :
 	nmmls = glob.glob( os.path.join( folder , "*.nmml" ) )
 	builds = []
 	for nmml in nmmls:
 		title = find_nme_project_title(nmml)
 		for t in hxconfig.nme_targets:
 
-			builds.append(NmeBuild(title, nmml, t))
+			builds.append(NmeBuild(project, title, nmml, t))
 	return builds
 
-def find_openfl_projects( folder ) :
+def find_openfl_projects( project, folder ) :
 	openfl_xmls = glob.glob( os.path.join( folder , "*.xml" ) )
 	builds = []
 	for openfl_xml in openfl_xmls:
 		title = find_nme_project_title(openfl_xml)
 		if title != None:
 			for t in hxconfig.openfl_targets:
-				builds.append(OpenFlBuild(title, openfl_xml, t))
+				builds.append(OpenFlBuild(project, title, openfl_xml, t))
 
 
 	return builds
 
 
-def create_haxe_build_from_nmml (target, nmml, display_cmd):
+def create_haxe_build_from_nmml (project, target, nmml, display_cmd):
 
 	cmd = list(display_cmd)
 	cmd.append(nmml)
@@ -224,7 +225,7 @@ def create_haxe_build_from_nmml (target, nmml, display_cmd):
 	f.close()
 	
 
-	hx_build = hxml_to_builds(hxml_file, nmml_dir)[0]
+	hx_build = hxml_to_builds(project, hxml_file, nmml_dir)[0]
 	hx_build.nmml = nmml
 	return hx_build
 
@@ -234,11 +235,12 @@ def create_haxe_build_from_nmml (target, nmml, display_cmd):
 class NmeBuild :
 
 
-	def __init__(self, title, nmml, target, cb = None):
+	def __init__(self, project, title, nmml, target, cb = None):
 		self._title = title
 		self.current_target = target
 		self.nmml = nmml
 		self._current_build = cb
+		self.project = project
 
 		#log("CLASSPATHS:" + str(self.current_build.classpaths))
 
@@ -259,7 +261,7 @@ class NmeBuild :
 		if self._current_build == None:
 			display_cmd = list(self.get_build_command())
 			display_cmd.append("display")
-			self._current_build = create_haxe_build_from_nmml(self.current_target, self.nmml, display_cmd)
+			self._current_build = create_haxe_build_from_nmml(self.project, self.current_target, self.nmml, display_cmd)
 
 		return self._current_build
 	
@@ -300,7 +302,7 @@ class NmeBuild :
 		return self.filter_platform_specific(self._current_build.std_packs)
 
 	def copy (self):
-		r = NmeBuild(self.title, self.nmml, self.current_target, self.current_build.copy())
+		r = NmeBuild(self.project, self.title, self.nmml, self.current_target, self.current_build.copy())
 		
 		return r
 
@@ -390,12 +392,12 @@ class NmeBuild :
 
 class OpenFlBuild (NmeBuild):
 
-	def __init__(self, title, openfl_xml, target, cb = None):
-		super(OpenFlBuild, self).__init__(title, openfl_xml, target, cb)
+	def __init__(self, project, title, openfl_xml, target, cb = None):
+		super(OpenFlBuild, self).__init__(project, title, openfl_xml, target, cb)
 		
 
 	def copy (self):
-		r = OpenFlBuild(self.title, self.nmml, self.current_target, self.current_build.copy())
+		r = OpenFlBuild(self.project, self.title, self.nmml, self.current_target, self.current_build.copy())
 		
 		return r
 
@@ -612,8 +614,9 @@ class HaxeBuild :
 		for a in self.args :
 			cmd.extend( list(a) )
 
-		#for l in self.libs :
-		#	cmd.append( ("-lib", l) )
+		for l in self.libs :
+			cmd.append( "-lib" )
+			cmd.append( l.as_cmd_arg() )
 
 		if self.main != None:
 			cmd.append("-main")
@@ -665,7 +668,8 @@ class HaxeBuild :
 	def update_types(self):
 
 		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
-		log("update types for " + str(self.classpaths))		
+		log("update types for classpaths:" + str(self.classpaths))
+		log("update types for libs:" + str(self.libs))
 		classes, packages = hxtypes.find_types(self.classpaths, self.libs, os.path.dirname( self.hxml ), [], [], include_private_types = False )
 
 		self.classes = classes;

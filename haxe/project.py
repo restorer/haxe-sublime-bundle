@@ -16,6 +16,7 @@ if is_st3:
     import Haxe.haxe.tools.path as path_tools
     import Haxe.haxe.compiler.server as hxserver
     import Haxe.haxe.config as hxconfig
+    import Haxe.haxe.lib as hxlib
     from Haxe.haxe.execute import run_cmd
     from Haxe.haxe.log import log
     from Haxe.haxe.tools.cache import Cache
@@ -26,6 +27,7 @@ else:
     import haxe.panel as hxpanel
     import haxe.hxtools as hxsrctools
     import haxe.types as hxtypes
+    import haxe.lib as hxlib
     import haxe.settings as hxsettings
     import haxe.tools.path as path_tools
     import haxe.compiler.server as hxserver
@@ -163,6 +165,7 @@ def haxe_build_env (project_dir):
 class Project:
     def __init__(self, id, file, win_id, server_port):
         self.completion_context = ProjectCompletionContext()
+        self._haxelib_manager = hxlib.HaxeLibManager(self)
         self.current_build = None
         self.selecting_build = False
         self.builds = []
@@ -183,6 +186,10 @@ class Project:
 
         self.update_compiler_info()
 
+    @property
+    def haxelib_manager (self):
+        return self._haxelib_manager
+
     def project_dir (self, default):
         p = default
         if self.project_path != None:
@@ -195,6 +202,8 @@ class Project:
     def openfl_exec (self, view = None):
         return ["openfl"]
 
+    def haxelib_exec (self, view = None):
+        return [hxsettings.haxelib_exec()]
 
     def haxe_exec (self, view = None):
         haxe_exec = hxsettings.haxe_exec(view)
@@ -274,9 +283,9 @@ class Project:
             folders = win.folders()
            
             for f in folders:
-                self.builds.extend(hxbuild.find_hxml_projects(f))
-                self.builds.extend(hxbuild.find_nme_projects(f))
-                self.builds.extend(hxbuild.find_openfl_projects(f))
+                self.builds.extend(hxbuild.find_hxml_projects(self, f))
+                self.builds.extend(hxbuild.find_nme_projects(self, f))
+                self.builds.extend(hxbuild.find_openfl_projects(self, f))
             
             
             
@@ -446,7 +455,7 @@ class Project:
             cmd, build_folder = build.prepare_sublime_check_cmd(self, self.serverMode, view)
         
         
-        
+        print("CMD: " + str(cmd))
         hxpanel.default_panel().writeln("running: " + " ".join(cmd))
 
         win.run_command("haxe_exec", {

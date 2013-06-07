@@ -91,6 +91,12 @@ if not is_st3:
          
     ) 
 
+    from haxe.lib import (
+
+         HaxeInstallLib
+         
+    ) 
+
     from haxe.completion.hx.types import (
 
          CompletionOptions
@@ -163,6 +169,12 @@ else:
     from Haxe.haxe.completion.base import (
 
          HaxeCompleteListener
+         
+    ) 
+
+    from Haxe.haxe.lib import (
+
+         HaxeInstallLib
          
     ) 
 
