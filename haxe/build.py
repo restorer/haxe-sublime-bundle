@@ -68,17 +68,17 @@ def hxml_to_builds (build, folder):
 			spl = l.split(" ")
 			if len( spl ) == 2 :
 				lib = hxlib.HaxeLib.get( spl[1] )
-				current_build.libs.append( lib )
+				current_build.add_lib( lib )
 			else :
 				sublime.status_message( "Invalid build.hxml : lib not found" )
 
 		if l.startswith("-cmd") :
 			spl = l.split(" ")
-			current_build.args.append( ( "-cmd" , " ".join(spl[1:]) ) )
+			current_build.add_arg( ( "-cmd" , " ".join(spl[1:]) ) )
 		
 		if l.startswith("--macro"):
 			spl = l.split(" ")
-			current_build.args.append( ( "--macro" , '"' +  "\"".join( " ".join(spl[1:]).split("\"")  ) + '"' ))	
+			current_build.add_arg( ( "--macro" , '"' +  "\"".join( " ".join(spl[1:]).split("\"")  ) + '"' ))	
 
 		for flag in [ "lib" , "D" , "swf-version" , "swf-header", 
 					"debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , 
@@ -94,7 +94,7 @@ def hxml_to_builds (build, folder):
 			if l.startswith( "-"+flag ) :
 				spl = l.split(" ")
 				outp = os.path.join( folder , " ".join(spl[1:]) )
-				current_build.args.append( ("-"+flag, outp) )
+				current_build.add_arg( ("-"+flag, outp) )
 				if (flag == "x"):
 					current_build.target = "neko"
 				break
@@ -104,7 +104,7 @@ def hxml_to_builds (build, folder):
 				spl = l.split(" ")
 				#outp = os.path.join( folder , " ".join(spl[1:]) ) 
 				outp = " ".join(spl[1:]) 
-				current_build.args.append( ("-"+flag, outp) )
+				current_build.add_arg( ("-"+flag, outp) )
 				
 				current_build.target = flag
 				current_build.output = outp
@@ -117,12 +117,12 @@ def hxml_to_builds (build, folder):
 			classpath = " ".join( cp )
 			
 			abs_classpath = path_tools.join_norm( build_path , classpath )
-			current_build.classpaths.append( abs_classpath )
-			current_build.args.append( ("-cp" , abs_classpath ) )
+			current_build.add_classpath( abs_classpath )
+			current_build.add_arg( ("-cp" , abs_classpath ) )
 	
 	if len(current_build.classpaths) == 0:
 		log("no classpaths")
-		current_build.classpaths.append( build_path )
+		current_build.add_classpath( build_path )
 		current_build.args.append( ("-cp" , build_path ) )
 
 	builds.append( current_build )
@@ -189,13 +189,13 @@ def find_nme_projects( folder ) :
 	return builds
 
 def find_openfl_projects( folder ) :
-	nmmls = glob.glob( os.path.join( folder , "*.xml" ) )
+	openfl_xmls = glob.glob( os.path.join( folder , "*.xml" ) )
 	builds = []
-	for nmml in nmmls:
-		title = find_nme_project_title(nmml)
+	for openfl_xml in openfl_xmls:
+		title = find_nme_project_title(openfl_xml)
 		if title != None:
 			for t in hxconfig.openfl_targets:
-				builds.append(OpenFlBuild(title, nmml, t))
+				builds.append(OpenFlBuild(title, openfl_xml, t))
 
 
 	return builds
@@ -204,6 +204,7 @@ def find_openfl_projects( folder ) :
 def create_haxe_build_from_nmml (target, nmml, display_cmd):
 
 	cmd = list(display_cmd)
+	cmd.append(nmml)
 	cmd.append(target.target)
 	cmd.extend(target.args)
 
@@ -317,8 +318,7 @@ class NmeBuild :
 	def set_times(self):
 		self.current_build.set_times()
 
-	def is_nme (self):
-		return True
+	
 
 
 
@@ -336,10 +336,10 @@ class NmeBuild :
 		return project.nme_exec(view)
 
 	def get_build_command(self):
-		return ["nme"]
+		return ["haxelib", "run", "nme"]
 
 	def prepare_sublime_check_cmd(self, project, server_mode, view):
-		cmd, folder, x = self.prepare_sublime_compile_cmd(project, server_mode, view)
+		cmd, folder = self.prepare_sublime_compile_cmd(project, server_mode, view)
 		cmd.append("--no-output")
 		return cmd, folder
 
@@ -349,7 +349,9 @@ class NmeBuild :
 
 	def _prepare_sublime_cmd(self, project, server_mode, view, command):
 		cmd = self.get_build_command()
+
 		cmd.append(command)
+		cmd.append(self.build_file)
 		cmd.append(self.current_target.target)
 		cmd.extend(self.current_target.args)
 		
@@ -388,8 +390,8 @@ class NmeBuild :
 
 class OpenFlBuild (NmeBuild):
 
-	def __init__(self, title, nmml, target, cb = None):
-		super(OpenFlBuild, self).__init__(title, nmml, target, cb)
+	def __init__(self, title, openfl_xml, target, cb = None):
+		super(OpenFlBuild, self).__init__(title, openfl_xml, target, cb)
 		
 
 	def copy (self):
@@ -410,7 +412,7 @@ class OpenFlBuild (NmeBuild):
 		return res
 
 	def get_build_command(self):
-		return ["openfl"]
+		return ["haxelib", "run", "openfl"]
 
 	def to_string(self) :
 		#out = os.path.basename(self.current_build.output)
@@ -460,12 +462,7 @@ class HaxeBuild :
 	def build_file(self):
 		return self.hxml
 
-	def is_nme (self):
-		return self.nmml != None
-
-	def is_openfl (self):
-		return self.openfl == True
-
+	
 	def set_main(self, main):
 		self.main = main
 	
@@ -534,6 +531,10 @@ class HaxeBuild :
 		self.classpaths.append(cp)
 		self.args.append(("-cp", cp))
 	
+
+	def add_lib(self, lib):
+		self.libs.append(lib)
+
 	def get_classpath (self, file):
 		cps = list(self.classpaths)
 		

@@ -437,12 +437,19 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
 
         project = hxproject.current_project(view)
 
-        builds = project.builds
+        builds = list(project.builds)
+
+        if project.has_build():
+            builds.insert(0, project.get_build(view))
+
+        
 
         #scopes = view.scope_name(view.sel()[0].end()).split()
         
         pack = [];
 
+        
+        
         if len(builds) == 0 and view != None and view.file_name() != None:
             print(view.file_name())
             project.extract_build_args(view)
@@ -451,6 +458,8 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
         if len(paths) == 0 and view != None:
             fn = view.file_name()
             paths.append(fn)
+
+        
 
         for path in paths :
 
@@ -461,24 +470,37 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
                 self.classpath = path
 
             for b in builds :
+                log("build file: " + b.build_file)
                 found = False
                 for cp in b.classpaths :
-
-
+                    log("class path: " + cp)
+                    log("path: " + path)
                     if path.startswith( cp ) :
                         
                         self.classpath = path[0:len(cp)]
-                        for p in path[len(cp):].split(os.sep) :
-                            if "." in p : 
-                                break
-                            elif p :
-                                pack.append(p)
-                               
-                                found = True
+                        log("self.classpath: " + self.classpath)
+                        
+                        rel_path = path[len(cp):]
+                        
+                        if len(rel_path) == 0:
+                            found = True
+                        else:
+                            sub_packs = rel_path.split(os.sep)
+                            log("subpacks:" + str(sub_packs))
+                            for p in sub_packs :
+                                if "." in p : 
+                                    break
+                                elif p :
+                                    pack.append(p)
+                                   
+                                    found = True
+     
                     if found:
                         break
                 if found:
                     break
+                log("found: " + str(found))
+
 
 
         if self.classpath is None :

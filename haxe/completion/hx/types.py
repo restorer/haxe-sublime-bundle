@@ -234,8 +234,10 @@ class CompletionSettings:
 
 
 class CompletionContext:
-    def __init__(self, view, project, offset, options, settings):
+    def __init__(self, view, project, offset, options, settings, prefix):
         self.view = view
+
+        self.prefix = prefix
 
         # position in src where auto completion was triggered
         self.offset = offset
@@ -300,6 +302,12 @@ class CompletionContext:
     def src_from_complete_to_offset(self):
         return self.src[self.complete_offset:self.offset]
 
+    @lazyprop
+    def src_from_complete_to_prefix_end(self):
+        rest = self.src[self.complete_offset+1:self.offset+1 + len(self.prefix)]
+        log("REEEEEEEEEEST:'" + rest + "'")
+        return rest
+                
     @lazyprop
     def offset_char (self):
         return self.src[self.offset]

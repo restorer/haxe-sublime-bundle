@@ -1,5 +1,6 @@
 import time
 import sublime
+import re
 
 is_st3 = int(sublime.version()) >= 3000
 
@@ -62,7 +63,7 @@ def get_available_async_completions(comp_result, view):
     return cancel_completion(view) if discard_results else combine_hints_and_comps(comp_result)
 
 
-def auto_complete(project, view, offset):
+def auto_complete(project, view, offset, prefix):
 
     # if completion is triggered by a background completion process
     # completion return the result
@@ -77,17 +78,17 @@ def auto_complete(project, view, offset):
         else:
             res = cancel_completion()
     else:
-        res = create_new_completions(project, view, offset, options)
+        res = create_new_completions(project, view, offset, options, prefix)
     return res
 
 
-def create_new_completions(project, view, offset, options):
+def create_new_completions(project, view, offset, options, prefix):
 
     cache = project.completion_context.current
 
     log("------- COMPLETION START -----------")
 
-    ctx = create_completion_context(project, view, offset, options)
+    ctx = create_completion_context(project, view, offset, options, prefix)
 
     res = None
     
@@ -109,6 +110,7 @@ def create_new_completions(project, view, offset, options):
     else:
 
         if is_hint_completion(ctx):
+            log("ADD HINT")
             ctx.options.types.add_hint()
     
         is_directly_after_control_struct = ctx.complete_char_is_after_control_struct
@@ -257,7 +259,10 @@ def is_iterator_completion(src, offset):
     return o > 3 and s[o] == "\n" and s[o-1] == "." and s[o-2] == "." and s[o-3] != "."
 
 def is_hint_completion(ctx):
-    return ctx.complete_char in "(,"
+    whitespace_re = re.compile("^\s*$")
+    return ctx.complete_char in "(," and (
+        re.match(whitespace_re, ctx.prefix)
+        )
 
 
 def is_equivalent_completion_already_running(ctx):
@@ -278,7 +283,7 @@ def get_toplevel_completions(ctx):
     return comps
 
 
-def create_completion_context(project, view, offset, options):
+def create_completion_context(project, view, offset, options, prefix):
 
     # if options are None, it's a completion progress initialized by sublime, 
     # not by the user or by faking it
@@ -291,7 +296,7 @@ def create_completion_context(project, view, offset, options):
         log("!!!!!!!!!!!!!!!!" + str(options.manual_completion))
     
     settings = CompletionSettings(hxsettings)
-    ctx = CompletionContext(view, project, offset, options, settings)
+    ctx = CompletionContext(view, project, offset, options, settings, prefix)
     return ctx    
 
 def update_completion_cache(cache, comp_result):

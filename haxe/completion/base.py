@@ -122,7 +122,7 @@ def dispatch_auto_complete (project, view, prefix, location):
 
     if can_run_completion(offset, scopes):
         handler = get_auto_complete_handler(view, scopes);
-        comps = handler(project, view, offset)
+        comps = handler(project, view, offset, prefix)
     else:
         comps = []
 
