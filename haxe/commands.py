@@ -686,18 +686,6 @@ except ImportError as e :
     ExecCommand = stexec.ExecCommand
     AsyncProcess = stexec.AsyncProcess
     
-
-
-#class HaxelibScanCommand(sublime_plugin.WindowCommand):
-#
-#    def __init__ (self, win):
-#        
-#        self.win = win
-# 
-#    def run(self):
-#        hxlib.HaxeLib.scan()
-   
-       
        
 class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
     def run(self, cmd = [], file_regex = "", line_regex = "", working_dir = "",

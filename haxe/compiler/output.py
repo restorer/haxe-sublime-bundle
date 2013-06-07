@@ -126,10 +126,6 @@ def get_function_type_params(name, signature_types):
 	return new_args, type_param_list
 
 
-
-
-
-
 def completion_field_to_entry(name, sig, doc):
 	insert = name
 	label = name
@@ -214,8 +210,6 @@ class CompletionEntry:
 		self.insert = insert
 		self.doc = doc
 
-
-
 def extract_errors( str ):
 	errors = []
 	
@@ -263,8 +257,6 @@ def get_completion_output(temp_file, orig_file, output, commas):
 
 	return (hints, comps, status, errors)
 
-
-
 def parse_completion_output(temp_file, orig_file, output):
 
 	try :
@@ -297,15 +289,9 @@ def get_completion_status_and_errors(hints, comps, output, temp_file, orig_file)
 	
 	errors = []
 
-	if len(hints) > 0 :
-		pass
-		#log("status: " + str(hints))
-		#status = " | ".join([h.replace( temp_file , orig_file ) for h in hints])
-
-	elif len(hints) == 0 and len(comps) == 0:
+	if len(hints) == 0 and len(comps) == 0:
 		status, errors = parse_completion_errors(output, temp_file, orig_file, status)
 		
-	
 	return status, errors
 
 def parse_completion_errors(output, temp_file, orig_file, status):
@@ -341,39 +327,6 @@ def parse_completion_errors(output, temp_file, orig_file, status):
 			log(l)
 		else :
 			status = ""
-
-	#regions = []
-	
-	# for infos in compiler_output.findall(err) :
-	# 	infos = list(infos)
-	# 	f = infos.pop(0)
-	# 	l = int( infos.pop(0) )-1
-	# 	left = int( infos.pop(0) )
-	# 	right = infos.pop(0)
-	# 	if right != "" :
-	# 		right = int( right )
-	# 	else :
-	# 		right = left+1
-	# 	m = infos.pop(0)
-
-	# 	self.errors.append({
-	# 		"file" : f,
-	# 		"line" : l,
-	# 		"from" : left,
-	# 		"to" : right,
-	# 		"message" : m
-	# 	})
-		
-	# 	if( f == fn ):
-	# 		status = m
-		
-	# 	if not autocomplete :
-	# 		w = view.window()
-	# 		if not w is None :
-	# 			w.open_file(f+":"+str(l)+":"+str(right) , sublime.ENCODED_POSITION  )
-	# 	#if not autocomplete
-
-
 
 	errors = extract_errors( output )
 

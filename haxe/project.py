@@ -14,12 +14,14 @@ if is_st3:
     import Haxe.haxe.types as hxtypes
     import Haxe.haxe.settings as hxsettings
     import Haxe.haxe.tools.path as path_tools
+    import Haxe.haxe.tools.sublime as sublime_tools
     import Haxe.haxe.compiler.server as hxserver
     import Haxe.haxe.config as hxconfig
     import Haxe.haxe.lib as hxlib
     from Haxe.haxe.execute import run_cmd
     from Haxe.haxe.log import log
     from Haxe.haxe.tools.cache import Cache
+
 
 else:
     import haxe.config as hxconfig
@@ -28,6 +30,7 @@ else:
     import haxe.hxtools as hxsrctools
     import haxe.types as hxtypes
     import haxe.lib as hxlib
+    import haxe.tools.sublime as sublime_tools
     import haxe.settings as hxsettings
     import haxe.tools.path as path_tools
     import haxe.compiler.server as hxserver
@@ -35,10 +38,6 @@ else:
     from haxe.execute import run_cmd
     from haxe.log import log
     from haxe.tools.cache import Cache
-is_st3 = int(sublime.version()) >= 3000
-
-#if is_st3():
-#    str = unicode
 
 class ProjectCompletionContext:
 
@@ -118,7 +117,7 @@ haxe_file_regex = "^(" + win_start + "|" + unix_start + ")?(?:[^:]*)):([0-9]+): 
 
 def haxe_build_env (project_dir):
         
-    libPath = hxsettings.haxe_library_path()
+    lib_path = hxsettings.haxe_library_path()
     haxe_inst_path = hxsettings.haxe_inst_path()
     neko_inst_path = hxsettings.neko_inst_path()
 
@@ -134,8 +133,8 @@ def haxe_build_env (project_dir):
         else:
             return s.encode(sys.getfilesystemencoding())
 
-    if libPath != None:
-        path = os.path.normpath(os.path.join(project_dir, libPath))
+    if lib_path != None:
+        path = os.path.normpath(os.path.join(project_dir, lib_path))
         env["HAXE_LIBRARY_PATH"] = do_encode(os.sep.join(path.split("/")))
         env["HAXE_STD_PATH"] = do_encode(os.sep.join(path.split("/")))
     
@@ -158,10 +157,6 @@ def haxe_build_env (project_dir):
     print(str(env))
     return env
 
-
-
-
-
 class Project:
     def __init__(self, id, file, win_id, server_port):
         self.completion_context = ProjectCompletionContext()
@@ -172,11 +167,8 @@ class Project:
         self.win_id = win_id
         
         self.server = hxserver.Server(server_port)
-
         
         self.project_file = file
-
-        
 
         self.project_id = id
         if (self.project_file != None):
@@ -191,10 +183,8 @@ class Project:
         return self._haxelib_manager
 
     def project_dir (self, default):
-        p = default
-        if self.project_path != None:
-            p = self.project_path
-        return p
+        return self.project_path if self.project_path != None else default
+            
 
     def nme_exec (self, view = None):
         return ["nme"]
@@ -221,7 +211,7 @@ class Project:
         cwd = self.project_dir(".")
         haxe_exec = self.haxe_exec(view)[0]
         
-        env = haxe_build_env(self.project_dir("."))
+        env = self.haxe_env()
         
         self.server.start(haxe_exec, cwd, env)
         
@@ -231,9 +221,9 @@ class Project:
 
         #assume it's supported if no version available
         if ver is None:
-            self.serverMode = True
+            self.server_mode = True
         else:
-            self.serverMode = int(ver.group(1)) >= 209
+            self.server_mode = int(ver.group(1)) >= 209
         print(ver)
         self.std_paths = std_paths
         self.std_packages = packs
@@ -241,7 +231,7 @@ class Project:
         self.std_classes.extend(classes)
 
     def is_server_mode (self):
-        return self.serverMode and hxsettings.get_bool('haxe-use-server-mode', True)
+        return self.server_mode and hxsettings.get_bool('haxe-use-server-mode', True)
 
     def generate_build(self, view) :
 
@@ -366,8 +356,6 @@ class Project:
     def has_build (self):
         return self.current_build != None
 
-
-
     def run_build( self, view, additional_args = [] ) :
         
         if view is None: 
@@ -406,9 +394,6 @@ class Project:
         
         build.run(self, view, True, cb)
         
-        
-
-    
 
     def check_sublime_build(self, view):
         self._sublime_build(view, "check")
@@ -418,13 +403,8 @@ class Project:
         
     def run_sublime_build( self, view ) :
         self._sublime_build(view, "run")
-        
-
-        
+    
     def _sublime_build(self, view, type = "run"):
-
-
-
 
         if view is None: 
             view = sublime.active_window().active_view()
@@ -433,9 +413,6 @@ class Project:
 
         if win is None:
             win = sublime.active_window()
-
-        
-
 
         #haxe_exec = self.haxe_exec(view)
         env = haxe_build_env(self.project_dir("."))
@@ -448,11 +425,11 @@ class Project:
 
         if type == "run":
             # does the default
-            cmd, build_folder = build.prepare_sublime_build_cmd(self, self.serverMode, view)
+            cmd, build_folder = build.prepare_sublime_build_cmd(self, self.server_mode, view)
         elif type == "build":
-            cmd, build_folder = build.prepare_sublime_compile_cmd(self, self.serverMode, view)
+            cmd, build_folder = build.prepare_sublime_compile_cmd(self, self.server_mode, view)
         else:
-            cmd, build_folder = build.prepare_sublime_check_cmd(self, self.serverMode, view)
+            cmd, build_folder = build.prepare_sublime_check_cmd(self, self.server_mode, view)
         
         
         print("CMD: " + str(cmd))
@@ -536,31 +513,6 @@ class Project:
 
 
 
-# last time the sublime session file was updated
-_last_modification_time = None
-# used for caching the path of current project file
-_last_project = None
-# hash to store all active projects, files without project file use the "global" context
-
-
-
-
-#def run_nme( view, build ) :
-#
-#    cmd = [ hxsettings.haxelib_exec(), "run", "nme", hxbuild.HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
-#    target = hxbuild.HaxeBuild.nme_target[1].split(" ")
-#    cmd.extend(target)
-#    cmd.append("-debug")
-#
-#    view.window().run_command("haxe_exec", {
-#        "cmd": cmd,
-#        "working_dir": os.path.dirname(build.nmml),
-#        "file_regex": "^([^:]*):([0-9]+): (?:characters|lines): [0-9]+-([0-9]+) :.*$"
-#    })
-#    return ("" , [], "" )
-
-
-
 def get_compiler_info_env (project_path):
     return haxe_build_env(project_path)
 
@@ -589,8 +541,6 @@ def collect_compiler_info (project_path):
     if m is not None :
         std_paths = set(m.group(1).split(";")) - set([".","./"])
     
-
-
     for p in std_paths : 
         
         p = os.path.normpath(p)
@@ -611,66 +561,6 @@ def collect_compiler_info (project_path):
     ver = re.search( haxe_version , out )
     
     return (classes, packs, ver, std_paths)
-
-def _get_project_file(win_id = None):
-    if is_st3:
-        #if win_id == None:
-        #    win_id = sublime.active_window().id()
-        return sublime.active_window().project_file_name()
-    else:
-        global _last_project
-        global _last_modification_time
-
-        log( "try getting project file")
-
-        if win_id == None:
-            win_id = sublime.active_window().id()
-
-        project = None
-        reg_session = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Session.sublime_session"))
-        auto_save = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Auto Save Session.sublime_session"))
-        session = auto_save if os.path.exists(auto_save) else reg_session
-
-        print(auto_save)
-        print(reg_session)
-        print(session)
-
-        if not os.path.exists(session) or win_id == None:
-            return project
-
-
-        mtime = os.path.getmtime(session)
-
-        if (_last_modification_time is not None 
-            and mtime == _last_modification_time
-            and _last_project != None):
-            _last_modification_time = mtime
-            
-            return _last_project
-        else:
-            _last_modification_time = mtime
-        try:
-            with open(session, 'r') as f:
-                # Tabs in strings messes things up for some reason
-                j = json.JSONDecoder(strict=False).decode(f.read())
-                for w in j['windows']:
-                    if w['window_id'] == win_id:
-                        if "workspace_name" in w:
-                            if sublime.platform() == "windows":
-                                # Account for windows specific formatting
-                                project = os.path.normpath(w["workspace_name"].lstrip("/").replace("/", ":/", 1))
-                            else:
-                                project = w["workspace_name"]
-                            break
-        except:
-            pass
-
-        # Throw out empty project names
-        if project == None or re.match(".*\\.sublime-project", project) == None or not os.path.exists(project):
-            project = None
-
-        _last_project = project
-        return project
 
 
 
@@ -715,9 +605,11 @@ def unload_handler():
 
 
 
-_next_server_port = [6000]
+_next_server_port = 6000
+
 def current_project(view = None):
 
+    global _next_server_port
 
     win_ids = [w.id() for w in sublime.windows()]
 
@@ -740,7 +632,7 @@ def current_project(view = None):
 
     
 
-    file = _get_project_file()
+    file = sublime_tools.get_project_file()
     
     if (view != None):
         win = view.window();
@@ -757,8 +649,9 @@ def current_project(view = None):
     log("win.id:" + str(win.id()))
 
     def create ():
-        p = Project(id, file, win.id(), _next_server_port[0])
-        _next_server_port[0] = _next_server_port[0] + 20
+        global _next_server_port
+        p = Project(id, file, win.id(), _next_server_port)
+        _next_server_port = _next_server_port + 20
         return p
     res = _projects.get_or_insert(id, create )
     
