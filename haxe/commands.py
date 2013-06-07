@@ -3,7 +3,10 @@ import os
 import re
 import json
 import codecs
+import functools
+
 from sublime import Region
+
 
 is_st3 = int(sublime.version()) >= 3000
 
@@ -580,24 +583,75 @@ class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
 class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 
     def on_load (self, view):
-        self.create_file(view)
+        can_create_file = view is not None and view.file_name() != None and view.file_name() in current_create_type_info and view.size() == 0
+        
+        if can_create_file:
+            self.create_file(view)
+
+
 
 
     def create_file(self, view):
-        if view is not None and view.file_name() != None and view.file_name() in current_create_type_info and view.size() == 0 :
-            data = current_create_type_info[view.file_name()];
-            
-            def run_edit(v, edit):
-                v.insert(edit,0,data)
-                v.end_edit(edit)
-                sel = v.sel()
-                sel.clear()
-                pt = v.text_point(5,1)
-                sel.add( sublime.Region(pt,pt) )
+        
+        data = current_create_type_info[view.file_name()];
+        
+        def run_edit(v, edit):
+            v.insert(edit,0,data)
+            v.end_edit(edit)
+            sel = v.sel()
+            sel.clear()
+            pt = v.text_point(5,1)
+            sel.add( sublime.Region(pt,pt) )
 
-            view_tools.async_edit(view, run_edit)
+        view_tools.async_edit(view, run_edit)
          
 
+
+
+
+class HaxeInstallLibCommand( sublime_plugin.WindowCommand ):
+
+    def run(self):
+
+        view = sublime.active_window().active_view()
+
+        project = hxproject.current_project(view)
+
+        if project is not None:
+            manager = project.haxelib_manager
+            libs = manager.search_libs()
+            menu = self._prepare_menu(libs, manager)
+            on_selected = functools.partial(self._entry_selected, libs, manager)
+            self.window.show_quick_panel(menu, on_selected)
+
+    def _prepare_menu (self, libs, manager):
+        menu = []
+        for l in libs :
+            if manager.is_lib_installed(l):
+                menu.append( [ l + " [" + manager.get_lib(l).version + "]" , "Remove" ] )
+            else :
+                menu.append( [ l , 'Install' ] )
+
+        menu.append( ["Upgrade libraries", "Upgrade installed libraries"] )
+        menu.append( ["Haxelib Selfupdate", "Updates Haxelib itself"] )
+        
+        return menu
+
+    def _entry_selected( self, libs, manager, i ):
+
+        if i < 0 :
+            return
+        if i == len(libs) :
+            manager.upgrade_all()
+            
+        if i == len(libs)+1 :
+            manager.self_update()
+        else :
+            lib = libs[i]
+            if lib in manager.available :
+                manager.remove_lib(lib)
+            else :
+                manager.install_lib(lib)
 
 
 
@@ -825,5 +879,6 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
     def on_finished(self, proc):
         sublime.set_timeout(functools.partial(self.finish, proc), 0)
+
 
 

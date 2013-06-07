@@ -71,7 +71,7 @@ class HaxeLibManager:
 			found = libLine.match( l )
 			if found is not None :
 				name, dev, version = found.groups()
-				lib = HaxeLib( self, name , dev is not None , version )
+				lib = HaxeLibLibrary( self, name , dev is not None , version )
 
 				self._available[ name ] = lib
 
@@ -118,7 +118,7 @@ class HaxeLibManager:
 	def get_lib(self, lib):
 		return self.available[lib]
 
-class HaxeLib :
+class HaxeLibLibrary :
 
 	def __init__( self , manager, name , dev , version ):
 		self.name = name
@@ -149,55 +149,5 @@ class HaxeLib :
 
 
 
-class HaxeInstallLib( sublime_plugin.WindowCommand ):
-
-	
-
-	def prepare_menu (self, libs, manager):
-		menu = []
-		for l in libs :
-			if manager.is_lib_installed(l):
-				menu.append( [ l + " [" + manager.get_lib(l).version + "]" , "Remove" ] )
-			else :
-				menu.append( [ l , 'Install' ] )
-
-		menu.append( ["Upgrade libraries", "Upgrade installed libraries"] )
-		menu.append( ["Haxelib Selfupdate", "Updates Haxelib itself"] )
-		
-		return menu
-
-	def run(self):
-		if is_st3:
-			import Haxe.haxe.project as hxproject
-		else:
-			import haxe.project as hxproject
-
-		project = hxproject.current_project(sublime.active_window().active_view())
-		manager = project.haxelib_manager
-		
-		libs = manager.search_libs()
-
-		menu = self.prepare_menu(libs, manager)
-
-		on_selected = functools.partial(self.install, libs, project)
-
-		self.window.show_quick_panel(menu, on_selected)
-
-	def install( self, libs, project, i ):
-
-		if i < 0 :
-			return
-		manager = project.haxelib_manager
-		if i == len(libs) :
-			manager.upgrade_all()
-			
-		if i == len(libs)+1 :
-			manager.self_update()
-		else :
-			lib = libs[i]
-			if lib in manager.available :
-				manager.remove_lib(lib)
-			else :
-				manager.install_lib(lib)
 		
 

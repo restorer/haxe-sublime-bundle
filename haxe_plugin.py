@@ -1,5 +1,6 @@
 import sys
 import sublime
+
 print("init haxe_plugin")
 
 is_st3 = int(sublime.version()) >= 3000
@@ -91,12 +92,7 @@ if not is_st3:
          
     ) 
 
-    from haxe.lib import (
-
-         HaxeInstallLib
-         
-    ) 
-
+ 
     from haxe.completion.hx.types import (
 
          CompletionOptions
@@ -129,6 +125,7 @@ if not is_st3:
         ,HaxeExecCommand
         ,HaxeBuildOnSaveListener
         ,HaxeFindDeclarationListener
+        ,HaxeInstallLibCommand
         #,HaxeSublimeTriggeredCompletionCommand
         
 
@@ -172,12 +169,6 @@ else:
          
     ) 
 
-    from Haxe.haxe.lib import (
-
-         HaxeInstallLib
-         
-    ) 
-
     from Haxe.haxe.completion.hx.types import (
 
          CompletionOptions
@@ -210,6 +201,7 @@ else:
         ,HaxeExecCommand
         ,HaxeBuildOnSaveListener
         ,HaxeFindDeclarationListener
+        ,HaxeInstallLibCommand
     ) 
     
     # only st3 relevant
