@@ -84,8 +84,20 @@
         ]
     },
     {
+        "keys": ["ctrl+F9"],
+        "command": "haxe_save_all_and_check",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
+            }
+        ]
+    },
+    {
         "keys": ["ctrl+shift+enter"],
-        "command": "haxe_run_build_alt",
+        "command": "haxe_save_all_and_run",
         "context":
         [
             {

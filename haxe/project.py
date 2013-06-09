@@ -356,55 +356,55 @@ class Project:
     def has_build (self):
         return self.current_build != None
 
-    def run_build( self, view, additional_args = [] ) :
+    # def run_build( self, view, additional_args = [] ) :
         
-        if view is None: 
-            view = sublime.active_window().active_view()
+    #     if view is None: 
+    #         view = sublime.active_window().active_view()
 
-        if (self.has_build()):
-            build = self.get_build(view)
-        else:
-            self.extract_build_args(view)
-            build = self.get_build(view)
+    #     if (self.has_build()):
+    #         build = self.get_build(view)
+    #     else:
+    #         self.extract_build_args(view)
+    #         build = self.get_build(view)
 
 
-        run_exec = self.get_run_exec(self, view)
+    #     run_exec = self.get_run_exec(self, view)
         
 
-        def cb (out, err):
-            if (err != None and err != ""):
-                msg = "build finished with errors"
-                cmd_args = build.get_command_args(run_exec)
-                cmd_args.extend(additional_args)
-                cmd = " ".join(cmd_args)
-                hxpanel.default_panel().writeln( "cmd: " + cmd)
-                hxpanel.default_panel().writeln( msg)
-                view.set_status( "haxe-status" , msg )
-                hxpanel.default_panel().writeln(err)
+    #     def cb (out, err):
+    #         if (err != None and err != ""):
+    #             msg = "build finished with errors"
+    #             cmd_args = build.get_command_args(run_exec)
+    #             cmd_args.extend(additional_args)
+    #             cmd = " ".join(cmd_args)
+    #             hxpanel.default_panel().writeln( "cmd: " + cmd)
+    #             hxpanel.default_panel().writeln( msg)
+    #             view.set_status( "haxe-status" , msg )
+    #             hxpanel.default_panel().writeln(err)
                 
-            else:
-                msg = "build finished successfull"
-                view.set_status( "haxe-status" , msg )
-                hxpanel.default_panel().writeln( msg )
+    #         else:
+    #             msg = "build finished successfull"
+    #             view.set_status( "haxe-status" , msg )
+    #             hxpanel.default_panel().writeln( msg )
 
-            if (out != None):
-                hxpanel.default_panel().writeln("---output----")
-                hxpanel.default_panel().writeln( out )
-                hxpanel.default_panel().writeln("-------------")    
+    #         if (out != None):
+    #             hxpanel.default_panel().writeln("---output----")
+    #             hxpanel.default_panel().writeln( out )
+    #             hxpanel.default_panel().writeln("-------------")    
         
-        build.run(self, view, True, cb)
+    #     build.run(self, view, True, cb)
         
 
-    def check_sublime_build(self, view):
-        self._sublime_build(view, "check")
+    def check_build(self, view):
+        self._build(view, "check")
 
-    def compile_sublime_build(self, view):
-        self._sublime_build(view, "build")
+    def just_build(self, view):
+        self._build(view, "build")
         
-    def run_sublime_build( self, view ) :
-        self._sublime_build(view, "run")
+    def run_build( self, view ) :
+        self._build(view, "run")
     
-    def _sublime_build(self, view, type = "run"):
+    def _build(self, view, type = "run"):
 
         if view is None: 
             view = sublime.active_window().active_view()
@@ -425,11 +425,11 @@ class Project:
 
         if type == "run":
             # does the default
-            cmd, build_folder = build.prepare_sublime_build_cmd(self, self.server_mode, view)
+            cmd, build_folder = build.prepare_run_cmd(self, self.server_mode, view)
         elif type == "build":
-            cmd, build_folder = build.prepare_sublime_compile_cmd(self, self.server_mode, view)
+            cmd, build_folder = build.prepare_build_cmd(self, self.server_mode, view)
         else:
-            cmd, build_folder = build.prepare_sublime_check_cmd(self, self.server_mode, view)
+            cmd, build_folder = build.prepare_check_cmd(self, self.server_mode, view)
         
         
         print("CMD: " + str(cmd))

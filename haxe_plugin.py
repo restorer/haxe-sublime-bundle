@@ -113,8 +113,10 @@ if not is_st3:
         ,HaxeSelectBuildCommand 
         ,HaxeAsyncTriggeredCompletionCommand
         ,HaxeSaveAllAndBuildCommand
+        ,HaxeSaveAllAndCheckCommand
+        ,HaxeSaveAllAndRunCommand
         ,HaxeRunBuildCommand
-        ,HaxeRunBuildAltCommand
+        
         
         ,HaxeRestartServerCommand
         ,HaxeGenerateUsingCommand
@@ -190,7 +192,8 @@ else:
         ,HaxeSelectBuildCommand 
         ,HaxeAsyncTriggeredCompletionCommand
         ,HaxeRunBuildCommand
-        ,HaxeRunBuildAltCommand
+        ,HaxeSaveAllAndCheckCommand
+        ,HaxeSaveAllAndRunCommand
         
         ,HaxeRestartServerCommand
         ,HaxeGenerateUsingCommand

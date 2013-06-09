@@ -347,14 +347,26 @@ class HaxeMacroHintDisplayCompletionCommand( sublime_plugin.TextCommand ):
         trigger_completion(self.view, options)
         
 
+class HaxeSaveAllAndRunCommand( sublime_plugin.TextCommand ):
+    def run( self , edit ) :
+        log("run HaxeSaveAllAndBuildCommand")
+        view = self.view
+        view.window().run_command("save_all")
+        hxproject.current_project(self.view).run_build( view )
 
+class HaxeSaveAllAndCheckCommand( sublime_plugin.TextCommand ):
+    def run( self , edit ) :
+        log("run HaxeSaveAllAndBuildCommand")
+        view = self.view
+        view.window().run_command("save_all")
+        hxproject.current_project(self.view).check_build( view )
 
 class HaxeSaveAllAndBuildCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
         log("run HaxeSaveAllAndBuildCommand")
         view = self.view
         view.window().run_command("save_all")
-        hxproject.current_project(self.view).run_sublime_build( view )
+        hxproject.current_project(self.view).just_build( view )
 
 class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
@@ -368,17 +380,6 @@ class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
         else:
             project.run_sublime_build( view )
 
-class HaxeRunBuildAltCommand( sublime_plugin.TextCommand ):
-    def run( self , edit ) :
-        view = self.view
-        log("run HaxeRunBuildCommand")
-        project = hxproject.current_project(self.view)
-
-        if len(project.builds) == 0:
-            log("no builds available")
-            project.extract_build_args(view, True);
-        else:
-            project.run_build( view )
 
 class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
@@ -571,12 +572,12 @@ class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
                     project = hxproject.current_project(view)
                 
                     if len(project.builds) > 0:
-                        project.check_sublime_build( view )
+                        project.check_build( view )
                     else:
                         project.extract_build_args(view, False)
                         build = project.get_build(view)
                         if (build != None):
-                            project.check_sublime_build( view )
+                            project.check_build( view )
 
 
 
