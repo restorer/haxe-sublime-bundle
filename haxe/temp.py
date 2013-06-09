@@ -40,7 +40,7 @@ def create_temp_path(build):
 
 def create_file(temp_path, build, orig_file, content):
 	relative = build.get_relative_path(orig_file)
-	
+	log("relative:" + str(relative))
 	if relative is None:
 		return None
 	new_file = os.path.join(temp_path, relative)

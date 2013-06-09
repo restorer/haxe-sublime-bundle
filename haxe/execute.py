@@ -41,7 +41,7 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 			
 			try:
 				if is_st3:
-					val = unicode(env[k], "ISO-8859-1")
+					val = env[k] # unicode(env[k], "ISO-8859-1")
 				else:
 					val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
 			except:
@@ -59,7 +59,8 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 		def encode_arg(a):
 			try:
 				if is_st3:
-					a = unicode(a, "ISO-8859-1")
+					pass
+					#a = unicode(a, "ISO-8859-1")
 				else:
 					a = unicode(a, "ISO-8859-1").encode(sys.getfilesystemencoding())
 			except:
@@ -70,6 +71,9 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 				startupinfo=STARTUP_INFO, env=env)
 		if not is_st3 and isinstance(input, unicode):
 			input = input.encode('utf-8')
+		elif is_st3 and isinstance(input, str):
+			input = input.encode("utf-8")
+		print("INPUT:" + str(input))
 		out, err = p.communicate(input=input)
 
 		return _decoded(out), _decoded(err)

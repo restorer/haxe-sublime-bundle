@@ -5,64 +5,64 @@ print("init haxe_plugin")
 
 is_st3 = int(sublime.version()) >= 3000
 
-prefix = "Haxe." if is_st3 else ""
+if not is_st3:
+    prefix = "Haxe." if is_st3 else ""
 
-plugin_modules = [
-     prefix + 'haxe.config'
-    ,prefix + 'haxe.project'
-    ,prefix + 'haxe.build'
-    ,prefix + 'haxe.completion.base'
-    ,prefix + 'haxe.completion.hx.base'
-    ,prefix + 'haxe.completion.hx.constants'
-    ,prefix + 'haxe.completion.hx.types'
-    ,prefix + 'haxe.completion.hx.toplevel'
-    ,prefix + 'haxe.completion.hxsl.base'
-    ,prefix + 'haxe.completion.hxml.base'
-    ,prefix + 'haxe.commands'
-    ,prefix + 'haxe.execute'
-    ,prefix + 'haxe.codegen'
-    ,prefix + 'haxe.compiler.server'
-    ,prefix + 'haxe.compiler.output'
-    ,prefix + 'haxe.lib'
-    ,prefix + 'haxe.tools.path'
-    ,prefix + 'haxe.tools.view'
-    ,prefix + 'haxe.tools.scope'
-    ,prefix + 'haxe.tools.cache'
-    ,prefix + 'haxe.tools.decorator'
-    ,prefix + 'haxe.panel'
-    ,prefix + 'haxe.log'
-    ,prefix + 'haxe.settings'
-    ,prefix + 'haxe.startup'
-    ,prefix + 'haxe.temp'
-    ,prefix + 'haxe.types'
-    ,prefix + 'haxe.hxtools'
-    ,prefix + 'haxe.plugin'
-]
+    plugin_modules = [
+         prefix + 'haxe.config'
+        ,prefix + 'haxe.project'
+        ,prefix + 'haxe.build'
+        ,prefix + 'haxe.completion.base'
+        ,prefix + 'haxe.completion.hx.base'
+        ,prefix + 'haxe.completion.hx.constants'
+        ,prefix + 'haxe.completion.hx.types'
+        ,prefix + 'haxe.completion.hx.toplevel'
+        ,prefix + 'haxe.completion.hxsl.base'
+        ,prefix + 'haxe.completion.hxml.base'
+        ,prefix + 'haxe.commands'
+        ,prefix + 'haxe.execute'
+        ,prefix + 'haxe.codegen'
+        ,prefix + 'haxe.compiler.server'
+        ,prefix + 'haxe.compiler.output'
+        ,prefix + 'haxe.lib'
+        ,prefix + 'haxe.tools.path'
+        ,prefix + 'haxe.tools.view'
+        ,prefix + 'haxe.tools.scope'
+        ,prefix + 'haxe.tools.cache'
+        ,prefix + 'haxe.tools.decorator'
+        ,prefix + 'haxe.panel'
+        ,prefix + 'haxe.log'
+        ,prefix + 'haxe.settings'
+        ,prefix + 'haxe.startup'
+        ,prefix + 'haxe.temp'
+        ,prefix + 'haxe.types'
+        ,prefix + 'haxe.hxtools'
+        ,prefix + 'haxe.plugin'
+    ]
 
-reload_mods = []
+    reload_mods = []
 
-for mod in sys.modules:
-    if (mod[0:5] == 'haxe.' or mod == 'haxe' or mod == 'Haxe' or mod[0:5] == 'Haxe.') and sys.modules[mod] != None:
-        reload_mods.append(mod) 
+    for mod in sys.modules:
+        if (mod[0:5] == 'haxe.' or mod == 'haxe' or mod == 'Haxe' or mod[0:5] == 'Haxe.') and sys.modules[mod] != None:
+            reload_mods.append(mod) 
 
-reloaded = []
-imported = []
-for mod in plugin_modules:
-    if mod in reload_mods:
-        reloaded.append(mod)
-        if not is_st3:
+    reloaded = []
+    imported = []
+    for mod in plugin_modules:
+        if mod in reload_mods:
+            reloaded.append(mod)
             reload(sys.modules[mod])
-    else:
-        imported.append(mod)
-        __import__(mod)
+        else:
+            imported.append(mod)
+            __import__(mod)
 
-def mod_str (mods):
-    return (str(len(mods)) + " modules ")  + ("\n" + ", ".join(mods) if len(mods) > 0 else "")
+    def mod_str (mods):
+        return (str(len(mods)) + " modules ")  + ("\n" + ", ".join(mods) if len(mods) > 0 else "")
 
-print("-----------------")
-print("Reloaded modules: " + mod_str(reloaded))
-print("\nImported modules: " + mod_str(imported))
-print("-----------------")
+    print("-----------------")
+    print("Reloaded modules: " + mod_str(reloaded))
+    print("\nImported modules: " + mod_str(imported))
+    print("-----------------")
 
 
 # all classes must be included manually, because sublimes autoreload does

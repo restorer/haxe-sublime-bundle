@@ -547,9 +547,11 @@ def collect_compiler_info (project_path):
         
         # last_pos - 2 on windows (why -2) ????? 
         # TODO check this, seems to work, but dirty
+        log("P:" + p)
         last_pos = len(p)-2
         
         if (len(p) > 0 and (p[last_pos] == "/" or  p[last_pos] == "\\" or p[last_pos] == os.path.sep)):
+            log("HERE WE GO:" + p)
             p = p[0:last_pos]
         
 
@@ -571,19 +573,6 @@ from os.path import expanduser
 user_home = expanduser("~")
 log_file = os.path.join(user_home, str("st3_haxe_log.txt"))
 
-def destroy ():
-    
-    file_log("destroy called")
-
-    global _projects
-    file_log("keys " + str(list(_projects.data.keys())))
-    for p in _projects.data.keys():
-        
-        project = _projects.data[p][1]
-        file_log("project " + project.project_file)
-        project.destroy()
-    _projects = Cache()
-
 
 
 def file_log (msg):
@@ -591,17 +580,33 @@ def file_log (msg):
     f.write( str(msg) + str("\n") )
     f.close()
 
-def plugin_unloaded_handler():
-    pass
-    #destroy()
-    
+
+#def destroy ():
+#    
+#    file_log("destroy called")
+#
+#    global _projects
+#    file_log("keys " + str(list(_projects.data.keys())))
+#    for p in _projects.data.keys():
+#        
+#        project = _projects.data[p][1]
+#        file_log("project " + project.project_file)
+#        project.destroy()
+#    _projects = Cache()
 
 
-def plugin_unloaded():
-    plugin_unloaded_handler()
 
-def unload_handler():
-    plugin_unloaded_handler()
+#def plugin_unloaded_handler():
+#    pass
+#    #destroy()
+#    
+#
+#
+#def plugin_unloaded():
+#    plugin_unloaded_handler()
+#
+#def unload_handler():
+#    plugin_unloaded_handler()
 
 
 

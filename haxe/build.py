@@ -528,7 +528,17 @@ class HaxeBuild :
 
 	def set_build_cwd (self):
 		self.set_cwd(self.get_build_folder())
+	def align_drive_letter(self, path):
+		is_win =  sublime.platform() == "windows"
+		
+		if is_win:
+			reg = re.compile("^([a-z]):(.*)$")
+			match = re.match(reg, path)
+			if match is not None:
+				path = match.group(1).upper() + ":" + match.group(2)
+		return path
 	def add_classpath (self, cp):
+		cp = self.align_drive_letter(cp)
 		
 		self.classpaths.append(cp)
 		self.args.append(("-cp", cp))
@@ -538,11 +548,17 @@ class HaxeBuild :
 		self.libs.append(lib)
 
 	def get_classpath (self, file):
+		
+		file = self.align_drive_letter(file)
+		
 		cps = list(self.classpaths)
-		
-		
+
 		for cp in cps:
-			if file.startswith(cp):
+			log("file:" + file)
+			log("cp:" + cp)
+			prefix = os.path.commonprefix([cp, file])
+			log("prefix:" + prefix)
+			if prefix == cp:
 				return cp
 
 		build_folder = self.get_build_folder()
@@ -552,9 +568,13 @@ class HaxeBuild :
 		return None
 
 	def is_file_in_classpath (self, file):
+		file = self.align_drive_letter(file)
 		return self.get_classpath(file) is not None
 
 	def get_relative_path (self, file):
+		
+		file = self.align_drive_letter(file)
+
 		cp = self.get_classpath(file)
 
 		if cp is not None:
