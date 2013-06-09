@@ -5,9 +5,13 @@ import time
 import codecs
 import sublime
 
+
+
+
 is_st3 = int(sublime.version()) >= 3000
 
 if is_st3:
+	from io import StringIO
 	import Haxe.haxe.config as hxconfig
 	import Haxe.haxe.types as hxtypes
 	import Haxe.haxe.lib as hxlib
@@ -18,6 +22,7 @@ if is_st3:
 	from Haxe.haxe.log import log
 	
 else:
+	from StringIO import StringIO
 	import haxe.config as hxconfig
 	import haxe.types as hxtypes
 	import haxe.lib as hxlib
@@ -28,6 +33,7 @@ else:
 	from haxe.log import log
 	
 
+#StringIO.StringIO(msg)
 
 hxml_cache = {}
 
@@ -35,16 +41,17 @@ hxml_cache = {}
 # should we really support this, or how can we handle this?
 # should the user be able to select a part of the build for completion/build
 
-def hxml_to_builds (project, build, folder):
+
+def hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, hxml = None):
 	builds = []
 
 	current_build = HaxeBuild()
-	current_build.hxml = build
-	build_path = os.path.dirname(build);
+	current_build.hxml = hxml
+	
 
-	log("read build file:" + build)
+	
 	# print("build file exists")
-	f = codecs.open( build , "r+" , "utf-8" , "ignore" )
+	f = hxml_buffer
 	while 1:
 		l = f.readline() 
 		if not l : 
@@ -129,6 +136,12 @@ def hxml_to_builds (project, build, folder):
 	builds.append( current_build )
 
 	return builds
+
+def hxml_to_builds (project, build, folder):
+	build_path = os.path.dirname(build);
+	hxml_buffer = codecs.open( build , "r+" , "utf-8" , "ignore" )
+	return hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build)
+	
 
 def find_hxml_projects( project, folder ) :
 	
@@ -215,17 +228,9 @@ def create_haxe_build_from_nmml (project, target, nmml, display_cmd):
 
 	out, err = run_cmd( cmd, cwd=nmml_dir )
 
-
-	#f = codecs.open( hxml_file , "wb" , "utf-8" , "ignore" )
-
-	# write out to file
-	hxml_file = os.path.join(nmml_dir, target.hxml_name)
-	f = codecs.open( hxml_file , "wb" , "utf-8" , "ignore" )
-	f.write( out )
-	f.close()
 	
 
-	hx_build = hxml_to_builds(project, hxml_file, nmml_dir)[0]
+	hx_build = hxml_buffer_to_builds(project, StringIO(out), nmml_dir, nmml_dir, None)[0]
 	hx_build.nmml = nmml
 	return hx_build
 
