@@ -47,41 +47,41 @@ class OpenFlTarget:
 
 nme_targets = [
     
-    NmeTarget("Flash - build only",                "flash",      ["-debug"]),
-    NmeTarget("HTML5 - build only",                "html5",      ["-debug"]),
-    NmeTarget("C++ - build only",                  "cpp",        ["-debug"]),
-    NmeTarget("Windows - build only",              "windows",    ["-debug"]),
-    NmeTarget("Mac - build only",                  "mac",        ["-debug"]),
-    NmeTarget("Linux - build only",                "linux",      ["-debug"]),
-    NmeTarget("Linux 64 - build only",             "linux",      ["-64 -debug"]),
-    NmeTarget("iOs - test in iPhone simulator",    "ios",        ["-simulator -debug"]),
-    NmeTarget("iOs - test in iPad simulator",      "ios",        ["-simulator -ipad -debug"]),
+    NmeTarget("Flash",                "flash",      ["-debug"]),
+    NmeTarget("HTML5",                "html5",      ["-debug"]),
+    NmeTarget("C++",                  "cpp",        ["-debug"]),
+    NmeTarget("Windows",              "windows",    ["-debug"]),
+    NmeTarget("Mac",                  "mac",        ["-debug"]),
+    NmeTarget("Linux",                "linux",      ["-debug"]),
+    NmeTarget("Linux 64",             "linux",      ["-64 -debug"]),
+    NmeTarget("iOs - iPhone simulator",    "ios",        ["-simulator -debug"]),
+    NmeTarget("iOs - iPad simulator",      "ios",        ["-simulator -ipad -debug"]),
     NmeTarget("iOs - update XCode project",        "ios",        ["-ipad -debug"]),
-    NmeTarget("Neko - build only",                "neko",   ["-debug"]),
-    NmeTarget("Neko 64 - build only",             "neko",    ["-64 -debug"]),
-    NmeTarget("WebOs - build only",             "webos",     ["-debug"]),
-    NmeTarget("BlackBerry - build only",             "blackberry",   ["-debug"]),
-    NmeTarget("Android - build only",             "android",   ["-debug"])
+    NmeTarget("Neko",                "neko",   ["-debug"]),
+    NmeTarget("Neko 64",             "neko",    ["-64 -debug"]),
+    NmeTarget("WebOs",             "webos",     ["-debug"]),
+    NmeTarget("BlackBerry",             "blackberry",   ["-debug"]),
+    NmeTarget("Android",             "android",   ["-debug"])
 ]   
 
 openfl_targets = [
     
-    OpenFlTarget("Flash - build only",                "flash",          ["-debug"]),
-    OpenFlTarget("HTML5 - build only",                "html5",          ["-debug"]),
-    OpenFlTarget("C++ - build only",                  "cpp",           ["-debug"]),
-    OpenFlTarget("Windows - build only",              "windows",       ["-debug"]),
-    OpenFlTarget("Mac - build only",                  "mac",       ["-debug"]),
-    OpenFlTarget("Linux - build only",                "linux",       ["-debug"]),
-    OpenFlTarget("Linux 64 - build only",             "linux",        ["-64 -debug"]),
-    OpenFlTarget("iOs - test in iPhone simulator",    "ios",         ["-simulator -debug"]),
-    OpenFlTarget("iOs - test in iPad simulator",      "ios",         ["-simulator -ipad -debug"]),
+    OpenFlTarget("Flash",                "flash",          ["-debug"]),
+    OpenFlTarget("HTML5",                "html5",          ["-debug"]),
+    OpenFlTarget("C++",                  "cpp",           ["-debug"]),
+    OpenFlTarget("Windows",              "windows",       ["-debug"]),
+    OpenFlTarget("Mac",                  "mac",       ["-debug"]),
+    OpenFlTarget("Linux",                "linux",       ["-debug"]),
+    OpenFlTarget("Linux 64",             "linux",        ["-64 -debug"]),
+    OpenFlTarget("iOs - iPhone simulator",    "ios",         ["-simulator -debug"]),
+    OpenFlTarget("iOs - iPad simulator",      "ios",         ["-simulator -ipad -debug"]),
     OpenFlTarget("iOs - update XCode project",        "ios",        ["-ipad -debug"]),
-    OpenFlTarget("Neko - build only",                "neko",        ["-debug"]),
-    OpenFlTarget("Neko 64 - build only",             "neko",         ["-64 -debug"]),
-    OpenFlTarget("Emscripten - build only",             "emscripten",   ["-debug"]),    
-    OpenFlTarget("WebOs - build only",             "webos",     ["-debug"]),
-    OpenFlTarget("BlackBerry - build only",             "blackberry",    ["-debug"]),
-    OpenFlTarget("Android - build only",             "android",     ["-debug"])
+    OpenFlTarget("Neko",                "neko",        ["-debug"]),
+    OpenFlTarget("Neko 64",             "neko",         ["-64 -debug"]),
+    OpenFlTarget("Emscripten",             "emscripten",   ["-debug"]),    
+    OpenFlTarget("WebOs",             "webos",     ["-debug"]),
+    OpenFlTarget("BlackBerry",             "blackberry",    ["-debug"]),
+    OpenFlTarget("Android",             "android",     ["-debug"])
 ]   
 
 

@@ -156,7 +156,7 @@ else:
 
     from Haxe.haxe.build import (
 
-        HaxeBuild
+        HxmlBuild
     )
 
     from Haxe.haxe.project import (

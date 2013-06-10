@@ -217,7 +217,7 @@ class Project:
         
 
     def update_compiler_info (self):
-        classes, packs, ver, std_paths = collect_compiler_info(self.project_path)
+        classes, packs, ver, std_paths = collect_compiler_info(self.haxe_exec(), self.project_path)
 
         #assume it's supported if no version available
         if ver is None:
@@ -277,9 +277,6 @@ class Project:
                 self.builds.extend(hxbuild.find_nme_projects(self, f))
                 self.builds.extend(hxbuild.find_openfl_projects(self, f))
             
-            
-            
-
             # settings.set("haxe-complete-folder", folder)
             
             num_builds = len(self.builds)
@@ -356,45 +353,6 @@ class Project:
     def has_build (self):
         return self.current_build != None
 
-    # def run_build( self, view, additional_args = [] ) :
-        
-    #     if view is None: 
-    #         view = sublime.active_window().active_view()
-
-    #     if (self.has_build()):
-    #         build = self.get_build(view)
-    #     else:
-    #         self.extract_build_args(view)
-    #         build = self.get_build(view)
-
-
-    #     run_exec = self.get_run_exec(self, view)
-        
-
-    #     def cb (out, err):
-    #         if (err != None and err != ""):
-    #             msg = "build finished with errors"
-    #             cmd_args = build.get_command_args(run_exec)
-    #             cmd_args.extend(additional_args)
-    #             cmd = " ".join(cmd_args)
-    #             hxpanel.default_panel().writeln( "cmd: " + cmd)
-    #             hxpanel.default_panel().writeln( msg)
-    #             view.set_status( "haxe-status" , msg )
-    #             hxpanel.default_panel().writeln(err)
-                
-    #         else:
-    #             msg = "build finished successfull"
-    #             view.set_status( "haxe-status" , msg )
-    #             hxpanel.default_panel().writeln( msg )
-
-    #         if (out != None):
-    #             hxpanel.default_panel().writeln("---output----")
-    #             hxpanel.default_panel().writeln( out )
-    #             hxpanel.default_panel().writeln("-------------")    
-        
-    #     build.run(self, view, True, cb)
-        
-
     def check_build(self, view):
         self._build(view, "check")
 
@@ -406,29 +364,29 @@ class Project:
     
     def _build(self, view, type = "run"):
 
+
         if view is None: 
+
             view = sublime.active_window().active_view()
 
         win = view.window()
 
-        if win is None:
-            win = sublime.active_window()
-
-        #haxe_exec = self.haxe_exec(view)
         env = haxe_build_env(self.project_dir("."))
         
-        if (self.has_build()):
+        if self.has_build():
             build = self.get_build(view)
         else:
             self.extract_build_args(view)
             build = self.get_build(view)
 
         if type == "run":
-            # does the default
+            # build and run
             cmd, build_folder = build.prepare_run_cmd(self, self.server_mode, view)
         elif type == "build":
+            # just build
             cmd, build_folder = build.prepare_build_cmd(self, self.server_mode, view)
         else:
+            # only check for errors
             cmd, build_folder = build.prepare_check_cmd(self, self.server_mode, view)
         
         
@@ -455,60 +413,60 @@ class Project:
         file_log("destroy server")
         self.server.stop()
 
+    def create_default_build (self, view):
+        fn = view.file_name()
+
+        src_dir = os.path.dirname( fn )
+
+        src = view.substr(sublime.Region(0, view.size()))
+    
+        build = hxbuild.HxmlBuild(None, None)
+        build.target = "js"
+
+        folder = os.path.dirname(fn)
+        folders = view.window().folders()
+        for f in folders:
+            if f in fn :
+                folder = f
+
+        pack = []
+        for ps in hxsrctools.package_line.findall( src ) :
+            if ps == "":
+                continue
+                
+            pack = ps.split(".")
+            for p in reversed(pack) : 
+                spl = os.path.split( src_dir )
+                if( spl[1] == p ) :
+                    src_dir = spl[0]
+
+        cl = os.path.basename(fn)
+        cl = cl.encode('ascii','ignore')
+        cl = cl[0:cl.rfind(".")]
+
+        main = pack[0:]
+        main.append( cl )
+        build.main = ".".join( main )
+
+        build.output = os.path.join(folder,build.main.lower() + ".js")
+
+        log( "add cp: " + src_dir)
+
+        build.args.append( ("-cp" , src_dir) )
+        #build.args.append( ("-main" , build.main ) )
+
+        build.args.append( ("-js" , build.output ) )
+        #build.args.append( ("--no-output" , "-v" ) )
+
+        build.hxml = os.path.join( src_dir , "build.hxml")
+        return build
+
 
     def get_build( self, view ) :
         
         if self.current_build is None and view.score_selector(0,"source.haxe.2") > 0 :
-
-            fn = view.file_name()
-
-            src_dir = os.path.dirname( fn )
-
-            src = view.substr(sublime.Region(0, view.size()))
-        
-            build = hxbuild.HaxeBuild()
-            build.target = "js"
-
-            folder = os.path.dirname(fn)
-            folders = view.window().folders()
-            for f in folders:
-                if f in fn :
-                    folder = f
-
-            pack = []
-            for ps in hxsrctools.package_line.findall( src ) :
-                if ps == "":
-                    continue
-                    
-                pack = ps.split(".")
-                for p in reversed(pack) : 
-                    spl = os.path.split( src_dir )
-                    if( spl[1] == p ) :
-                        src_dir = spl[0]
-
-            cl = os.path.basename(fn)
-            cl = cl.encode('ascii','ignore')
-            cl = cl[0:cl.rfind(".")]
-
-            main = pack[0:]
-            main.append( cl )
-            build.main = ".".join( main )
-
-            build.output = os.path.join(folder,build.main.lower() + ".js")
-
-            log( "add cp: " + src_dir)
-
-            build.args.append( ("-cp" , src_dir) )
-            #build.args.append( ("-main" , build.main ) )
-
-            build.args.append( ("-js" , build.output ) )
-            #build.args.append( ("--no-output" , "-v" ) )
-
-            build.hxml = os.path.join( src_dir , "build.hxml")
-            
-            #build.hxml = os.path.join( src_dir , "build.hxml")
-            self.current_build = build
-            
+            self.current_build = self.create_default_build(view)
+           
         return self.current_build.copy()  
 
 
@@ -517,53 +475,59 @@ def get_compiler_info_env (project_path):
     return haxe_build_env(project_path)
 
 
-def collect_compiler_info (project_path):
-    log("collect compiler info")
-    haxe_exec = hxsettings.haxe_exec()
-    
+
+
+
+def collect_compiler_info (haxe_exec, project_path):
     env = get_compiler_info_env(project_path)
 
-    if haxe_exec != "haxe":
-        if project_path != None:
-            haxe_exec = path_tools.join_norm(project_path, haxe_exec)
-    
-    
-    log("cmd" + " ".join([haxe_exec, "-main", "Nothing", "-v", "--no-output"]))
-    out, err = run_cmd( [haxe_exec, "-main", "Nothing", "-v", "--no-output"], env=env )
+    cmd = haxe_exec
+    cmd.extend(["-main", "Nothing", "-v", "--no-output"])
+
+    out, err = run_cmd( cmd, env=env )
     log( out )
     log( err )
-    m = classpath_line.match(out)
     
-    classes = []
-    packs = []
-    std_paths = []
+    std_classpaths = extract_std_classpaths(out)
+    
+    classes,packs = collect_std_classes_and_packs(std_classpaths)
+            
+    ver = extract_haxe_version(out)
+    
+    return (classes, packs, ver, std_classpaths)
 
-    if m is not None :
-        std_paths = set(m.group(1).split(";")) - set([".","./"])
+def extract_haxe_version (out):
+    return re.search( haxe_version , out )
+
+def extract_std_classpaths (out):
+    m = classpath_line.match(out)
+        
+    std_classpaths = []
+
+    std_paths = set(m.group(1).split(";")) - set([".","./"]) if m is not None else []
     
     for p in std_paths : 
-        
         p = os.path.normpath(p)
         
-        # last_pos - 2 on windows (why -2) ????? 
-        # TODO check this, seems to work, but dirty
-        log("P:" + p)
-        last_pos = len(p)-2
-        
-        if (len(p) > 0 and (p[last_pos] == "/" or  p[last_pos] == "\\" or p[last_pos] == os.path.sep)):
-            log("HERE WE GO:" + p)
-            p = p[0:last_pos]
-        
+        if len(p) > 1:
+            last_pos = len(p)-1
+            last_char = p[last_pos]
+            if last_char == "/" or  last_char == "\\" or last_char == os.path.sep:
+                p = p[0:last_pos]
 
         if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
-            log("do extract")
-            classes, packs = hxtypes.extract_types( p, [], [], 0, [], False )
-            
+            std_classpaths.append(p)
 
-    ver = re.search( haxe_version , out )
-    
-    return (classes, packs, ver, std_paths)
+    return std_classpaths
 
+
+def collect_std_classes_and_packs(std_cps):
+    classes = []
+    packs = []
+    for p in std_cps : 
+        classes, packs = hxtypes.extract_types( p, [], [], 0, [], False )
+
+    return classes, packs
 
 
 _projects = Cache()
@@ -612,12 +576,8 @@ def file_log (msg):
 
 _next_server_port = 6000
 
-def current_project(view = None):
-
-    global _next_server_port
-
+def cleanup_projects():
     win_ids = [w.id() for w in sublime.windows()]
-
     remove = []
     for p in _projects.data.keys():
         proj = _projects.get_or_default(p, None)
@@ -635,29 +595,44 @@ def current_project(view = None):
         del project
 
 
-    
+def get_project_id(file, win):
+    if (file == None):
+        id = "global" + str(win.id())
+    else:
+        id = file
 
-    file = sublime_tools.get_project_file()
-    
+    return id
+
+def get_window (view):
     if (view != None):
         win = view.window();
         if win == None:
             win = sublime.active_window()
     else:
         win = sublime.active_window()
-    if (file == None):
-        id = "global" + str(win.id())
-    else:
-        id = file
+    return win
+
+def current_project(view = None):
+
+
+    cleanup_projects()
+
+    file = sublime_tools.get_project_file()
+    
+    win = get_window(view)
+    
+    id = get_project_id(file, win)
+
     log("project id:" + id)
     log("project file:" + str(file))
     log("win.id:" + str(win.id()))
 
-    def create ():
-        global _next_server_port
-        p = Project(id, file, win.id(), _next_server_port)
-        _next_server_port = _next_server_port + 20
-        return p
-    res = _projects.get_or_insert(id, create )
+    res = _projects.get_or_insert(id, lambda:create_project(id, file, win) )
     
     return res
+
+def create_project (id, file, win):
+    global _next_server_port
+    p = Project(id, file, win.id(), _next_server_port)
+    _next_server_port = _next_server_port + 20
+    return p
