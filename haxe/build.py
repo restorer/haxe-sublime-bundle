@@ -617,9 +617,12 @@ class HxmlBuild :
 	def to_string(self) :
 		out = os.path.basename(self.output)
 		
-		target = self.target.upper()
-		if target == "JS" and "nodejs" in self.defines:
-			target = "NODE.JS"
+		if self.target is None:
+			target = "js"
+		else:
+			target = self.target.upper()
+			if target == "JS" and "nodejs" in self.defines:
+				target = "NODE.JS"
 
 
 		return "{main} ({target} - {out})".format(self=self, out=out, main=self.get_name(), target=target);

@@ -3,24 +3,24 @@ import sublime
 is_st3 = int(sublime.version()) >= 3000
 
 def get (id, view = None):
-	if view == None:
+	if view is None:
 		win = sublime.active_window()
-		if (win != None):
+		if (win is not None):
 			view = sublime.active_window().active_view();
 
 	res = None
-	if (view != None):
+	if (view is not None):
 		settings = view.settings()
 		pf = sublime.platform()
 		if (settings.has(id + "_" + pf)):
 			res = settings.get(id + "_" + pf)
-		if res == None and settings.has(id):
+		if res is None and settings.has(id):
 			res = settings.get(id)
 	return res;
 
 def get_bool (id, default, view = None):
 	r = get(id, view)
-	if (r == None):
+	if r is None:
 		return default
 	else:
 		if isinstance(r, bool):
@@ -31,7 +31,7 @@ def get_bool (id, default, view = None):
 
 def get_int (id, default, view = None):
 	r = get(id, view)
-	if (r == None):
+	if r is None:
 		return default
 	else:
 		if isinstance(r, int):
@@ -42,7 +42,7 @@ def get_int (id, default, view = None):
 
 def get_string (id, default, view = None):
 	r = get(id, view)
-	if (r == None):
+	if r is None:
 		return default
 	else:
 		if not is_st3 and isinstance(r, unicode):
@@ -81,6 +81,9 @@ def show_completion_times (view = None):
 
 def haxe_exec (view = None):
 	return get_string("haxe_exec", "haxe", view)
+
+def use_haxe_servermode(view = None):
+	return get_bool("haxe_use_servermode", True, view)
 
 def use_haxe_servermode_wrapper (view = None):
 	return get_bool("haxe_use_servermode_wrapper", False, view)

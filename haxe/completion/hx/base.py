@@ -286,14 +286,13 @@ def get_toplevel_completions(ctx):
 def create_completion_context(project, view, offset, options, prefix):
 
     # if options are None, it's a completion progress initialized by sublime, 
-    # not by the user or by faking it
+    # not by the user or by key trigger
 
     log("OPTIONS:" + str(options))
 
     if options == None:
-        log("!!!!!!!!!!!!!!!!CREATE OPTIONS")
         options = CompletionOptions(hxconst.COMPLETION_TRIGGER_AUTO)
-        log("!!!!!!!!!!!!!!!!" + str(options.manual_completion))
+        
     
     settings = CompletionSettings(hxsettings)
     ctx = CompletionContext(view, project, offset, options, settings, prefix)
@@ -331,18 +330,14 @@ def highlight_errors( errors , view ) :
     regions = []
     
     for e in errors :
-        
         l = e["line"]
         left = e["from"]
         right = e["to"]
         a = view.text_point(l,left)
         b = view.text_point(l,right)
-
         regions.append( sublime.Region(a,b))
-
         
         hxpanel.default_panel().status( "Error" , e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right) + ": " + e["message"])
-
             
     view.add_regions("haxe-error" , regions , "invalid" , "dot" )
 
@@ -363,9 +358,6 @@ def trigger_async_completion(view, options):
 
     async_options = options.copy_as_async()
     
-    log("has hint:" + str(options.types.has_hint()))
-    log("has hint:" + str(async_options.types.has_hint()))
-    
     def run_complete():
         trigger_completion(view, async_options)
 
@@ -373,7 +365,7 @@ def trigger_async_completion(view, options):
 
 def trigger_manual_completion(view, options):
     
-    log("LOG: " + str(options.types._opt))
+    #log("LOG: " + str(options.types._opt))
 
 
     hint = options.types.has_hint()

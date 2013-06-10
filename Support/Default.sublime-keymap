@@ -84,7 +84,7 @@
         ]
     },
     {
-        "keys": ["ctrl+F9"],
+        "keys": ["ctrl+shift+f9"],
         "command": "haxe_save_all_and_check",
         "context":
         [

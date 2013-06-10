@@ -81,14 +81,14 @@ if not is_st3:
     )
 
     from haxe.project import (
-
-         Project
+         ProjectListener
+        ,Project
         ,ProjectCompletionContext
     )
 
     from haxe.completion.base import (
 
-         HaxeCompleteListener
+         CompletionListener
          
     ) 
 
@@ -162,12 +162,13 @@ else:
     from Haxe.haxe.project import (
 
          Project
+        ,ProjectListener
         ,ProjectCompletionContext
     )
 
     from Haxe.haxe.completion.base import (
 
-         HaxeCompleteListener
+         CompletionListener
          
     ) 
 

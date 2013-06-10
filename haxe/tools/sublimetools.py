@@ -1,9 +1,9 @@
-import sublime
+import sublime as sub
 import os
 import re
 import json
 
-is_st3 = int(sublime.version()) >= 3000
+is_st3 = int(sub.version()) >= 3000
 
 # last time the sublime session file was updated
 _last_modification_time = None
@@ -15,8 +15,8 @@ _last_project = None
 def get_project_file(win_id = None):
     if is_st3:
         #if win_id == None:
-        #    win_id = sublime.active_window().id()
-        return sublime.active_window().project_file_name()
+        #    win_id = sub.active_window().id()
+        return sub.active_window().project_file_name()
     else:
         global _last_project
         global _last_modification_time
@@ -24,11 +24,11 @@ def get_project_file(win_id = None):
         log( "try getting project file")
 
         if win_id == None:
-            win_id = sublime.active_window().id()
+            win_id = sub.active_window().id()
 
         project = None
-        reg_session = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Session.sublime_session"))
-        auto_save = os.path.normpath(os.path.join(sublime.packages_path(), "..", "Settings", "Auto Save Session.sublime_session"))
+        reg_session = os.path.normpath(os.path.join(sub.packages_path(), "..", "Settings", "Session.sublime_session"))
+        auto_save = os.path.normpath(os.path.join(sub.packages_path(), "..", "Settings", "Auto Save Session.sublime_session"))
         session = auto_save if os.path.exists(auto_save) else reg_session
 
         print(auto_save)
@@ -56,7 +56,7 @@ def get_project_file(win_id = None):
                 for w in j['windows']:
                     if w['window_id'] == win_id:
                         if "workspace_name" in w:
-                            if sublime.platform() == "windows":
+                            if sub.platform() == "windows":
                                 # Account for windows specific formatting
                                 project = os.path.normpath(w["workspace_name"].lstrip("/").replace("/", ":/", 1))
                             else:

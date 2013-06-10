@@ -1,9 +1,10 @@
 import json
 import sublime
+import sublime_plugin
 import os
 import re
 import sys
-import sublime
+
 
 is_st3 = int(sublime.version()) >= 3000
 
@@ -14,7 +15,8 @@ if is_st3:
     import Haxe.haxe.types as hxtypes
     import Haxe.haxe.settings as hxsettings
     import Haxe.haxe.tools.path as path_tools
-    import Haxe.haxe.tools.sublime as sublime_tools
+    import Haxe.haxe.tools.view as view_tools
+    import Haxe.haxe.tools.sublimetools as sublime_tools
     import Haxe.haxe.compiler.server as hxserver
     import Haxe.haxe.config as hxconfig
     import Haxe.haxe.lib as hxlib
@@ -28,9 +30,10 @@ else:
     import haxe.build as hxbuild
     import haxe.panel as hxpanel
     import haxe.hxtools as hxsrctools
+    import haxe.tools.view as view_tools
     import haxe.types as hxtypes
     import haxe.lib as hxlib
-    import haxe.tools.sublime as sublime_tools
+    import haxe.tools.sublimetools as sublime_tools
     import haxe.settings as hxsettings
     import haxe.tools.path as path_tools
     import haxe.compiler.server as hxserver
@@ -38,6 +41,35 @@ else:
     from haxe.execute import run_cmd
     from haxe.log import log
     from haxe.tools.cache import Cache
+
+
+# TODO split this module into smaller chunks
+
+
+class ProjectListener( sublime_plugin.EventListener ):
+
+    def __del__( self ) :
+        destroy()
+
+    
+    def on_post_save( self , view ) :
+        if view is not None and view.file_name() is not None and view_tools.is_hxml(view):
+            project = current_project(view)
+            project.clear_build()
+            
+    # if view is None it's a preview
+    def on_activated( self , view ) :
+        log("on_activated")
+        if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
+            def on_load_delay():
+                current_project(view).generate_build( view )
+
+            sublime.set_timeout(on_load_delay, 100)
+            
+
+    def on_pre_save( self , view ) :
+        if view_tools.is_haxe(view) :
+            view_tools.create_missing_folders(view)
 
 class ProjectCompletionContext:
 
@@ -133,18 +165,18 @@ def haxe_build_env (project_dir):
         else:
             return s.encode(sys.getfilesystemencoding())
 
-    if lib_path != None:
+    if lib_path is not None:
         path = os.path.normpath(os.path.join(project_dir, lib_path))
         env["HAXE_LIBRARY_PATH"] = do_encode(os.sep.join(path.split("/")))
         env["HAXE_STD_PATH"] = do_encode(os.sep.join(path.split("/")))
     
 
-    if haxe_inst_path != None:
+    if haxe_inst_path is not None:
         path = os.path.normpath(os.path.join(project_dir, haxe_inst_path))
         env["HAXEPATH"] = do_encode(os.sep.join(path.split("/")))
         paths.append(do_encode(os.sep.join(path.split("/"))))
 
-    if neko_inst_path != None:
+    if neko_inst_path is not None:
         path = os.path.normpath(os.path.join(project_dir, neko_inst_path))
         env["NEKO_INSTPATH"] = do_encode(os.sep.join(path.split("/")))
         paths.append(do_encode(os.sep.join(path.split("/"))))
@@ -171,7 +203,7 @@ class Project:
         self.project_file = file
 
         self.project_id = id
-        if (self.project_file != None):
+        if (self.project_file is not None):
             self.project_path = os.path.normpath(os.path.dirname(self.project_file))
         else:
             self.project_path = None
@@ -183,7 +215,7 @@ class Project:
         return self._haxelib_manager
 
     def project_dir (self, default):
-        return self.project_path if self.project_path != None else default
+        return self.project_path if self.project_path is not None else default
             
 
     def nme_exec (self, view = None):
@@ -220,28 +252,30 @@ class Project:
         classes, packs, ver, std_paths = collect_compiler_info(self.haxe_exec(), self.project_path)
 
         #assume it's supported if no version available
-        if ver is None:
-            self.server_mode = True
-        else:
-            self.server_mode = int(ver.group(1)) >= 209
-        print(ver)
+        self.server_mode = ver is None or ver >= 209
+        
         self.std_paths = std_paths
         self.std_packages = packs
         self.std_classes = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
         self.std_classes.extend(classes)
 
     def is_server_mode (self):
-        return self.server_mode and hxsettings.get_bool('haxe-use-server-mode', True)
+        return self.server_mode and hxsettings.use_haxe_servermode()
 
-    def generate_build(self, view) :
 
+     #TODO check if this method still usefull
+    def generate_build(self, view):
         fn = view.file_name()
+        log("generate build")
+        if self.current_build is not None and fn == self.current_build.hxml and view.size() == 0 :
+            log("do edit")
+            def run_edit(v, e):
+                hxml_src = self.current_build.make_hxml()
+                log("hxml_src")
+                v.insert(e,0,hxml_src)
+                v.end_edit(e)
 
-        if self.current_build is not None and fn == self.current_build.hxml and view.size() == 0 :  
-            e = view.begin_edit()
-            hxml_src = self.current_build.make_hxml()
-            view.insert(e,0,hxml_src)
-            view.end_edit(e)
+            view_tools.async_edit(view, run_edit)
 
     def select_build( self, view ) :
         scopes = view.scope_name(view.sel()[0].end()).split()
@@ -252,57 +286,52 @@ class Project:
         self.extract_build_args( view , True )
 
 
-    def extract_build_args( self, view = None , force_panel = False ) :
-        
-        self.builds = []
+    # TODO rewrite this function and make it understandable
+    
+    def _find_builds_in_folders(self, folders):
+        builds = []
+        for f in folders:
+            builds.extend(hxbuild.find_hxml_projects(self, f))
+            builds.extend(hxbuild.find_nme_projects(self, f))
+            builds.extend(hxbuild.find_openfl_projects(self, f))
+        return builds
 
+    def _get_view_file_name (self, view):
         if view is None:
             view = sublime.active_window().active_view()
+        return view.file_name()                
 
-        fn = view.file_name()
+    def _get_current_window (self, view):
+        return get_window(view)
 
-        if fn != None:
-            settings = view.settings()
-
-            folder = os.path.dirname(fn)
-            win = view.window()
-            if win is None:
-                win = sublime.active_window()
-            
-
-            folders = win.folders()
-           
-            for f in folders:
-                self.builds.extend(hxbuild.find_hxml_projects(self, f))
-                self.builds.extend(hxbuild.find_nme_projects(self, f))
-                self.builds.extend(hxbuild.find_openfl_projects(self, f))
-            
-            # settings.set("haxe-complete-folder", folder)
-            
-            num_builds = len(self.builds)
-
-            if num_builds == 1:
-                if force_panel : 
-                    sublime.status_message("There is only one build")
-
-                self.set_current_build( view , int(0), force_panel )
-
-            elif num_builds == 0  and force_panel :
-                sublime.status_message("No hxml or nmml file found")
-                self.create_new_hxml(view)
-                
-
-            elif num_builds > 1 and force_panel :
-                self.show_build_selection_panel(view)
-
-            elif settings.has("haxe-build-id"):
-                self.set_current_build( view , int(settings.get("haxe-build-id")), force_panel )
-            
-            else:
-                self.set_current_build( view , int(0), force_panel )
+    def _get_folders (self, view):
+        win = self._get_current_window(view)
+        folders = win.folders()
+        return folders
 
 
-    def create_new_hxml (self, view):
+    def extract_build_args( self, view = None , force_panel = False ) :
+
+        folders = self._get_folders(view)
+        
+        self.builds = self._find_builds_in_folders(folders)
+        
+        num_builds = len(self.builds)
+
+        if num_builds == 1:
+            if force_panel : 
+                sublime.status_message("There is only one build")
+            self.set_current_build( view , int(0) )
+        elif num_builds == 0 and force_panel :
+            sublime.status_message("No build files found (e.g. hxml, nmml, xml)")
+            self.create_new_hxml(view, folders[0])
+        elif num_builds > 1 and force_panel :
+            self.show_build_selection_panel(view)
+        else:
+            self.set_current_build( view , int(0) )
+
+
+    def create_new_hxml (self, view, folder):
         win = sublime.active_window()
         f = os.path.join(folder,"build.hxml")
 
@@ -313,45 +342,39 @@ class Project:
         #for whatever reason generate_build doesn't work without transient
         win.open_file(f,sublime.TRANSIENT)
 
-        self.set_current_build( view , int(0), True )
+        self.set_current_build( view , int(0) )
 
     def show_build_selection_panel(self, view):
-        win = sublime.active_window()
-        buildsView = []
-        log("do show panel")
         
-        for b in self.builds :
-            buildsView.append( [b.to_string(), os.path.basename(b.build_file) ] )
-
+        buildsView = [[b.to_string(), os.path.basename(b.build_file) ] for b in self.builds]
 
         self.selecting_build = True
         sublime.status_message("Please select your build")
 
         def on_selected (i):
             self.selecting_build = False
-            self.set_current_build(view, i, True)   
+            self.set_current_build(view, i)   
 
+        win = sublime.active_window()
         win.show_quick_panel( buildsView , on_selected  , sublime.MONOSPACE_FONT )        
 
-    def set_current_build( self, view , id , force_panel ) :
+    def set_current_build( self, view , id ) :
         
         log( "set_current_build")
+        
         if id < 0 or id >= len(self.builds) :
             id = 0
         
-        view.settings().set( "haxe-build-id" , id ) 
-
         if len(self.builds) > 0 :
             self.current_build = self.builds[id]
             self.current_build.set_std_classes(list(self.std_classes))
             self.current_build.set_std_packs(list(self.std_packages))
-            #log( "set_current_build - 2")
             hxpanel.default_panel().writeln( "build selected: " + self.current_build.to_string() )
         else:
             hxpanel.default_panel().writeln( "No build found/selected" )
             
     def has_build (self):
-        return self.current_build != None
+        return self.current_build is not None
 
     def check_build(self, view):
         self._build(view, "check")
@@ -364,9 +387,7 @@ class Project:
     
     def _build(self, view, type = "run"):
 
-
         if view is None: 
-
             view = sublime.active_window().active_view()
 
         win = view.window()
@@ -379,18 +400,14 @@ class Project:
             self.extract_build_args(view)
             build = self.get_build(view)
 
-        if type == "run":
-            # build and run
+        if type == "run": # build and run
             cmd, build_folder = build.prepare_run_cmd(self, self.server_mode, view)
-        elif type == "build":
-            # just build
+        elif type == "build": # just build
             cmd, build_folder = build.prepare_build_cmd(self, self.server_mode, view)
-        else:
-            # only check for errors
+        else: # only check for errors
             cmd, build_folder = build.prepare_check_cmd(self, self.server_mode, view)
         
         
-        print("CMD: " + str(cmd))
         hxpanel.default_panel().writeln("running: " + " ".join(cmd))
 
         win.run_command("haxe_exec", {
@@ -413,6 +430,9 @@ class Project:
         file_log("destroy server")
         self.server.stop()
 
+
+
+    # TODO rewrite this function and make it understandable
     def create_default_build (self, view):
         fn = view.file_name()
 
@@ -441,7 +461,8 @@ class Project:
                     src_dir = spl[0]
 
         cl = os.path.basename(fn)
-        cl = cl.encode('ascii','ignore')
+        if not is_st3:
+            cl = cl.encode('ascii','ignore')
         cl = cl[0:cl.rfind(".")]
 
         main = pack[0:]
@@ -450,13 +471,9 @@ class Project:
 
         build.output = os.path.join(folder,build.main.lower() + ".js")
 
-        log( "add cp: " + src_dir)
-
         build.args.append( ("-cp" , src_dir) )
-        #build.args.append( ("-main" , build.main ) )
 
         build.args.append( ("-js" , build.output ) )
-        #build.args.append( ("--no-output" , "-v" ) )
 
         build.hxml = os.path.join( src_dir , "build.hxml")
         return build
@@ -485,9 +502,7 @@ def collect_compiler_info (haxe_exec, project_path):
     cmd.extend(["-main", "Nothing", "-v", "--no-output"])
 
     out, err = run_cmd( cmd, env=env )
-    log( out )
-    log( err )
-    
+
     std_classpaths = extract_std_classpaths(out)
     
     classes,packs = collect_std_classes_and_packs(std_classpaths)
@@ -497,25 +512,37 @@ def collect_compiler_info (haxe_exec, project_path):
     return (classes, packs, ver, std_classpaths)
 
 def extract_haxe_version (out):
-    return re.search( haxe_version , out )
+    ver = re.search( haxe_version , out )
+    return int(ver.group(1)) if ver is not None else None
+
+
+def remove_trailing_path_sep(path):
+    if len(path) > 1:
+        last_pos = len(path)-1
+        last_char = path[last_pos]
+        if last_char == "/" or  last_char == "\\" or last_char == os.path.sep:
+            path = path[0:last_pos]
+    return path
+
+def is_valid_classpath(path):
+    return len(path) > 1 and os.path.exists(path) and os.path.isdir(path)
 
 def extract_std_classpaths (out):
     m = classpath_line.match(out)
         
     std_classpaths = []
 
-    std_paths = set(m.group(1).split(";")) - set([".","./"]) if m is not None else []
+    all_paths = m.group(1).split(";")
+    ignored_paths = [".","./"]
+
+    std_paths = set(all_paths) - set(ignored_paths) if m is not None else []
     
     for p in std_paths : 
         p = os.path.normpath(p)
         
-        if len(p) > 1:
-            last_pos = len(p)-1
-            last_char = p[last_pos]
-            if last_char == "/" or  last_char == "\\" or last_char == os.path.sep:
-                p = p[0:last_pos]
+        p = remove_trailing_path_sep(p)
 
-        if len(p) > 1 and os.path.exists(p) and os.path.isdir(p):
+        if is_valid_classpath(p):
             std_classpaths.append(p)
 
     return std_classpaths
@@ -525,7 +552,9 @@ def collect_std_classes_and_packs(std_cps):
     classes = []
     packs = []
     for p in std_cps : 
-        classes, packs = hxtypes.extract_types( p, [], [], 0, [], False )
+        classes_p, packs_p = hxtypes.extract_types( p, [], [], 0, [], False )
+        classes.extend(classes_p)
+        packs.extend(packs_p)
 
     return classes, packs
 
@@ -581,7 +610,7 @@ def cleanup_projects():
     remove = []
     for p in _projects.data.keys():
         proj = _projects.get_or_default(p, None)
-        if proj != None and proj.win_id not in win_ids:
+        if proj is not None and proj.win_id not in win_ids:
             remove.append(p)
             # project should be closed
     
@@ -604,7 +633,7 @@ def get_project_id(file, win):
     return id
 
 def get_window (view):
-    if (view != None):
+    if (view is not None):
         win = view.window();
         if win == None:
             win = sublime.active_window()
