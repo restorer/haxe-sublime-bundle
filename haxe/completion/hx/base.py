@@ -2,28 +2,17 @@ import time
 import sublime
 import re
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-if is_st3:
-    import Haxe.haxe.settings as hxsettings
-    import Haxe.haxe.panel as hxpanel
-    import Haxe.haxe.completion.hx.toplevel as toplevel
-    import Haxe.haxe.temp as hxtemp
-    from Haxe.haxe.completion.hx.types import CompletionOptions, CompletionSettings, CompletionContext, CompletionResult, CompletionBuild
-    import Haxe.haxe.completion.hx.constants as hxconst
-    from Haxe.haxe.compiler.output import get_completion_output
-    from Haxe.haxe.log import log
-    import Haxe.haxe.project as hxproject
-else:
-    import haxe.settings as hxsettings
-    import haxe.panel as hxpanel
-    import haxe.completion.hx.toplevel as toplevel
-    import haxe.temp as hxtemp
-    import haxe.project as hxproject
-    from haxe.completion.hx.types import CompletionOptions, CompletionSettings, CompletionContext, CompletionResult, CompletionBuild
-    import haxe.completion.hx.constants as hxconst
-    from haxe.compiler.output import get_completion_output
-    from haxe.log import log
+import haxe.settings as hxsettings
+import haxe.panel as hxpanel
+import haxe.completion.hx.toplevel as toplevel
+import haxe.temp as hxtemp
+import haxe.project as hxproject
+from haxe.completion.hx.types import CompletionOptions, CompletionSettings, CompletionContext, CompletionResult, CompletionBuild
+import haxe.completion.hx.constants as hxconst
+from haxe.compiler.output import get_completion_output
+from haxe.log import log
 
 
 

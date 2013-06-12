@@ -4,21 +4,13 @@ import os
 
 from subprocess import Popen, PIPE
 import time 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-
-if is_st3:
-	from Haxe.haxe.startup import STARTUP_INFO
-	from Haxe.haxe.log import log
-	import Haxe.haxe.plugin as hxplugin
-	import Haxe.haxe.panel as hxpanel
-	import Haxe.haxe.settings as hxsettings
-else:
-	from haxe.startup import STARTUP_INFO
-	from haxe.log import log
-	import haxe.plugin as hxplugin
-	import haxe.panel as hxpanel
-	import haxe.settings as hxsettings
+from haxe.startup import STARTUP_INFO
+from haxe.log import log
+import haxe.plugin as hxplugin
+import haxe.panel as hxpanel
+import haxe.settings as hxsettings
 
 
 

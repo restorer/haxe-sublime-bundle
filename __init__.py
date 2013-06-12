@@ -5,10 +5,8 @@ import sublime
 is_st3 = int(sublime.version()) >= 3000
 
 def plugin_unloaded_handler():
-	if is_st3:
-		import Haxe.haxe.project as hxproject
-	else:
-		import haxe.project as hxproject
+	import haxe.project as hxproject
+	
 	print("destroy")
 	#hxproject.destroy()
 	

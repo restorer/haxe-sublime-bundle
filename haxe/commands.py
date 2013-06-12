@@ -8,37 +8,21 @@ import functools
 from sublime import Region
 
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-if is_st3:
-    import Haxe.haxe.tools.view as view_tools
-    import Haxe.haxe.project as hxproject
-    import Haxe.haxe.codegen as hxcodegen
-    import Haxe.haxe.tools.path as path_tools
-    import Haxe.haxe.hxtools as hxsrctools
-    import Haxe.haxe.settings as hxsettings
-    import Haxe.haxe.completion.hx.constants as hxcc
+import haxe.tools.view as viewtools
+import haxe.project as hxproject
+import haxe.codegen as hxcodegen
+import haxe.tools.path as pathtools
+import haxe.hxtools as hxsrctools
+import haxe.settings as hxsettings
+import haxe.completion.hx.constants as hxcc
+import haxe.tools.view as viewtools
+import haxe.temp as hxtemp
 
-    import Haxe.haxe.tools.view as view_tools
-    import Haxe.haxe.temp as hxtemp
-
-    from Haxe.haxe.log import log
-    from Haxe.haxe.completion.hx.types import CompletionOptions
-    from Haxe.haxe.completion.hx.base import trigger_completion
-else:
-    import haxe.tools.view as view_tools
-    import haxe.project as hxproject
-    import haxe.codegen as hxcodegen
-    import haxe.tools.path as path_tools
-    import haxe.hxtools as hxsrctools
-    import haxe.settings as hxsettings
-    import haxe.completion.hx.constants as hxcc
-    import haxe.tools.view as view_tools
-    import haxe.temp as hxtemp
-
-    from haxe.log import log
-    from haxe.completion.hx.types import CompletionOptions
-    from haxe.completion.hx.base import trigger_completion
+from haxe.log import log
+from haxe.completion.hx.types import CompletionOptions
+from haxe.completion.hx.base import trigger_completion
 
 plugin_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
@@ -64,7 +48,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         build.args.append(("-D", "no-inline"))
         log("ARGS:" + str(build.args))
         log("ARGS2" + str(project.get_build(view).args))
-        src = view_tools.get_content(view)
+        src = viewtools.get_content(view)
 
         file_name = os.path.basename(view.file_name())
 
@@ -153,8 +137,8 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
             #abs_path = abs_path.replace(build.get_relative_path(temp_file), build.get_relative_path(view.file_name())
             
-            abs_path = path_tools.join_norm(build.get_build_folder(), file)
-            abs_path_temp = path_tools.join_norm(build.get_build_folder(), build.get_relative_path(os.path.join(temp_path, temp_file)))
+            abs_path = pathtools.join_norm(build.get_build_folder(), file)
+            abs_path_temp = pathtools.join_norm(build.get_build_folder(), build.get_relative_path(os.path.join(temp_path, temp_file)))
 
 
             if (abs_path == temp_file):
@@ -264,7 +248,7 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
         target_file = folders[0] + "/tmp/" + file_name
 
         if os.path.exists(tmp_folder):
-            path_tools.remove_dir(tmp_folder)           
+            pathtools.remove_dir(tmp_folder)           
         
 
         os.makedirs(tmp_folder)
@@ -567,7 +551,7 @@ class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
     def on_post_save(self, view):
         log("on_post_save")
         if view is not None and view.file_name() is not None:
-            if view_tools.is_supported(view) or view.file_name().endswith(".erazor.html"):
+            if viewtools.is_supported(view) or view.file_name().endswith(".erazor.html"):
                 if (hxsettings.build_on_save()):
                     project = hxproject.current_project(view)
                 
@@ -604,7 +588,7 @@ class HaxeCreateTypeListener( sublime_plugin.EventListener ):
             pt = v.text_point(5,1)
             sel.add( sublime.Region(pt,pt) )
 
-        view_tools.async_edit(view, run_edit)
+        viewtools.async_edit(view, run_edit)
          
 
 
@@ -836,7 +820,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
             v.set_read_only(True)
             
-        view_tools.async_edit(self.output_view, do_edit)
+        viewtools.async_edit(self.output_view, do_edit)
 
     def finish(self, proc):
         

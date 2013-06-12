@@ -1,12 +1,10 @@
 import sublime, sublime_plugin
 import os
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-if is_st3:
-	import Haxe.haxe.config as hxconfig
-else:
-	import haxe.config as hxconfig
+
+import haxe.config as hxconfig
 
 
 # convert edit operation into a async operation with a callback, use global map (cannot pass function to command)

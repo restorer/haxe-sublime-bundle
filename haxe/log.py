@@ -1,11 +1,13 @@
 import sublime
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
+import haxe.settings as hxsettings
 
-if is_st3:
-	import Haxe.haxe.settings as hxsettings
-else:
-	import haxe.settings as hxsettings
+
+# debug should only be used for internal debugging
+# currently it's the same as log but this should change in the future (2 levels (debug, log))
+def debug(msg):
+	log(msg, False)
 
 def log (msg, to_file = False):
 	if to_file:
@@ -14,10 +16,7 @@ def log (msg, to_file = False):
 		f.close()
 	else:
 		if hxsettings.use_debug_panel():
-			if is_st3:
-				import Haxe.haxe.panel as hxpanel
-			else:
-				import haxe.panel as hxpanel
+			import haxe.panel as hxpanel
 			def f():
 				hxpanel.debug_panel().writeln(str(msg))
 			sublime.set_timeout(f, 100)

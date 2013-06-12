@@ -1,36 +1,20 @@
-
 import sublime
 import sublime_plugin
 
-is_st3 = int(sublime.version()) >= 3000
+import haxe.tools.view as viewtools
+import haxe.project as hxproject
+import haxe.tools.scope as scopetools
+import haxe.config as hxconfig
 
-if is_st3:
-    import Haxe.haxe.tools.view as view_tools
-    import Haxe.haxe.project as hxproject
-    import Haxe.haxe.tools.scope as scope_tools
-    import Haxe.haxe.config as hxconfig
+from haxe.log import log
 
-    from Haxe.haxe.log import log
-
-    import Haxe.haxe.completion.hx.base as hx 
-    import Haxe.haxe.completion.hxml.base as hxml
-    import Haxe.haxe.completion.hxsl.base as hxsl
-else:
-    import haxe.tools.view as view_tools
-    import haxe.project as hxproject
-    import haxe.tools.scope as scope_tools
-    import haxe.config as hxconfig
-
-    from haxe.log import log
-
-    import haxe.completion.hx.base as hx 
-    import haxe.completion.hxml.base as hxml
-    import haxe.completion.hxsl.base as hxsl
-
+import haxe.completion.hx.base as hx 
+import haxe.completion.hxml.base as hxml
+import haxe.completion.hxsl.base as hxsl
 
 import time
 
-
+from haxe.plugin import is_st3, is_st2
 
 
 class CompletionListener( sublime_plugin.EventListener ):
@@ -43,7 +27,7 @@ class CompletionListener( sublime_plugin.EventListener ):
 # on the file type of the current view
 
 def get_completion_scopes (view, location):
-    return view_tools.get_scopes_at(view, location)
+    return viewtools.get_scopes_at(view, location)
 
 def get_completion_offset (location, prefix):
     return location - len(prefix)
@@ -52,7 +36,7 @@ def can_run_completion(offset, scopes):
     return False if offset == 0 else is_supported_scope(scopes)
 
 def is_supported_scope(scopes):
-    return not scope_tools.contains_string_or_comment(scopes)    
+    return not scopetools.contains_string_or_comment(scopes)    
 
 def get_auto_complete_handler (view, scopes):
     
@@ -61,7 +45,7 @@ def get_auto_complete_handler (view, scopes):
     if hxconfig.SOURCE_HXML in scopes: # hxml completion
         handler = hxml.auto_complete
     elif hxconfig.SOURCE_HAXE in scopes : # hx can be hxsl or haxe
-        if view_tools.is_hxsl(view) :
+        if viewtools.is_hxsl(view) :
             handler = hxsl.auto_complete # hxsl completion
         else :
             handler = hx.auto_complete # hx completion

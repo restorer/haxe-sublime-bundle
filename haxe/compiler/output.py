@@ -1,27 +1,26 @@
 import sublime
 import re
 import os
+
+import haxe.panel as hxpanel
+import haxe.hxtools as hxtools
+import haxe.settings as hxsettings
+
+from haxe.log import log
+
+
 from xml.etree import ElementTree
 from xml.etree.ElementTree import XMLTreeBuilder
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
 
-if is_st3:
-	import Haxe.haxe.panel as hxpanel
-	import Haxe.haxe.hxtools as hxtools
-	import Haxe.haxe.settings as hxsettings
 
-	from Haxe.haxe.log import log
-else:
+if not is_st3:
 	from elementtree import SimpleXMLTreeBuilder # part of your codebase
 	ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
-	import haxe.panel as hxpanel
-	import haxe.hxtools as hxtools
-	import haxe.settings as hxsettings
-
-	from haxe.log import log
+	
 
 
 compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)

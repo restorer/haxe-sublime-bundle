@@ -3,20 +3,13 @@ import os
 import sublime, sublime_plugin
 import functools
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-if is_st3:
-	import Haxe.haxe.settings as hxsettings
-	import Haxe.haxe.types as hxtypes
-	from Haxe.haxe.log import log
+import haxe.settings as hxsettings
+import haxe.types as hxtypes
+from haxe.log import log
 
-	from Haxe.haxe.execute import run_cmd
-else:
-	import haxe.settings as hxsettings
-	import haxe.types as hxtypes
-	from haxe.log import log
-
-	from haxe.execute import run_cmd
+from haxe.execute import run_cmd
 
 libLine = re.compile("([^:]*):[^\[]*\[(dev\:)?(.*)\]")
 

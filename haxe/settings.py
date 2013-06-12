@@ -1,6 +1,6 @@
 import sublime
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
 def get (id, view = None):
 	if view is None:

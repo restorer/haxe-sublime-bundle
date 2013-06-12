@@ -1,18 +1,12 @@
 import sublime
 import re
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-if is_st3:
-	import Haxe.haxe.panel as hxpanel
-	import Haxe.haxe.hxtools as hxsrctools
+import haxe.panel as hxpanel
+import haxe.hxtools as hxsrctools
 
-	from Haxe.haxe.log import log
-else:
-	import haxe.panel as hxpanel
-	import haxe.hxtools as hxsrctools
-
-	from haxe.log import log
+from haxe.log import log
 
 
 

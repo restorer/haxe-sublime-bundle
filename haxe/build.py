@@ -4,44 +4,31 @@ import glob
 import time
 import codecs
 import sublime
+import haxe.config as hxconfig
+import haxe.types as hxtypes
+import haxe.lib as hxlib
+import haxe.settings as hxsettings 
+import haxe.tools.path as pathtools
+import haxe.tools.stringtools as stringtools
+import haxe.panel as hxpanel
+from haxe.execute import run_cmd, run_cmd_async
+from haxe.log import log
 
-
-
-
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
 if is_st3:
 	from io import StringIO
-	import Haxe.haxe.config as hxconfig
-	import Haxe.haxe.types as hxtypes
-	import Haxe.haxe.lib as hxlib
-	import Haxe.haxe.settings as hxsettings 
-	import Haxe.haxe.tools.path as path_tools
-	import Haxe.haxe.panel as hxpanel
-	from Haxe.haxe.execute import run_cmd, run_cmd_async
-	from Haxe.haxe.log import log
-	
 else:
 	from StringIO import StringIO
-	import haxe.config as hxconfig
-	import haxe.types as hxtypes
-	import haxe.lib as hxlib
-	import haxe.settings as hxsettings 
-	import haxe.tools.path as path_tools
-	import haxe.panel as hxpanel
-	from haxe.execute import run_cmd, run_cmd_async
-	from haxe.log import log
+
+
 	
 
 #StringIO.StringIO(msg)
 
 hxml_cache = {}
 
-# one hxml can contain multiple builds separated by --next
-# should we really support this, or how can we handle this?
-# should the user be able to select a part of the build for completion/build
-
-
+# TODO refactor this method into smaller managable chunks
 def hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file = None, hxml = None):
 	builds = []
 
@@ -104,7 +91,7 @@ def hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file =
 			current_build.add_define(tup[1])
 			continue
 
-		for flag in [ "lib" , "swf-version" , "swf-header", 
+		for flag in [ "swf-version" , "swf-header", 
 					"debug" , "-no-traces" , "-flash-use-stage" , "-gen-hx-classes" , 
 					"-remap" , "-no-inline" , "-no-opt" , "-php-prefix" , 
 					"-js-namespace" , "-interp" , "-dead-code-elimination" , 
@@ -126,7 +113,7 @@ def hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file =
 		for flag in hxconfig.targets:
 			if l.startswith( "-" + flag + " " ) :
 				spl = l.split(" ")
-				#outp = os.path.join( folder , " ".join(spl[1:]) ) 
+
 				outp = " ".join(spl[1:]) 
 				current_build.add_arg( ("-"+flag, outp) )
 				
@@ -140,7 +127,7 @@ def hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file =
 			cp.pop(0)
 			classpath = " ".join( cp )
 			
-			abs_classpath = path_tools.join_norm( build_path , classpath )
+			abs_classpath = pathtools.join_norm( build_path , classpath )
 			current_build.add_classpath( abs_classpath )
 			current_build.add_arg( ("-cp" , abs_classpath ) )
 	
@@ -175,8 +162,8 @@ def find_hxml_projects( project, folder ) :
 extract_tag = re.compile("<([a-z0-9_-]+).*?\s(name|main|title|file)=\"([ a-z0-9_./-]+)\"", re.I)
 
 
-def find_nme_project_title(nmml):
-	f = codecs.open( nmml , "r+", "utf-8" , "ignore" )
+def find_nme_project_title(nmml_file):
+	f = codecs.open( nmml_file , "r+", "utf-8" , "ignore" )
 	title = ["No Title"]
 	while 1:
 		l = f.readline()
@@ -236,20 +223,12 @@ def create_haxe_build_from_nmml (project, target, nmml, display_cmd):
 
 	nmml_dir = os.path.dirname(nmml)
 
-
-
 	out, err = run_cmd( cmd, cwd=nmml_dir )
 
-	
-
-	hx_build = hxml_buffer_to_builds(project, StringIO(out), nmml_dir, nmml_dir, nmml, None)[0]
-	return hx_build
-
-
+	return hxml_buffer_to_builds(project, StringIO(out), nmml_dir, nmml_dir, nmml, None)[0]
 
 
 class NmeBuild :
-
 
 	def __init__(self, project, title, nmml, target, cb = None):
 		self._title = title
@@ -257,8 +236,6 @@ class NmeBuild :
 		self.nmml = nmml
 		self._hxml_build = cb
 		self.project = project
-
-		#log("CLASSPATHS:" + str(self.current_build.classpaths))
 
 	@property
 	def title(self):
@@ -276,19 +253,20 @@ class NmeBuild :
 	def plattform(self):
 		return self._target.plattform
 
+	def get_hxml_build_with_nme_display(self):
+		display_cmd = list(self.get_build_command())
+		display_cmd.append("display")
+		return create_haxe_build_from_nmml(self.project, self.target, self.nmml, display_cmd)
+
 	@property
 	def hxml_build (self):
 		if self._hxml_build == None:
-			display_cmd = list(self.get_build_command())
-			display_cmd.append("display")
-			self._hxml_build = create_haxe_build_from_nmml(self.project, self.target, self.nmml, display_cmd)
+			self._hxml_build = self.get_hxml_build_with_nme_display()
 
 		return self._hxml_build
 	
 	def to_string(self) :
-		#out = os.path.basename(self.hxml_build.output)
-		out = self.title
-		return "{out} (NME - {target})".format(out=out, target=self.target.name);
+		return "{title} (NME - {target})".format(title=self.title, target=self.target.name);
 		
 	def set_std_classes(self, std_classes):
 		self.hxml_build.set_std_classes(std_classes)
@@ -306,31 +284,23 @@ class NmeBuild :
 
 	def get_types(self):
 		classes, packages = self.hxml_build.get_types()
-
 		return self.filter_platform_specific(classes), self.filter_platform_specific(packages)
-
-	
 
 	@property
 	def std_classes(self):
 		return self.filter_platform_specific(self.hxml_build.std_classes)
-		#return self.hxml_build.std_classes
-		
 
 	@property
 	def std_packs(self):
 		return self.filter_platform_specific(self.hxml_build.std_packs)
 
 	def copy (self):
-		r = NmeBuild(self.project, self.title, self.nmml, self.target, self.hxml_build.copy())
-		
-		return r
+		return NmeBuild(self.project, self.title, self.nmml, self.target, self.hxml_build.copy())
 
 	def get_relative_path(self, file):
 		return self.hxml_build.get_relative_path(file)
 
 	def get_build_folder(self):
-
 		r = None
 		if self.nmml is not None:
 			r = os.path.dirname(self.nmml)
@@ -338,15 +308,12 @@ class NmeBuild :
 		log("nmml: " + str(self.nmml))
 		return r
 
-	
-
 	def set_auto_completion(self, display, macro_completion):
 		self.hxml_build.set_auto_completion(display, macro_completion)
 
 	def set_times(self):
 		self.hxml_build.set_times()
 
-	
 	def add_define (self, define):
 		self.hxml_build.add_define(define)
 
@@ -383,7 +350,6 @@ class NmeBuild :
 		cmd.append(self.build_file)
 		cmd.append(self.target.plattform)
 		cmd.extend(self.target.args)
-		
 
 		return (cmd, self.get_build_folder())
 
@@ -403,19 +369,20 @@ class NmeBuild :
 	def args (self):
 		return self.hxml_build.args
 
+	# checks if a toplevel package is available in the current build
 	def is_package_available (self, pack):
 		target = self.hxml_build.target
 		cls = hxconfig
-		res = True
 
 		tp = list(cls.target_packages)
 		tp.extend(["native", "browser", "nme"])
 
-		if target != None and pack in tp:
-			if pack not in ["nme"]:
-				res = False;
+		no_target_pack = not pack in tp
+		is_nme_pack = pack == "nme"
 
-		return res
+		available = target == None or no_target_pack or is_nme_pack
+
+		return available
 
 class OpenFlBuild (NmeBuild):
 
@@ -431,17 +398,16 @@ class OpenFlBuild (NmeBuild):
 	def get_run_exec(self, project, view):
 		return project.openfl_exec(view)
 
+	
+
 	def filter_platform_specific(self, packs_or_classes):
 		res = []
 		for c in packs_or_classes:
 			# allow only flash package
-			if not c.startswith("native") and not c.startswith("browser"):
+			if not stringtools.startswith_any(c,["native", "browser", "nme"]):
 				res.append(c)
 
 		return res
-
-
-	
 
 	def get_build_command(self):
 		return ["haxelib", "run", "openfl"]
@@ -454,16 +420,16 @@ class OpenFlBuild (NmeBuild):
 	def is_package_available (self, pack):
 		target = self.hxml_build.target
 		cls = hxconfig
-		res = True
 
 		tp = list(cls.target_packages)
-		tp.extend(["native", "browser"])
+		tp.extend(["native", "browser", "nme"])
 
-		if target != None and pack in tp:
-			if pack not in ["flash"]:
-				res = False;
+		no_target_pack = not pack in tp
+		is_flash_pack = pack == "flash"
 
-		return res
+		available = target == None or no_target_pack or is_flash_pack
+
+		return available
 
 class HxmlBuild :
 
@@ -578,36 +544,31 @@ class HxmlBuild :
 
 	def add_lib(self, lib):
 		self.libs.append(lib)
+		self.add_arg( ("-lib", lib.name))
 
-	def get_classpath (self, file):
+	def get_classpath_of_file (self, file):
 		
 		file = self.align_drive_letter(file)
 		
 		cps = list(self.classpaths)
 
+		cps.append(self.get_build_folder())
 		for cp in cps:
-			log("file:" + file)
-			log("cp:" + cp)
 			prefix = os.path.commonprefix([cp, file])
-			log("prefix:" + prefix)
 			if prefix == cp:
 				return cp
 
-		build_folder = self.get_build_folder()
-		if file.startswith(build_folder):
-			return build_folder
-		
 		return None
 
 	def is_file_in_classpath (self, file):
 		file = self.align_drive_letter(file)
-		return self.get_classpath(file) is not None
+		return self.get_classpath_of_file(file) is not None
 
 	def get_relative_path (self, file):
 		
 		file = self.align_drive_letter(file)
 
-		cp = self.get_classpath(file)
+		cp = self.get_classpath_of_file(file)
 
 		if cp is not None:
 			return file.replace(cp, "")[1:]

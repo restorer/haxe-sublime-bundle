@@ -3,18 +3,13 @@ import re
 
 import time
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-if is_st3:
-    from Haxe.haxe.tools.decorator import lazyprop
-    import Haxe.haxe.tools.view as view_tools
-    from Haxe.haxe.log import log
-    import Haxe.haxe.completion.hx.constants as hcc
-else:
-    from haxe.tools.decorator import lazyprop
-    import haxe.tools.view as view_tools
-    from haxe.log import log
-    import haxe.completion.hx.constants as hcc
+
+from haxe.tools.decorator import lazyprop
+import haxe.tools.view as viewtools
+from haxe.log import log
+import haxe.completion.hx.constants as hcc
 
 control_struct = re.compile( "\s+(if|switch|for|while)\s*\($" );
 
@@ -292,7 +287,7 @@ class CompletionContext:
     # src of current file
     @lazyprop
     def src (self):
-        return view_tools.get_content(self.view)
+        return viewtools.get_content(self.view)
 
     @lazyprop
     def complete_char (self):

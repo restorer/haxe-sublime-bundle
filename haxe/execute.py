@@ -1,14 +1,15 @@
 import sys
 import os
 import sublime
+from haxe.startup import STARTUP_INFO
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
+
 if is_st3:
 	import _thread as thread
-	from Haxe.haxe.startup import STARTUP_INFO
 else:
 	import thread
-	from haxe.startup import STARTUP_INFO
+	
 
 
 from subprocess import Popen, PIPE

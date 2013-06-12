@@ -2,8 +2,9 @@ import sublime as sub
 import os
 import re
 import json
+from haxe.log import log
 
-is_st3 = int(sub.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
 # last time the sublime session file was updated
 _last_modification_time = None

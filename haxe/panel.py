@@ -2,22 +2,15 @@ import sublime, sublime_plugin
 
 from datetime import datetime
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3
 
-if is_st3:
-	import Haxe.haxe.tools.view as view_tools
-	import Haxe.haxe.settings as hxsettings
-	from Haxe.haxe.tools.cache import Cache
-else:
-	import haxe.tools.view as view_tools
-	import haxe.settings as hxsettings
-	from haxe.tools.cache import Cache
+
+import haxe.tools.view as viewtools
+import haxe.settings as hxsettings
+from haxe.tools.cache import Cache
 
 def _haxe_file_regex():
-	if is_st3:
-		from Haxe.haxe.project import haxe_file_regex
-	else:
-		from haxe.project import haxe_file_regex
+	from haxe.project import haxe_file_regex
 	return "^[0-9]{2}:[0-9]{2}:[0-9]{2}[ ]Error:[ ]" + haxe_file_regex[1:]
 
 
@@ -80,7 +73,7 @@ class SlidePanel ():
 			sublime.set_timeout(lambda:v.show(region), 800)
 		
 		
-		view_tools.async_edit(panel, do_edit)
+		viewtools.async_edit(panel, do_edit)
 
 		return panel
 
@@ -140,11 +133,11 @@ class TabPanel():
 				v = self.output_view
 
 				if (v == None): 
-					v = view_tools.find_view_by_name(self.panel_name)
+					v = viewtools.find_view_by_name(self.panel_name)
 					
 					if (v == None):
 						v = make_tab_panel(self.win, self.panel_name, self.panel_syntax)
-						view_tools.replace_content(v, "".join(self.all))
+						viewtools.replace_content(v, "".join(self.all))
 
 					self.output_view = v
 					self.output_view_id = v.id()
@@ -154,7 +147,7 @@ class TabPanel():
 					def do_edit(v, edit):
 						v.insert(edit, 0, msg1)
 						v.end_edit( edit )
-					view_tools.async_edit(v, do_edit)
+					viewtools.async_edit(v, do_edit)
 					
 
 		sublime.set_timeout(f,40)

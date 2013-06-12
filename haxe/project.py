@@ -5,62 +5,39 @@ import os
 import re
 import sys
 
-
-is_st3 = int(sublime.version()) >= 3000
-
-if is_st3:
-    import Haxe.haxe.build as hxbuild
-    import Haxe.haxe.panel as hxpanel
-    import Haxe.haxe.hxtools as hxsrctools
-    import Haxe.haxe.types as hxtypes
-    import Haxe.haxe.settings as hxsettings
-    import Haxe.haxe.tools.path as path_tools
-    import Haxe.haxe.tools.view as view_tools
-    import Haxe.haxe.tools.sublimetools as sublime_tools
-    import Haxe.haxe.compiler.server as hxserver
-    import Haxe.haxe.config as hxconfig
-    import Haxe.haxe.lib as hxlib
-    from Haxe.haxe.execute import run_cmd
-    from Haxe.haxe.log import log
-    from Haxe.haxe.tools.cache import Cache
+from haxe.plugin import is_st3, is_st2
 
 
-else:
-    import haxe.config as hxconfig
-    import haxe.build as hxbuild
-    import haxe.panel as hxpanel
-    import haxe.hxtools as hxsrctools
-    import haxe.tools.view as view_tools
-    import haxe.types as hxtypes
-    import haxe.lib as hxlib
-    import haxe.tools.sublimetools as sublime_tools
-    import haxe.settings as hxsettings
-    import haxe.tools.path as path_tools
-    import haxe.compiler.server as hxserver
+import haxe.build as hxbuild
+import haxe.panel as hxpanel
+import haxe.hxtools as hxsrctools
+import haxe.types as hxtypes
+import haxe.settings as hxsettings
+import haxe.execute as hxexecute
+import haxe.tools.path as pathtools
+import haxe.tools.view as viewtools
+import haxe.tools.sublimetools as sublimetools
+import haxe.lib as hxlib
+import haxe.compiler.server as hxserver
 
-    from haxe.execute import run_cmd
-    from haxe.log import log
-    from haxe.tools.cache import Cache
-
+import haxe.config as hxconfig
+from haxe.log import log
+from haxe.tools.cache import Cache
 
 # TODO split this module into smaller chunks
 
 
 class ProjectListener( sublime_plugin.EventListener ):
 
-    def __del__( self ) :
-        destroy()
-
-    
     def on_post_save( self , view ) :
-        if view is not None and view.file_name() is not None and view_tools.is_hxml(view):
+        if view is not None and view.file_name() is not None and viewtools.is_hxml(view):
             project = current_project(view)
             project.clear_build()
             
     # if view is None it's a preview
     def on_activated( self , view ) :
         log("on_activated")
-        if view is not None and view.file_name() is not None and view_tools.is_supported(view): 
+        if view is not None and view.file_name() is not None and viewtools.is_supported(view): 
             def on_load_delay():
                 current_project(view).generate_build( view )
 
@@ -68,8 +45,8 @@ class ProjectListener( sublime_plugin.EventListener ):
             
 
     def on_pre_save( self , view ) :
-        if view_tools.is_haxe(view) :
-            view_tools.create_missing_folders(view)
+        if viewtools.is_haxe(view) :
+            viewtools.create_missing_folders(view)
 
 class ProjectCompletionContext:
 
@@ -263,11 +240,10 @@ class Project:
         return self.server_mode and hxsettings.use_haxe_servermode()
 
 
-     #TODO check if this method still usefull
     def generate_build(self, view):
         fn = view.file_name()
         log("generate build")
-        if self.current_build is not None and fn == self.current_build.hxml and view.size() == 0 :
+        if self.current_build is not None and isinstance(self.current_build, hxbuild.HxmlBuild) and fn == self.current_build.hxml and view.size() == 0 :
             log("do edit")
             def run_edit(v, e):
                 hxml_src = self.current_build.make_hxml()
@@ -275,7 +251,7 @@ class Project:
                 v.insert(e,0,hxml_src)
                 v.end_edit(e)
 
-            view_tools.async_edit(view, run_edit)
+            viewtools.async_edit(view, run_edit)
 
     def select_build( self, view ) :
         scopes = view.scope_name(view.sel()[0].end()).split()
@@ -461,7 +437,7 @@ class Project:
                     src_dir = spl[0]
 
         cl = os.path.basename(fn)
-        if not is_st3:
+        if is_st2:
             cl = cl.encode('ascii','ignore')
         cl = cl[0:cl.rfind(".")]
 
@@ -501,7 +477,7 @@ def collect_compiler_info (haxe_exec, project_path):
     cmd = haxe_exec
     cmd.extend(["-main", "Nothing", "-v", "--no-output"])
 
-    out, err = run_cmd( cmd, env=env )
+    out, err = hxexecute.run_cmd( cmd, env=env )
 
     std_classpaths = extract_std_classpaths(out)
     
@@ -646,7 +622,7 @@ def current_project(view = None):
 
     cleanup_projects()
 
-    file = sublime_tools.get_project_file()
+    file = sublimetools.get_project_file()
     
     win = get_window(view)
     

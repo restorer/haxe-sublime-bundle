@@ -2,12 +2,10 @@ import sublime
 
 import re
 
-is_st3 = int(sublime.version()) >= 3000
+from haxe.plugin import is_st3, is_st2
 
-if is_st3:
-	import Haxe.haxe.lib as hxlib
-else:
-	import haxe.lib as hxlib
+
+import haxe.lib as hxlib
 
 
 

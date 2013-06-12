@@ -2,17 +2,11 @@ import os
 
 import codecs
 import sublime
+from haxe.log import log
+import haxe.tools.path as path_tools
 
+from haxe.plugin import is_st3, is_st2
 
-
-is_st3 = int(sublime.version()) >= 3000
-
-if is_st3:
-	from Haxe.haxe.log import log
-	import Haxe.haxe.tools.path as path_tools
-else:
-	from haxe.log import log
-	import haxe.tools.path as path_tools
 def get_temp_path(build):
 
 	id = 0
