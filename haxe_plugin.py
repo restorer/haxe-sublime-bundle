@@ -27,6 +27,7 @@ if is_st3:
                     sys.modules[name] = module
                 return sys.modules[name]
             except Exception as e:
+                print("cannot load module " + name + " - error: " + str(e))
                 return None
 
     sys.meta_path.append(MyImporter())
@@ -175,5 +176,8 @@ from haxe.tools.cache import (
      Cache
 )
 
+from haxe.tools.view import (
+    HaxeTextEditCommand
+)
 
 print("init haxe_plugin finished")

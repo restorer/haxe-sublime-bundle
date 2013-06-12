@@ -7,7 +7,6 @@ import sys
 
 from haxe.plugin import is_st3, is_st2
 
-
 import haxe.build as hxbuild
 import haxe.panel as hxpanel
 import haxe.hxtools as hxsrctools
@@ -386,6 +385,7 @@ class Project:
         
         hxpanel.default_panel().writeln("running: " + " ".join(cmd))
 
+        
         win.run_command("haxe_exec", {
             "cmd": cmd,
             "is_check_run" : type == "check",

@@ -378,6 +378,7 @@ class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
 
     def run( self ) : 
         log("run HaxeRestartServerCommand")
+        
         view = sublime.active_window().active_view()
         
         project = hxproject.current_project(view)

@@ -68,7 +68,7 @@ class Server ():
 				#self._server_proc.stdout.close()
 				
 				log("server started at port: " + str(self._server_port))
-				
+				hxpanel.default_panel().writeln("server started at port: " + str(self._server_port))
 			except(OSError, ValueError) as e:
 				err = u'Error starting server %s: %s' % (" ".join(cmd), e)
 				sublime.error_message(err)
@@ -89,6 +89,7 @@ class Server ():
 
 	
 	def stop( self, completeCallback = None) :
+		old_port = self._server_port
 		try:
 			proc = self._server_proc
 
@@ -115,6 +116,7 @@ class Server ():
 			self._server_proc = None
 		
 		if completeCallback != None:
+			hxpanel.default_panel().writeln("stopping server on port: " + str(old_port))
 			completeCallback()
 
 	def __del__(self):

@@ -126,7 +126,6 @@ class TabPanel():
 		def f () : 
 			self.all = self.all[0:300]
 			msg1 = timestamp_msg(msg)
-
 			if valid_message(msg):
 				self.all.insert(0,msg1)
 
@@ -141,7 +140,6 @@ class TabPanel():
 
 					self.output_view = v
 					self.output_view_id = v.id()
-					print("output_view_id:" + str(self.output_view_id))
 
 				if (v != None):
 					def do_edit(v, edit):

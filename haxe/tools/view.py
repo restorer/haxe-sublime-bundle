@@ -16,10 +16,13 @@ _async_edit_dict = dict()
 def async_edit(view, do_edit):
 	if is_st3:
 	    def start():
+	    	
+
 	        global _async_edit_id
 	        global _async_edit_dict
 	        id = str(_async_edit_id)
 	        if _async_edit_id > 1000000:
+
 	        	_async_edit_id = 0
 	        else:
 	        	_async_edit_id += 1

@@ -38,6 +38,9 @@ def can_run_completion(offset, scopes):
 def is_supported_scope(scopes):
     return not scopetools.contains_string_or_comment(scopes)    
 
+def empty_handler(project, view, offset, prefix):
+    return []
+
 def get_auto_complete_handler (view, scopes):
     
     handler = None
@@ -50,7 +53,7 @@ def get_auto_complete_handler (view, scopes):
         else :
             handler = hx.auto_complete # hx completion
     else: # empy handler
-        handler = lambda project, view, offset: []
+        handler = empty_handler
             
     return handler
 
