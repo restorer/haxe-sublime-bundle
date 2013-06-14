@@ -20,8 +20,6 @@ from haxe.log import log
 
 
 def trigger_completion (view, options):
-    #log("run HaxeCompletionCommand (macro:" + str(macro) + ", type:" + str(type) + ")")
-        
 
     def run():
         project = hxproject.current_project(view)
@@ -353,9 +351,6 @@ def trigger_async_completion(view, options):
     sublime.set_timeout(run_complete, 20)
 
 def trigger_manual_completion(view, options):
-    
-    #log("LOG: " + str(options.types._opt))
-
 
     hint = options.types.has_hint()
     macro = options.macro_completion
@@ -363,9 +358,9 @@ def trigger_manual_completion(view, options):
     def run_complete():
         if hint and macro:
             view.run_command("haxe_hint_display_macro_completion")
-        if hint:
+        elif hint:
             view.run_command("haxe_hint_display_completion")
-        if macro:
+        elif macro:
             view.run_command("haxe_display_macro_completion")
         else:
             view.run_command("haxe_display_completion")

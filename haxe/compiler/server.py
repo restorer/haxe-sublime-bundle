@@ -63,10 +63,8 @@ class Server ():
 				
 				self._server_proc.poll()
 
-				time.sleep(0.1)
-				#self._server_proc.stderr.close()
-				#self._server_proc.stdout.close()
-				
+				time.sleep(0.05)
+					
 				log("server started at port: " + str(self._server_port))
 				hxpanel.default_panel().writeln("server started at port: " + str(self._server_port))
 			except(OSError, ValueError) as e:
