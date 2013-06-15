@@ -4,7 +4,7 @@ import glob
 import codecs
 import sublime
 
-from haxe import config as hxconfig
+from haxe import config
 
 from haxe.tools import pathtools
 
@@ -20,16 +20,11 @@ try:
 except:
 	from StringIO import StringIO
 
-
-hxml_cache = {}
-
 # TODO refactor this method into smaller managable chunks
 def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file = None, hxml = None):
 	builds = []
 
 	current_build = HxmlBuild(hxml, build_file)
-	
-	
 	
 	# print("build file exists")
 	f = hxml_buffer
@@ -51,7 +46,6 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 			builds.append( current_build )
 			current_build = HxmlBuild(hxml, build_file)
 			continue
-			
 			
 		l = l.strip()
 		
@@ -104,7 +98,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 					current_build.target = "neko"
 				break
 
-		for flag in hxconfig.targets:
+		for flag in config.targets:
 			if l.startswith( "-" + flag + " " ) :
 				spl = l.split(" ")
 
@@ -145,8 +139,6 @@ def _hxml_to_builds (project, hxml, folder):
 	hxml_buffer = codecs.open( hxml , "r+" , "utf-8" , "ignore" )
 	return _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, hxml, hxml)
 	
-
-
 _extract_tag = re.compile("<([a-z0-9_-]+).*?\s(name|main|title|file)=\"([ a-z0-9_./-]+)\"", re.I)
 
 def _find_nme_project_title(nmml_file):
@@ -168,7 +160,6 @@ def _find_nme_project_title(nmml_file):
 	f.close()
 	return title
 
-
 def create_haxe_build_from_nmml (project, target, nmml, display_cmd):
 
 	cmd = list(display_cmd)
@@ -181,7 +172,6 @@ def create_haxe_build_from_nmml (project, target, nmml, display_cmd):
 	out, err = run_cmd( cmd, cwd=nmml_dir )
 
 	return _hxml_buffer_to_builds(project, StringIO(out), nmml_dir, nmml_dir, nmml, None)[0]
-
 
 def find_hxml_projects( project, folder ) :
 	
@@ -196,19 +186,15 @@ def find_hxml_projects( project, folder ) :
 
 	return builds
 
-
-
 def find_nme_projects( project, folder ) :
 	nmmls = _find_build_files_in_folder(folder, "nmml")
 	builds = []
 	for nmml in nmmls:
 		title = _find_nme_project_title(nmml)
-		for t in hxconfig.nme_targets:
+		for t in config.nme_targets:
 
 			builds.append(NmeBuild(project, title, nmml, t))
 	return builds
-
-
 
 def find_openfl_projects( project, folder ) :
 
@@ -217,11 +203,8 @@ def find_openfl_projects( project, folder ) :
 	for openfl_xml in openfl_xmls:
 		title = _find_nme_project_title(openfl_xml)
 		if title != None:
-			for t in hxconfig.openfl_targets:
+			for t in config.openfl_targets:
 				builds.append(OpenFlBuild(project, title, openfl_xml, t))
 
 
 	return builds
-
-
-

@@ -1,8 +1,4 @@
-from __future__ import absolute_import
-
 import sublime
-
-
 
 from haxe.tools import viewtools
 
@@ -14,7 +10,6 @@ class SlidePanel ():
 		self.win = win
 		self.output_view = None
 
-
 	def clear(self) :
 		self.output_view = self.win.get_output_panel("haxe")
 
@@ -22,11 +17,8 @@ class SlidePanel ():
 		
 		win = self.win
 
-
 		if self.output_view is None :
 			self.output_view = win.get_output_panel("haxe")
-			
-		
 
 		self.output_view.settings().set("result_file_regex", haxe_file_regex())
 		# force result buffer
@@ -35,9 +27,6 @@ class SlidePanel ():
 		panel = self.output_view
 			
 		text = timestamp_msg(text);
-
-		
-			
 		
 		win.run_command("show_panel",{"panel":"output.haxe"})
 		
@@ -60,7 +49,6 @@ class SlidePanel ():
 
 			region = sublime.Region(v.size()+1000, v.size()+1000)
 			sublime.set_timeout(lambda:v.show(region), 800)
-		
 		
 		viewtools.async_edit(panel, do_edit)
 

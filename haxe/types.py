@@ -1,13 +1,11 @@
-import os, codecs, glob
+import os, codecs, glob, re
 
 from haxe import config as hxconfig
 from haxe import hxtools as hxtools
 from haxe.log import log
 
 
-
 def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None, include_private_types = True):
-
 	classes = []
 	packs = []
 
@@ -18,7 +16,6 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 		if lib is not None :
 			cp.append( lib.path )
 
-
 	for path in cp :
 
 		p = os.path.join( base_path, path )
@@ -28,29 +25,22 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 		classes.extend( c )
 		packs.extend( p )
 
-	
-	
 	classes.sort()
 	packs.sort()
 
 	return classes,packs
 
-
-import re
 valid_package = re.compile("^[_a-z][a-zA-Z0-9_]*$")
 
 def is_valid_package (pack):
 	return valid_package.match(pack) and pack != "_std"
 
 def extract_types( path , filtered_classes = None, filtered_packages = None, depth = 0, pack = [], include_private_types = True) :
-
-
 	if filtered_classes is None: 
 		filtered_classes = []
 	if filtered_packages is None: 
 		filtered_packages = []
 	
-
 	classes = []
 	packs = []
 	
@@ -64,7 +54,6 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 
 			classes.extend(module_classes)
 	
-			
 	for f in os.listdir( path ) :
 		if is_valid_package(f):
 			cl, ext = os.path.splitext( f )
@@ -84,11 +73,7 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 	classes.sort()
 	packs.sort()
 
-
-	
-
 	return classes, packs
-
 
 file_type_cache = {}
 
@@ -111,8 +96,6 @@ def extract_types_from_file (file, depth, module_name = None, include_private_ty
 	for ps in hxtools.package_line.findall( src ) :
 		clPack = ps
 
-	
-	
 	if clPack == "" :
 		pack_depth = 0
 	else:
@@ -151,8 +134,6 @@ def extract_types_from_file (file, depth, module_name = None, include_private_ty
 	file_type_cache[file] = (mtime, classes)
 	return classes
 
-
-import re
 enum_constructor_start_decl = re.compile("\s+([a-zA-Z0-9_]+)" , re.M )
 enum_start_decl = re.compile("(private\s+)?enum\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
 
@@ -164,16 +145,13 @@ def extract_enum_constructors_from_src (src, module_name, include_private = Fals
 			continue
 		else:
 			enum_name = e.group(2)
-			start = search_next_char_on_same_level(src, "{", e.start(2))
+			start = search_next_char_on_same_nesting_level(src, "{", e.start(2))
 			if start != None:
-				end = search_next_char_on_same_level(src, "}", start[0]+1)
+				end = search_next_char_on_same_nesting_level(src, "}", start[0]+1)
 				if end != None:
 					constructors = extract_enum_constructors_from_enum(src[start[0]+1: end[0]-1])
 					all.extend([(enum_name,c) for c in constructors])
 	return all
-
-
-
 
 def extract_enum_constructors_from_enum (enumStr):
 	
@@ -184,7 +162,7 @@ def extract_enum_constructors_from_enum (enumStr):
 		if m != None:
 			constructor = m.group(1)
 			constructors.append(constructor)
-			end = search_next_char_on_same_level(enumStr, ";", m.end(1))
+			end = search_next_char_on_same_nesting_level(enumStr, ";", m.end(1))
 			if end != None:
 				start = end[0]+1
 			else:
@@ -193,7 +171,7 @@ def extract_enum_constructors_from_enum (enumStr):
 			break
 	return constructors
 
-def search_next_char_on_same_level (str, char, start_pos):
+def search_next_char_on_same_nesting_level (str, char, start_pos):
 	open_pars = 0
 	open_braces = 0
 	open_brackets = 0
@@ -252,11 +230,3 @@ def search_next_char_on_same_level (str, char, start_pos):
 			pos += 1
 			cur += c
 	return None
-
-
-
-
-#print str(extract_enum_constructors_from_src("enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
-#print str(extract_enum_constructors_from_src("  enum Xy_Z<A,B:{ x : Int, y : Void->String}> { Left(v:A); Right(v:B); }", "my.Module"))
-#print str(extract_enum_constructors_from_src("enum XY{ Left; Right; }", "my.Module"))
-

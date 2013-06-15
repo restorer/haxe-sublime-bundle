@@ -1,6 +1,6 @@
-
 import os
-from haxe import config as hxconfig
+
+from haxe import config
 
 from haxe.log import log
 
@@ -144,9 +144,9 @@ class NmeBuild :
 	# checks if a toplevel package is available in the current build
 	def is_package_available (self, pack):
 		target = self.hxml_build.target
-		cls = hxconfig
+		
 
-		tp = list(cls.target_packages)
+		tp = list(config.target_packages)
 		tp.extend(["native", "browser", "nme"])
 
 		no_target_pack = not pack in tp

@@ -2,16 +2,17 @@ import sublime as sub
 import os
 import re
 import json
-from haxe.log import log
+
+from haxe import log
 
 from haxe.plugin import is_st3
+
 
 # last time the sublime session file was updated
 _last_modification_time = None
 # used for caching the path of current project file
 _last_project = None
 # hash to store all active projects, files without project file use the "global" context
-
 
 def get_project_file(win_id = None):
     if is_st3:
@@ -22,7 +23,7 @@ def get_project_file(win_id = None):
         global _last_project
         global _last_modification_time
 
-        log( "try getting project file")
+        log.log( "try getting project file")
 
         if win_id == None:
             win_id = sub.active_window().id()

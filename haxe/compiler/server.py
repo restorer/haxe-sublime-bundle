@@ -12,8 +12,6 @@ from haxe import plugin
 from haxe import panel as hxpanel
 from haxe import settings as hxsettings
 
-
-
 class Server ():
 	def __init__ (self, port):
 
@@ -85,7 +83,6 @@ class Server ():
 				log("ERROR : " + str(e))
 		
 
-	
 	def stop( self, completeCallback = None) :
 		old_port = self._server_port
 		try:

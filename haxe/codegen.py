@@ -27,7 +27,6 @@ class HaxeImportGenerator:
 		self.size = None
 		self.cname = None 
 		
-
 	def _get_end( self, src, offset ) :
 		end = len(src)
 		while offset < end:
@@ -67,7 +66,6 @@ class HaxeImportGenerator:
 			self.start = end - self.size
 
 		self.cname = view.substr(sublime.Region(self.start, end)).rpartition(".")
-
 
 		while (not self.cname[0] == "" and self._is_membername(self.cname[2])):
 			self.size -= 1 + len(self.cname[2])
@@ -130,5 +128,3 @@ class HaxeImportGenerator:
 			return 
 		 
 		self._insert_statement(edit, view, src, statement, regex)	
-
-

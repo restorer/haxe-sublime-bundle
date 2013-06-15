@@ -1,4 +1,3 @@
-
 from haxe.project.tools import (
 	haxe_file_regex
 )

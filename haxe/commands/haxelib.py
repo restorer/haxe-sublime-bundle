@@ -1,5 +1,6 @@
 import sublime, sublime_plugin
 import functools
+
 from haxe import project as hxproject
 from haxe.log import log
 

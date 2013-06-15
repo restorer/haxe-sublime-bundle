@@ -10,7 +10,6 @@ from haxe.log import log
 
 from haxe.plugin import is_st2, is_st3
 
-
 from xml.etree import ElementTree
 from xml.etree.ElementTree import XMLTreeBuilder
 
@@ -23,7 +22,6 @@ compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)?
 no_classes_found = re.compile("^No classes found in ", re.M)
 
 haxe_compiler_line = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
-
 
 def split_signature (signature):
 	open_pars = 0
@@ -42,7 +40,6 @@ def split_signature (signature):
 		c = signature[pos]
 		next = signature[pos+1] if pos < count-1 else None
 		
-
 		if (c == "-" and next == ">"):
 			if (open_pars == 0 and open_braces == 0 and open_brackets == 0):
 				types.append(cur)
@@ -97,7 +94,6 @@ type_parameter_name = re.compile("^([A-Z][_a-zA-Z0-9]*)")
 
 def get_function_type_params(name, signature_types):
 
-	
 	new_args = []
 	type_params = dict()
 	name_len = len(name)

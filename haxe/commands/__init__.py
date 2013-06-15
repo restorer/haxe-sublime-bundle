@@ -1,7 +1,11 @@
-from haxe.commands.other import (
+from haxe.commands.completion_server import (
 
 	 HaxeRestartServerCommand
-	,HaxeExecCommand
+	
+)
+
+from haxe.commands.exec import (
+	HaxeExecCommand
 )
 
 

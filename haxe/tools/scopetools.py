@@ -1,4 +1,3 @@
-
 def contains_any (scopes, scopes_test):
 	for s in scopes : 
 		if s.split(".")[0] in scopes_test : 

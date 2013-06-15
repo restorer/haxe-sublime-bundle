@@ -1,13 +1,6 @@
-from __future__ import absolute_import
-
 import sublime
 
-
-
-
 from haxe.tools import viewtools
-
-
 
 from haxe.panel import tools as paneltools
 

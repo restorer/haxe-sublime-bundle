@@ -6,7 +6,6 @@ class Cache:
 		self.cache_time = cache_time
 		self.time_driven = cache_time != -1
 
-
 	def insert (self, id, value):
 		self.data[id] = (time.time(), value)
 
@@ -40,9 +39,6 @@ class Cache:
 			else:
 				res = self._get_val(id)
 		return res
-
-
-
 
 	def get_and_delete (self, id, default=None):
 		val = default

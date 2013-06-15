@@ -2,10 +2,11 @@ import os
 import re
 import time
 import sublime
-from haxe import config as hxconfig
-from haxe import types as hxtypes
 
+from haxe import config
+from haxe import types as hxtypes
 from haxe import panel as hxpanel
+
 from haxe.execute import run_cmd, run_cmd_async
 from haxe.log import log
 
@@ -386,9 +387,9 @@ class HxmlBuild :
 
 		available = True
 
-		if target != None and pack in hxconfig.target_packages:
-			if target in hxconfig.target_std_packages:
-				if pack not in hxconfig.target_std_packages[target]:
+		if target != None and pack in config.target_packages:
+			if target in config.target_std_packages:
+				if pack not in config.target_std_packages[target]:
 					available = False;
 		return available
 

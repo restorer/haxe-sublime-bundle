@@ -1,5 +1,3 @@
-
-
 target_packages = ["flash","flash8","neko","js","php","cpp","cs","java", "sys"]
 
 targets = ["js","cpp","swf8","swf","neko","php","java","cs", "as3"]
@@ -29,22 +27,18 @@ for p in ignored_packages_list:
 
 ignored_types = ["haxe.io.BytesData.Unsigned_char__"]
 
-
 class NmeTarget:
     def __init__(self, name, plattform, args):
         self.name = name
         self.plattform = plattform
         self.args = args
         
-
 class OpenFlTarget:
     def __init__(self, name, plattform, args):
         self.name = name
         self.plattform = plattform
         self.args = args
         
-
-
 nme_targets = [
     
     NmeTarget("Flash",                "flash",      ["-debug"]),

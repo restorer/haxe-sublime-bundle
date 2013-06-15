@@ -1,6 +1,7 @@
 from haxe.log import log
 from haxe.tools.cache import Cache
 
+
 class ProjectCompletionState:
 
     def __init__(self):

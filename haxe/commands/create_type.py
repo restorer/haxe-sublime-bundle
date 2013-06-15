@@ -1,25 +1,24 @@
 import sublime, sublime_plugin
 import os
 import sublime_plugin
+
 from haxe.tools import viewtools
+
 from haxe import project as hxproject
 from haxe import hxtools as hxsrctools
 
 from haxe.log import log
 
+# TODO Cleanup this module
 
-# stores the info for file creation, is shared between the command and listener instances.
+
+# stores the info for file creation, this data is shared between command and listener instances.
 current_create_type_info = {}
 
-# TODO Cleanup HaxeCreateTypeCommand
 
 class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
 
-    
-    
-
     def __init__ (self, win):
-        
         self.classpath = None
         self.win = win
 
@@ -37,13 +36,7 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
         if project.has_build():
             builds.insert(0, project.get_build(view))
 
-        
-
-        #scopes = view.scope_name(view.sel()[0].end()).split()
-        
         pack = [];
-
-        
         
         if len(builds) == 0 and view != None and view.file_name() != None:
             print(view.file_name())
@@ -53,8 +46,6 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
         if len(paths) == 0 and view != None:
             fn = view.file_name()
             paths.append(fn)
-
-        
 
         for path in paths :
 
@@ -96,8 +87,6 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
                     break
                 log("found: " + str(found))
 
-
-
         if self.classpath is None :
             if len(builds) > 0 :
                 self.classpath = builds[0].classpaths[0]
@@ -106,7 +95,6 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
         if len(pack) > 0 :
             pack.append("")
                         
-        
         sublime.status_message( "Current classpath : " + self.classpath )
         win.show_input_panel("Enter "+t+" name : " , ".".join(pack) , lambda inp: self.on_done(inp, t) , self.on_change , self.on_cancel )
 
@@ -130,9 +118,7 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
             cl = parts[0]
 
         fn += ".hx"
-        
-        
-        
+
         src = "\npackage " + ".".join(pack) + ";\n\n"+cur_type+" "+cl+" " 
         if cur_type == "typedef" :
             src += "= "
@@ -151,9 +137,6 @@ class HaxeCreateTypeCommand( sublime_plugin.WindowCommand ):
         None
 
 
-
-
-
 class HaxeCreateTypeListener( sublime_plugin.EventListener ):
 
     def on_load (self, view):
@@ -161,9 +144,6 @@ class HaxeCreateTypeListener( sublime_plugin.EventListener ):
         
         if can_create_file:
             self.create_file(view)
-
-
-
 
     def create_file(self, view):
         
@@ -178,5 +158,3 @@ class HaxeCreateTypeListener( sublime_plugin.EventListener ):
             sel.add( sublime.Region(pt,pt) )
 
         viewtools.async_edit(view, run_edit)
-         
-

@@ -1,6 +1,9 @@
 import sys
 import os
 import sublime
+
+from subprocess import Popen, PIPE
+
 from haxe.plugin import STARTUP_INFO
 
 from haxe.plugin import is_st3
@@ -9,11 +12,6 @@ if is_st3:
 	import _thread as thread
 else:
 	import thread
-	
-
-
-from subprocess import Popen, PIPE
-
 
 def run_cmd_async(args, callback, input=None, cwd=None, env=None):
 

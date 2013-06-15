@@ -118,6 +118,11 @@ from haxe.completion.base import (
      CompletionListener   
 ) 
 
+from haxe.panel import (
+
+     PanelCloseListener
+)
+
 
 from haxe.completion.hx.types import (
 
@@ -142,8 +147,6 @@ from haxe.commands import (
     ,HaxeSaveAllAndCheckCommand
     ,HaxeSaveAllAndRunCommand
     ,HaxeRunBuildCommand
-    
-    
     ,HaxeRestartServerCommand
     ,HaxeGenerateUsingCommand
     ,HaxeGenerateImportCommand
@@ -157,18 +160,11 @@ from haxe.commands import (
 
 ) 
 
-from haxe.panel import (
 
-     PanelCloseListener
-)
 
 from haxe.codegen import (
 
      HaxeImportGenerator
-)
-
-from haxe.tools.cache import (
-     Cache
 )
 
 from haxe.tools.viewtools import (

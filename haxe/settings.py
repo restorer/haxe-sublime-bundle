@@ -54,10 +54,6 @@ def get_string (id, default, view = None):
 		else :
 			return None
 
-
-
-		
-
 def no_fuzzy_completion (view = None):
 	return get_bool("haxe_completion_no_fuzzy", False, view)
 
@@ -108,7 +104,6 @@ def haxe_library_path (view = None):
 	res = get_string("haxe_library_path", None, view)
 	return res
 	
-
 def haxelib_exec (view = None):
 	return get_string("haxe_haxelib_exec", "haxelib", view)
 	

@@ -3,6 +3,7 @@ import os
 import sublime
 
 from haxe import types as hxtypes
+
 from haxe.log import log
 
 from haxe.execute import run_cmd
@@ -31,7 +32,6 @@ class HaxeLibManager:
 			sublime.status_message( "Haxelib : "+ name +" project not installed" )
 			return None
 
-	
 	def get_completions(self) :
 		comps = []
 		for l in self.available :

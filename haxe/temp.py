@@ -13,7 +13,6 @@ def get_temp_path(build):
 	if path is None:
 		return None
 
-
 	temp_path = os.path.join(path, os.path.join(".hxsublime_tmp","tmp" + str(id)))
 	
 	# while os.path.exists(temp_path):
@@ -54,10 +53,6 @@ def create_temp_path_and_file(build, orig_file, content):
 	temp_file = create_file(temp_path, build, orig_file, content)
 	return temp_path, temp_file
 
-
 def remove_path (temp_path):
 	pass
 	#pathtools.remove_dir(temp_path)
-
-
- 

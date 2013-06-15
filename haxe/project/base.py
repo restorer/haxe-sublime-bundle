@@ -14,8 +14,6 @@ from haxe.project.tools import get_window
 from haxe.project.project import Project
 
 
-
-
 _projects = Cache()
 _user_home = expanduser("~")
 _log_file = os.path.join(_user_home, str("st3_haxe_log.txt"))

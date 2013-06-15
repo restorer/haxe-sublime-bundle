@@ -39,15 +39,11 @@ class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
         else:
             project.run_sublime_build( view )
 
-
 class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
         log("run HaxeSelectBuildCommand")
         view = self.view
-        
         hxproject.current_project(self.view).select_build( view )
-
-
 
 class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
     def on_post_save(self, view):

@@ -5,6 +5,13 @@ from haxe.plugin import is_st3
 
 from haxe import config as hxconfig
 
+class HaxeTextEditCommand (sublime_plugin.TextCommand):
+    def run (self, edit, id):
+        global _async_edit_dict
+        if id in _async_edit_dict:
+            fun = _async_edit_dict[id]
+            del _async_edit_dict[id]
+            fun(self.view, edit)
 
 # convert edit operation into a async operation with a callback, use global map (cannot pass function to command)
 
@@ -15,8 +22,6 @@ _async_edit_dict = dict()
 def async_edit(view, do_edit):
 	if is_st3:
 	    def start():
-	    	
-
 	        global _async_edit_id
 	        global _async_edit_dict
 	        id = str(_async_edit_id)
@@ -31,21 +36,12 @@ def async_edit(view, do_edit):
 	    sublime.set_timeout(start, 10)
 	else:
 		# no need for text command in st2
-		
 		def on_run():
 			edit = view.begin_edit()
 			do_edit(view, edit)
 			view.end_edit(edit)	
 		sublime.set_timeout(on_run, 10)
 		
-
-class HaxeTextEditCommand (sublime_plugin.TextCommand):
-    def run (self, edit, id):
-        global _async_edit_dict
-        if id in _async_edit_dict:
-            fun = _async_edit_dict[id]
-            del _async_edit_dict[id]
-            fun(self.view, edit)
 
 def find_view_by_name (name):
 	windows = sublime.windows()
@@ -98,7 +94,6 @@ def replace_content (view, new_content):
 	view.set_read_only(False)
 	async_edit(view, do_edit)
 	
-
 def in_haxe_code (view, caret):
 	return view.score_selector(caret,"source.haxe") > 0 and view.score_selector(caret,"string") == 0 and view.score_selector(caret,"comment") == 0
 

@@ -2,8 +2,7 @@ import sublime
 
 import codecs
 
-from haxe import settings
-from haxe import panel as hxpanel
+
 
 
 # debug should only be used for internal debugging
@@ -17,6 +16,9 @@ def log (msg, to_file = False):
 		f.append( str(msg) + "\n" )
 		f.close()
 	else:
+		from haxe import settings
+		from haxe import panel as hxpanel
+		
 		if settings.use_debug_panel():
 			
 			def f():

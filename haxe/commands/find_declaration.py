@@ -17,9 +17,8 @@ from haxe.log import log
 
 plugin_path = plugin_base_dir()
 
+# TODO cleanup this module
 
-
-word_chars = re.compile("[a-z0-9_]", re.I)
 
 class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :

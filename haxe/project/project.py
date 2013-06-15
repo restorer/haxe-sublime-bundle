@@ -87,7 +87,11 @@ class Project:
         env = self.haxe_env()
         
         self.server.start(haxe_exec, cwd, env)
-        
+    
+
+    def restart_server (self, view):
+        self.server.stop(lambda: self.start_server( view ) )
+
     def is_server_mode (self):
         return self.server_mode and hxsettings.use_haxe_servermode()
 

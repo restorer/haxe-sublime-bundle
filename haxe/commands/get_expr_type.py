@@ -4,7 +4,7 @@ from sublime import Region
 
 from haxe.tools import pathtools
 
-
+# TODO this is currently not working
 
 class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
     def run( self , edit ) :
@@ -28,7 +28,6 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
         if os.path.exists(tmp_folder):
             pathtools.remove_dir(tmp_folder)           
         
-
         os.makedirs(tmp_folder)
         
 

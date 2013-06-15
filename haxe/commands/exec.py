@@ -1,64 +1,17 @@
 import sublime, sublime_plugin
-import os
-import re
+import os,sys
+
 import functools
+import time
 
 from haxe.plugin import is_st3
 from haxe.tools import viewtools
-from haxe import project as hxproject
 from haxe.log import log
 
-
-plugin_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
-
-
-
-word_chars = re.compile("[a-z0-9_]", re.I)
-
-
-
-
-# called 
-
-class HaxeRestartServerCommand( sublime_plugin.WindowCommand ):
-
-    def run( self ) : 
-        log("run HaxeRestartServerCommand")
-        
-        view = sublime.active_window().active_view()
-        
-        project = hxproject.current_project(view)
-
-        project.server.stop(lambda: project.start_server( view ) )
-        
-
-
-
-
-
-
-
-
-############# Copy of Default exec.py with some modifications ##########
-
-import sublime, sublime_plugin
-import os, sys
 if is_st3:
     import _thread as thread
 else:
     import thread
-import subprocess
-import functools
-import time
-
-
-class ProcessListener(object):
-    def on_data(self, proc, data):
-        pass
-
-    def on_finished(self, proc):
-        pass
-
 
 try :
     stexec = __import__("exec")
@@ -69,8 +22,16 @@ except ImportError as e :
     stexec = getattr( Default , "exec" )
     ExecCommand = stexec.ExecCommand
     AsyncProcess = stexec.AsyncProcess
-    
-       
+
+
+class ProcessListener(object):
+    def on_data(self, proc, data):
+        pass
+
+    def on_finished(self, proc):
+        pass
+
+
 class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
     def run(self, cmd = [], file_regex = "", line_regex = "", working_dir = "",
             encoding = None, env = {}, quiet = False, kill = False, is_check_run = False,
@@ -104,7 +65,6 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
         if (working_dir == "" and self.window.active_view()
                         and self.window.active_view().file_name()):
             working_dir = os.path.dirname(self.window.active_view().file_name())
-
 
 
         self.output_view.settings().set("result_file_regex", file_regex)

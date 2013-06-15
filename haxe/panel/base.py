@@ -1,8 +1,7 @@
-from __future__ import absolute_import
-
 import sublime, sublime_plugin
 
 from haxe import settings
+
 from haxe.tools.cache import Cache
 
 from haxe.panel.slidepanel import SlidePanel
@@ -60,12 +59,10 @@ def default_panel(win = None):
 
 def slide_panel(win = None):
 	
-	
 	if (win is None):
 		win = sublime.active_window()
 	
 	win_id = win.id()
-	
 	
 	if (win_id not in _slide_panel):
 		_slide_panel[win_id] = SlidePanel(win)
