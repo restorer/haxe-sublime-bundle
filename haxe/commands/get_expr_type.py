@@ -1,28 +1,10 @@
 import sublime, sublime_plugin
 import os
-import re
-import json
-import codecs
-import functools
-
 from sublime import Region
 
+from haxe.tools import pathtools
 
-from haxe.plugin import is_st3, is_st2
 
-import haxe.tools.view as viewtools
-import haxe.project as hxproject
-import haxe.codegen as hxcodegen
-import haxe.tools.path as pathtools
-import haxe.hxtools as hxsrctools
-import haxe.settings as hxsettings
-import haxe.completion.hx.constants as hxcc
-import haxe.tools.view as viewtools
-import haxe.temp as hxtemp
-
-from haxe.log import log
-from haxe.completion.hx.types import CompletionOptions
-from haxe.completion.hx.base import trigger_completion
 
 class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
     def run( self , edit ) :
@@ -40,7 +22,6 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
         window = view.window()
         folders = window.folders()
  
-        project_dir = folders[0]
         tmp_folder = folders[0] + "/tmp"
         target_file = folders[0] + "/tmp/" + file_name
 
@@ -67,7 +48,7 @@ class HaxeGetTypeOfExprCommand (sublime_plugin.TextCommand ):
 
         view.replace(edit, newSel, word)
 
-        new_content = view.substr(sublime.Region(0, view.size()))
+        new_content = view.substr(Region(0, view.size()))
         fd.write(new_content)
 
         view.run_command("undo")

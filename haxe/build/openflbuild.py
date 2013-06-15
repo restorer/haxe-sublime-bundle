@@ -1,23 +1,7 @@
-from __future__ import absolute_import
 
-import os
-import re
-import glob
-import time
-import codecs
-import sublime
-import haxe.config as hxconfig
-import haxe.types as hxtypes
-import haxe.lib as hxlib
-import haxe.settings as hxsettings 
-import haxe.tools.path as pathtools
-import haxe.tools.stringtools as stringtools
-import haxe.panel as hxpanel
-from haxe.execute import run_cmd, run_cmd_async
+from haxe import config
+from haxe.tools import stringtools
 from haxe.log import log
-
-from haxe.plugin import is_st3, is_st2
-
 from haxe.build.nmebuild import NmeBuild
 
 class OpenFlBuild (NmeBuild):
@@ -55,9 +39,8 @@ class OpenFlBuild (NmeBuild):
 
 	def is_package_available (self, pack):
 		target = self.hxml_build.target
-		cls = hxconfig
 
-		tp = list(cls.target_packages)
+		tp = list(config.target_packages)
 		tp.extend(["native", "browser", "nme"])
 
 		no_target_pack = not pack in tp

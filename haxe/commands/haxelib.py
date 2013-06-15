@@ -1,6 +1,6 @@
 import sublime, sublime_plugin
 import functools
-import haxe.project as hxproject
+from haxe import project as hxproject
 from haxe.log import log
 
 

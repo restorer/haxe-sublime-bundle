@@ -4,7 +4,7 @@ import re
 import json
 from haxe.log import log
 
-from haxe.plugin import is_st3, is_st2
+from haxe.plugin import is_st3
 
 # last time the sublime session file was updated
 _last_modification_time = None

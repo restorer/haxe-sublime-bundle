@@ -1,28 +1,13 @@
 import sublime, sublime_plugin
 import os
 import re
-import json
-import codecs
 import functools
 
-from sublime import Region
-
-
-from haxe.plugin import is_st3, is_st2
-
-import haxe.tools.view as viewtools
-import haxe.project as hxproject
-import haxe.codegen as hxcodegen
-import haxe.tools.path as pathtools
-import haxe.hxtools as hxsrctools
-import haxe.settings as hxsettings
-import haxe.completion.hx.constants as hxcc
-import haxe.tools.view as viewtools
-import haxe.temp as hxtemp
-
+from haxe.plugin import is_st3
+from haxe.tools import viewtools
+from haxe import project as hxproject
 from haxe.log import log
-from haxe.completion.hx.types import CompletionOptions
-from haxe.completion.hx.base import trigger_completion
+
 
 plugin_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 

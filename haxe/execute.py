@@ -1,9 +1,9 @@
 import sys
 import os
 import sublime
-from haxe.startup import STARTUP_INFO
+from haxe.plugin import STARTUP_INFO
 
-from haxe.plugin import is_st3, is_st2
+from haxe.plugin import is_st3
 
 if is_st3:
 	import _thread as thread

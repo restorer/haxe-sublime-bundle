@@ -1,8 +1,6 @@
 
 import re
-import sublime
 
-from haxe.plugin import is_st3, is_st2
 
 from haxe.tools.decorator import lazyprop
 from haxe.log import log

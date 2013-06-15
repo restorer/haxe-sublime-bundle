@@ -2,15 +2,13 @@ import time
 import sublime
 import re
 
-from haxe.plugin import is_st3, is_st2
-
 import haxe.settings as hxsettings
 import haxe.panel as hxpanel
-import haxe.completion.hx.toplevel as toplevel
+from haxe.completion.hx import toplevel
 import haxe.temp as hxtemp
 import haxe.project as hxproject
 from haxe.completion.hx.types import CompletionOptions, CompletionSettings, CompletionContext, CompletionResult, CompletionBuild
-import haxe.completion.hx.constants as hxconst
+from haxe.completion.hx import constants as hxconst
 from haxe.compiler.output import get_completion_output
 from haxe.log import log
 
@@ -327,10 +325,6 @@ def highlight_errors( errors , view ) :
         hxpanel.default_panel().status( "Error" , e["file"] + ":" + str(l) + ": characters " + str(left) + "-" + str(right) + ": " + e["message"])
             
     view.add_regions("haxe-error" , regions , "invalid" , "dot" )
-
-
-
-
 
 def cancel_completion(view, hide_complete = True):
     if hide_complete:

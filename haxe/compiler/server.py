@@ -4,13 +4,13 @@ import os
 
 from subprocess import Popen, PIPE
 import time 
-from haxe.plugin import is_st3, is_st2
+from haxe.plugin import is_st3
 
-from haxe.startup import STARTUP_INFO
+from haxe.plugin import STARTUP_INFO
 from haxe.log import log
-import haxe.plugin as hxplugin
-import haxe.panel as hxpanel
-import haxe.settings as hxsettings
+from haxe import plugin
+from haxe import panel as hxpanel
+from haxe import settings as hxsettings
 
 
 
@@ -35,7 +35,7 @@ class Server ():
 			try:
 				
 				if self._use_wrapper:
-					wrapper = hxplugin.plugin_base_dir() + "/wrapper"
+					wrapper = plugin.plugin_base_dir() + "/wrapper"
 					cmd = ["neko", wrapper]
 				else:
 					cmd = list()

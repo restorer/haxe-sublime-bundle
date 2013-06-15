@@ -1,12 +1,8 @@
 import re
 import os
-import sublime, sublime_plugin
-import functools
+import sublime
 
-from haxe.plugin import is_st3, is_st2
-
-import haxe.settings as hxsettings
-import haxe.types as hxtypes
+from haxe import types as hxtypes
 from haxe.log import log
 
 from haxe.execute import run_cmd
@@ -44,7 +40,6 @@ class HaxeLibManager:
 
 		return comps
 
-	
 	def scan(self) :
 		self.scanned = True
 		log("do scan")
@@ -81,7 +76,6 @@ class HaxeLibManager:
 		cmd.append(lib)
 		run_cmd(cmd)
 		self.scan()
-
 
 	def upgrade_all(self):
 		cmd = self.project.haxelib_exec()
@@ -136,11 +130,3 @@ class HaxeLibLibrary :
 			self.classes, self.packages = hxtypes.extract_types( self.path )
 		
 		return self.classes, self.packages
-
-	
-
-
-
-
-		
-

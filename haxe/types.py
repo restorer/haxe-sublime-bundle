@@ -1,18 +1,12 @@
 import os, codecs, glob
-import sublime
 
-from haxe.plugin import is_st3, is_st2
-
-import haxe.config as hxconfig
-import haxe.hxtools as hxtools
+from haxe import config as hxconfig
+from haxe import hxtools as hxtools
 from haxe.log import log
-from haxe.tools.cache import Cache
+
 
 
 def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_packages = None, include_private_types = True):
-
-
-	
 
 	classes = []
 	packs = []
@@ -40,8 +34,6 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 	packs.sort()
 
 	return classes,packs
-
-
 
 
 import re

@@ -1,25 +1,19 @@
-from __future__ import absolute_import
 import os
 import re
 import glob
-import time
 import codecs
 import sublime
-import haxe.config as hxconfig
-import haxe.types as hxtypes
-import haxe.lib as hxlib
-import haxe.settings as hxsettings 
-import haxe.tools.path as pathtools
-import haxe.tools.stringtools as stringtools
-import haxe.panel as hxpanel
-from haxe.execute import run_cmd, run_cmd_async
+
+from haxe import config as hxconfig
+
+from haxe.tools import pathtools
+
+from haxe.execute import run_cmd
 from haxe.log import log
 
 from haxe.build.hxmlbuild import HxmlBuild
 from haxe.build.nmebuild import NmeBuild
 from haxe.build.openflbuild import OpenFlBuild
-
-from haxe.plugin import is_st3, is_st2
 
 try:
 	from io import StringIO

@@ -1,14 +1,10 @@
 import sublime
 import re
 
-from haxe.plugin import is_st3, is_st2
-
-import haxe.panel as hxpanel
-import haxe.hxtools as hxsrctools
+from haxe import panel as hxpanel
+from haxe import hxtools as hxsrctools
 
 from haxe.log import log
-
-
 
 def generate_using (view, edit):
 	p = HaxeImportGenerator(hxpanel.default_panel(), view)
@@ -17,6 +13,8 @@ def generate_using (view, edit):
 def generate_import (view, edit):
 	p = HaxeImportGenerator(hxpanel.default_panel(), view)
 	return p.generate_statement(edit, "import", hxsrctools.import_line)
+
+# TODO clean up this class, it's really dirty
 
 class HaxeImportGenerator:
 
@@ -30,7 +28,7 @@ class HaxeImportGenerator:
 		self.cname = None 
 		
 
-	def get_end( self, src, offset ) :
+	def _get_end( self, src, offset ) :
 		end = len(src)
 		while offset < end:
 			c = src[offset]
@@ -38,7 +36,7 @@ class HaxeImportGenerator:
 			if not hxsrctools.word_chars.match(c): break
 		return offset - 1
 
-	def get_start( self, src, offset ) :
+	def _get_start( self, src, offset ) :
 		found_word = 0
 		offset -= 1
 		while offset > 0:
@@ -51,41 +49,44 @@ class HaxeImportGenerator:
 
 		return offset + 2
 	
-	def is_membername( self, token ) :
+	def _is_membername( self, token ) :
 		return token[0] >= "Z" or token == token.upper()
 
-	def is_module( self , token ) :
-		return re.search("[\.^][A-Z]+", token);
+	# def is_module( self , token ) :
+	# 	return re.search("[\.^][A-Z]+", token);
 
-	def get_classname( self, view, src ) :
+	def _get_classname( self, view, src ) :
 		loc = view.sel()[0]
 		end = max(loc.a, loc.b)
 		self.size = loc.size()
 		if self.size == 0:
-			end = self.get_end(src, end)
-			self.start = self.get_start(src, end)
+			end = self._get_end(src, end)
+			self.start = self._get_start(src, end)
 			self.size = end - self.start
 		else:
 			self.start = end - self.size
 
 		self.cname = view.substr(sublime.Region(self.start, end)).rpartition(".")
-		#print(self.cname)
-		while (not self.cname[0] == "" and self.is_membername(self.cname[2])):
+
+
+		while (not self.cname[0] == "" and self._is_membername(self.cname[2])):
 			self.size -= 1 + len(self.cname[2])
 			self.cname = self.cname[0].rpartition(".")
 
-	def compact_classname( self, edit, view ) :
+		return self.cname
+
+	def _compact_classname( self, edit, view ) :
 		view.replace(edit, sublime.Region(self.start, self.start+self.size), self.cname[2])
 		view.sel().clear()
 		loc = self.start + len(self.cname[2])
 		view.sel().add(sublime.Region(loc, loc))
 
-	def get_indent( self, src, index ) :
+	def _get_indent( self, src, index ) :
 	
 		if src[index] == "\n": return index + 1
 		return index
 
-	def insert_statement( self, edit, view, src, statement, regex) :
+	def _insert_statement( self, edit, view, src, statement, regex) :
 		cname = "".join(self.cname)
 		clow = cname.lower()
 		last = None
@@ -93,7 +94,7 @@ class HaxeImportGenerator:
 		for imp in regex.finditer(src):
 			if clow < imp.group(2).lower():
 				ins = "{0}{1} {2};\n".format(imp.group(1), statement, cname)
-				view.insert(edit, self.get_indent(src, imp.start(0)), ins)
+				view.insert(edit, self._get_indent(src, imp.start(0)), ins)
 				return
 			last = imp
 
@@ -114,20 +115,20 @@ class HaxeImportGenerator:
 		
 		view = self.view
 		src = view.substr(sublime.Region(0, view.size()))
-		self.get_classname(view, src)
+		cname = self._get_classname(view, src)
 		
-		if self.cname[1] == "": 
+		if cname[1] == "": 
 			sublime.status_message("Nothing to " + statement)
 			self.panel.writeln("Nothing to " + statement)
 			return
 
-		self.compact_classname(edit, view)
+		self._compact_classname(edit, view)
 
-		if re.search((statement + "\s+{0};").format("".join(self.cname)), src):
+		if re.search((statement + "\s+{0};").format("".join(cname)), src):
 			sublime.status_message("Already imported/used")
 			self.panel.writeln("Already imported/used")
 			return 
 		 
-		self.insert_statement(edit, view, src, statement, regex)	
+		self._insert_statement(edit, view, src, statement, regex)	
 
 

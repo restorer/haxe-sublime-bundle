@@ -1,10 +1,9 @@
 import sublime, sublime_plugin
 import os
 
-from haxe.plugin import is_st3, is_st2
+from haxe.plugin import is_st3
 
-
-import haxe.config as hxconfig
+from haxe import config as hxconfig
 
 
 # convert edit operation into a async operation with a callback, use global map (cannot pass function to command)

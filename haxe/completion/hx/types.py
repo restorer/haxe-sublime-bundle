@@ -1,15 +1,15 @@
-import sublime, sublime_plugin
+import sublime
 import re
 
 import time
 
-from haxe.plugin import is_st3, is_st2
+from haxe.plugin import is_st3
 
 
 from haxe.tools.decorator import lazyprop
-import haxe.tools.view as viewtools
+from haxe.tools import viewtools
 from haxe.log import log
-import haxe.completion.hx.constants as hcc
+from haxe.completion.hx import constants as hcc
 
 control_struct = re.compile( "\s+(if|switch|for|while)\s*\($" );
 

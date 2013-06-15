@@ -1,11 +1,9 @@
 import os
 
 import codecs
-import sublime
 from haxe.log import log
-import haxe.tools.path as path_tools
+from haxe.tools import pathtools
 
-from haxe.plugin import is_st3, is_st2
 
 def get_temp_path(build):
 
@@ -28,7 +26,7 @@ def get_temp_path(build):
 def create_temp_path(build):
 
 	temp_path = get_temp_path(build)
-	path_tools.remove_dir(temp_path)
+	pathtools.remove_dir(temp_path)
 	os.makedirs(temp_path)
 	return temp_path
 
@@ -59,7 +57,7 @@ def create_temp_path_and_file(build, orig_file, content):
 
 def remove_path (temp_path):
 	pass
-	#path_tools.remove_dir(temp_path)
+	#pathtools.remove_dir(temp_path)
 
 
  

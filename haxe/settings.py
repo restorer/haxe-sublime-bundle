@@ -1,6 +1,8 @@
 import sublime
+import os
 
-from haxe.plugin import is_st3, is_st2
+from haxe.plugin import is_st2
+
 
 def get (id, view = None):
 	if view is None:
@@ -45,7 +47,7 @@ def get_string (id, default, view = None):
 	if r is None:
 		return default
 	else:
-		if not is_st3 and isinstance(r, unicode):
+		if is_st2 and isinstance(r, unicode):
 			return r.decode("iso-8859-1")
 		elif isinstance(r, str):
 			return r
@@ -93,13 +95,12 @@ def haxe_sdk_path (view = None):
 
 def haxe_inst_path (view = None):
 	tmp = haxe_sdk_path(view)
-	import os
 	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "haxe") if tmp != None else None
 	return get_string("haxe_inst_path", default, view)
 
 def neko_inst_path (view = None):
 	tmp = haxe_sdk_path(view)
-	import os
+	
 	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "default") if tmp != None else None
 	return get_string("neko_inst_path", default, view)
 

@@ -1,7 +1,9 @@
 import sublime
 
-from haxe.plugin import is_st3, is_st2
-import haxe.settings as hxsettings
+import codecs
+
+from haxe import settings
+from haxe import panel as hxpanel
 
 
 # debug should only be used for internal debugging
@@ -15,8 +17,8 @@ def log (msg, to_file = False):
 		f.append( str(msg) + "\n" )
 		f.close()
 	else:
-		if hxsettings.use_debug_panel():
-			import haxe.panel as hxpanel
+		if settings.use_debug_panel():
+			
 			def f():
 				hxpanel.debug_panel().writeln(str(msg))
 			sublime.set_timeout(f, 100)

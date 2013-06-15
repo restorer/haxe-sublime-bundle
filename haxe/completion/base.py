@@ -1,20 +1,19 @@
 import sublime
 import sublime_plugin
 
-import haxe.tools.view as viewtools
-import haxe.project as hxproject
-import haxe.tools.scope as scopetools
-import haxe.config as hxconfig
+from haxe.tools import viewtools
+from haxe import project as hxproject
+from haxe.tools import scopetools
+
+from haxe import config as hxconfig
 
 from haxe.log import log
 
-import haxe.completion.hx.base as hx 
-import haxe.completion.hxml.base as hxml
-import haxe.completion.hxsl.base as hxsl
+from haxe.completion import hx
+from haxe.completion import hxml
+from haxe.completion import hxsl
 
 import time
-
-from haxe.plugin import is_st3, is_st2
 
 
 class CompletionListener( sublime_plugin.EventListener ):
@@ -75,8 +74,6 @@ def dispatch_auto_complete (project, view, prefix, location):
     log_completion_info(start_time, time.time(), comps)
 
     return comps
-
-
 
 def log_completion_info (start_time, end_time, comps):
     run_time = end_time-start_time

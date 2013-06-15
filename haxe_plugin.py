@@ -110,15 +110,12 @@ from haxe.build import (
 )
 
 from haxe.project import (
-     ProjectListener
-    ,Project
-    ,ProjectCompletionContext
+    ProjectListener
 )
 
 from haxe.completion.base import (
 
-     CompletionListener
-     
+     CompletionListener   
 ) 
 
 
@@ -163,8 +160,6 @@ from haxe.commands import (
 from haxe.panel import (
 
      PanelCloseListener
-    ,TabPanel
-    ,SlidePanel
 )
 
 from haxe.codegen import (
@@ -176,7 +171,7 @@ from haxe.tools.cache import (
      Cache
 )
 
-from haxe.tools.view import (
+from haxe.tools.viewtools import (
     HaxeTextEditCommand
 )
 
