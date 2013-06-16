@@ -4,6 +4,7 @@
     { "caption": "Haxe: New Enum", "command": "haxe_create_type" , "args" : { "t" : "enum"} },
     { "caption": "Haxe: New Typedef", "command": "haxe_create_type" , "args" : { "t" : "typedef"} },
     { "caption": "Haxe: Manage libraries", "command": "haxe_install_lib" },
+
     { "caption": "Haxe: Restart Server", "command": "haxe_restart_server" },
     { "caption": "Haxe: Find Declaration", "command": "haxe_find_declaration" },
     { "caption": "Haxe: Save All And Build", "command": "haxe_save_all_and_build" },

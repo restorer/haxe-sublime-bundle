@@ -4,7 +4,7 @@ from haxe.commands.completion_server import (
 	
 )
 
-from haxe.commands.exec import (
+from haxe.commands.execute import (
 	HaxeExecCommand
 )
 

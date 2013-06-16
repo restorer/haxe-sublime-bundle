@@ -1,7 +1,11 @@
 import haxe.completion.hx.constants as hxcc
 
 import sublime_plugin
+import re 
 from haxe.log import log
+
+from haxe.tools import viewtools
+
 from haxe.completion.hx.types import CompletionOptions
 from haxe.completion.hx.base import trigger_completion
 
