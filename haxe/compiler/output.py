@@ -215,13 +215,14 @@ def extract_errors( str ):
 			right = left+1
 		m = infos.pop(0)
 
-		errors.append({
-			"file" : f,
-			"line" : l,
-			"from" : left,
-			"to" : right,
-			"message" : m
-		}) 
+		if m != "Unexpected |":
+			errors.append({
+				"file" : f,
+				"line" : l,
+				"from" : left,
+				"to" : right,
+				"message" : m
+			}) 
 
 	if no_classes_found.match(str):
 		errors.append({ "file:" : "", "line" : 0, "from" : 0, "to" : 0, "message" : "".join(str.split("\n")) + " ( are you referencing a variable that doesn't exist?)"})
@@ -319,5 +320,6 @@ def parse_completion_errors(output, temp_file, orig_file, status):
 			status = ""
 
 	errors = extract_errors( output )
+	
 
 	return (status,errors)

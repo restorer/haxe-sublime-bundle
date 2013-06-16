@@ -58,6 +58,15 @@ def create_missing_folders(view):
 	if not os.path.isdir( path ) :
 		os.makedirs( path )
 
+def get_first_cursor_pos (view):
+	return view.sel()[0].begin()
+
+def get_content_until_first_cursor (view):
+	end = get_first_cursor_pos(view)
+	return get_content_until(view, end)
+
+def get_content_until (view, end_pos):
+	return view.substr(sublime.Region(0, end_pos))
 
 def get_content (view):
 	return view.substr(sublime.Region(0, view.size()))
