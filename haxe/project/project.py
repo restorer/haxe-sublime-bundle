@@ -7,13 +7,13 @@ from haxe.plugin import is_st3, is_st2
 
 from haxe import build as hxbuild
 from haxe import panel as hxpanel
-from haxe import hxtools as hxsrctools
 from haxe import types as hxtypes
 from haxe import settings as hxsettings
 from haxe import execute as hxexecute
 from haxe import haxelib
 
 from haxe.tools import viewtools
+from haxe.tools import hxsrctools
 
 from haxe.compiler import server as hxserver
 

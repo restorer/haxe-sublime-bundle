@@ -5,7 +5,7 @@ import sublime_plugin
 from haxe.tools import viewtools
 
 from haxe import project as hxproject
-from haxe import hxtools as hxsrctools
+from haxe.tools import hxsrctools
 
 from haxe.log import log
 

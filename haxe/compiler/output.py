@@ -3,8 +3,9 @@ import re
 import os
 
 from haxe import panel as hxpanel
-from haxe import hxtools as hxtools
 from haxe import settings as hxsettings
+
+from haxe.tools import hxsrctools
 
 from haxe.log import log
 
@@ -158,7 +159,7 @@ def completion_field_to_entry(name, sig, doc):
 				hint_to_long = is_st2 and len(label) > 40
 
 				if hint_to_long: # compact arguments
-					label = hxtools.compact_func.sub("(...)", label);
+					label = hxsrctools.compact_func.sub("(...)", label);
 				
 				new_types = list(types)
 				for i in range(0, len(new_types)):
@@ -172,9 +173,9 @@ def completion_field_to_entry(name, sig, doc):
 			
 	
 	if is_st2 and len(label) > 40: # compact return type
-		m = hxtools.compact_prop.search(label)
+		m = hxsrctools.compact_prop.search(label)
 		if m is not None:
-			label = hxtools.compact_prop.sub(": " + m.group(1), label)
+			label = hxsrctools.compact_prop.sub(": " + m.group(1), label)
 	
 	res = CompletionEntry( label, insert, doc )
 

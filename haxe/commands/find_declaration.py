@@ -4,7 +4,7 @@ import re
 import json
 import codecs
 
-from haxe import hxtools as hxsrctools
+
 from haxe import temp as hxtemp
 from haxe import project as hxproject
 
@@ -12,6 +12,7 @@ from haxe.plugin import plugin_base_dir
 
 from haxe.tools import viewtools
 from haxe.tools import pathtools
+from haxe.tools import hxsrctools
 
 from haxe.log import log
 

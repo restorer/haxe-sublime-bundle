@@ -1,7 +1,7 @@
 import os, codecs, glob, re
 
 from haxe import config as hxconfig
-from haxe import hxtools as hxtools
+from haxe.tools import hxsrctools
 from haxe.log import log
 
 
@@ -90,10 +90,10 @@ def extract_types_from_file (file, depth, module_name = None, include_private_ty
 
 	classes = []
 	s = codecs.open( file , "r" , "utf-8" , "ignore" )
-	src = hxtools.comments.sub( "" , s.read() )
+	src = hxsrctools.comments.sub( "" , s.read() )
 	
 	clPack = "";
-	for ps in hxtools.package_line.findall( src ) :
+	for ps in hxsrctools.package_line.findall( src ) :
 		clPack = ps
 
 	if clPack == "" :
@@ -103,7 +103,7 @@ def extract_types_from_file (file, depth, module_name = None, include_private_ty
 
 	module_class_included = False
 
-	for decl in hxtools.type_decl_with_scope.finditer( src ):
+	for decl in hxsrctools.type_decl_with_scope.finditer( src ):
 		is_private = decl.group(1) != None
 		
 		t = decl.group(3)
@@ -145,9 +145,9 @@ def extract_enum_constructors_from_src (src, module_name, include_private = Fals
 			continue
 		else:
 			enum_name = e.group(2)
-			start = search_next_char_on_same_nesting_level(src, "{", e.start(2))
+			start = hxsrctools.search_next_char_on_same_nesting_level(src, "{", e.start(2))
 			if start != None:
-				end = search_next_char_on_same_nesting_level(src, "}", start[0]+1)
+				end = hxsrctools.search_next_char_on_same_nesting_level(src, "}", start[0]+1)
 				if end != None:
 					constructors = extract_enum_constructors_from_enum(src[start[0]+1: end[0]-1])
 					all.extend([(enum_name,c) for c in constructors])
@@ -162,7 +162,7 @@ def extract_enum_constructors_from_enum (enumStr):
 		if m != None:
 			constructor = m.group(1)
 			constructors.append(constructor)
-			end = search_next_char_on_same_nesting_level(enumStr, ";", m.end(1))
+			end = hxsrctools.search_next_char_on_same_nesting_level(enumStr, ";", m.end(1))
 			if end != None:
 				start = end[0]+1
 			else:
@@ -170,63 +170,3 @@ def extract_enum_constructors_from_enum (enumStr):
 		else:
 			break
 	return constructors
-
-def search_next_char_on_same_nesting_level (str, char, start_pos):
-	open_pars = 0
-	open_braces = 0
-	open_brackets = 0
-	open_angle_brackets = 0
-
-	count = len(str)
-	cur = ""
-	pos = start_pos
-	while (True):
-		if pos > count-1:
-			break
-
-		c = str[pos]
-
-		next = str[pos+1] if pos < count-1 else None
-
-		if (c == char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
-			return (pos,cur)
-						
-		if (c == "-" and next == ">"):
-			cur += "->"
-			pos += 2
-		elif (c == "{"):
-			pos += 1
-			open_braces += 1
-			cur += c
-		elif (c == "}"):
-			pos += 1
-			open_braces -= 1
-			cur += c
-		elif (c == "("):
-			pos += 1
-			open_pars += 1
-			cur += c
-		elif (c == ")"):
-			pos += 1
-			open_pars -= 1
-			cur += c
-		elif (c == "["):
-			pos += 1
-			open_brackets += 1
-			cur += c
-		elif (c == "]"):
-			pos += 1
-			open_brackets -= 1
-			cur += c
-		elif (c == "<"):
-			pos += 1
-			open_angle_brackets += 1
-			cur += c
-		elif (c == ">"):
-			pos += 1
-			open_angle_brackets -= 1
-			cur += c
-		else:
-			pos += 1
-			cur += c
-	return None

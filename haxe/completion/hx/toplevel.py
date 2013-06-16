@@ -1,10 +1,11 @@
-
 import re
 
-
 from haxe.tools.decorator import lazyprop
+
+from haxe.tools import hxsrctools
+
 from haxe.log import log
-import haxe.hxtools as hxsrctools
+
 import haxe.config as hxconfig
 
 def has_upper_first (s):

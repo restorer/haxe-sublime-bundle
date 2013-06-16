@@ -2,7 +2,7 @@ import sublime
 import re
 
 from haxe import panel as hxpanel
-from haxe import hxtools as hxsrctools
+from haxe.tools import hxsrctools
 
 from haxe.log import log
 
