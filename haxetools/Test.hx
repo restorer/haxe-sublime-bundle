@@ -7,7 +7,7 @@ import hxsublime.Utils;
 class Test {
 
 	static function main () {
-		"hey".substr.sublime_find_decl();
+		"hey".substr.__sublimeFindDecl();
 	}
 
 }

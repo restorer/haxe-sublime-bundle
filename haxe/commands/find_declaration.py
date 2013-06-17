@@ -60,7 +60,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         if prev == ".":
             field_access = True
 
-        add = ".sublime_find_decl()"
+        add = ".__sublimeFindDecl()"
 
         if use_display:
             add += ".|"
@@ -70,7 +70,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         end = src[word_end:]
 
         if inline_workaround:
-            add_x = "sublime_find_decl"         
+            add_x = "__sublimeFindDecl"         
             add_y = ""
             if use_display:
                 add_y = ".|"
