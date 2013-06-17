@@ -460,3 +460,70 @@ def _extract_enum_constructors_from_enum (enumStr):
 		else:
 			break
 	return constructors
+
+
+
+
+#
+# splits a function signature into a list of types
+# e.g.
+# split_function_signature("A -> Array<T> -> (Void->Void) -> Int")
+# returns:
+# ["A","Array<T>","(Void->Void)","Int"]
+#
+def split_function_signature (signature):
+	open_pars = 0
+	open_braces = 0
+	open_brackets = 0
+
+	types = []
+	count = len(signature)
+	cur = ""
+	pos = 0
+	while (True):
+		if pos > count-1:
+			types.append(cur)
+			break
+
+		c = signature[pos]
+		next = signature[pos+1] if pos < count-1 else None
+		
+		if (c == "-" and next == ">"):
+			if (open_pars == 0 and open_braces == 0 and open_brackets == 0):
+				types.append(cur)
+				cur = ""
+			else:
+				cur += "->"
+			
+			pos += 2
+		elif (c == " " and open_pars == 0 and open_braces == 0 and open_brackets == 0):
+			pos += 1
+		elif (c == "{"):
+			pos += 1
+			open_braces += 1
+			cur += c
+		elif (c == "}"):
+			pos += 1
+			open_braces -= 1
+			cur += c
+		elif (c == "("):
+			pos += 1
+			open_pars += 1
+			cur += c
+		elif (c == ")"):
+			pos += 1
+			open_pars -= 1
+			cur += c
+		elif (c == "<"):
+			pos += 1
+			open_brackets += 1
+			cur += c
+		
+		elif (c == ">"):
+			pos += 1
+			open_brackets -= 1
+			cur += c
+		else:
+			pos += 1
+			cur += c
+	return types
