@@ -380,13 +380,22 @@ class CompletionResult:
         return CompletionResult("", [], "", [], ctx)
 
 
-    def __init__(self, ret, comps, status, hints, ctx):
+    def __init__(self, ret, comps, status, hints, ctx, retrieve_toplevel_comps = None):
         self.ret = ret
         self.comps = comps
         self.status = status
         self.hints = hints
         self.ctx = ctx
-        self.toplevel = []
+        if retrieve_toplevel_comps == None:
+            retrieve_toplevel_comps = lambda:[]
+        self.retrieve_toplevel_comps = retrieve_toplevel_comps
+
+        
+
+    @lazyprop
+    def _toplevel_comps(self):
+        return self.retrieve_toplevel_comps()
+
 
     def has_hints (self):
         return len(self.hints) > 0
@@ -395,10 +404,16 @@ class CompletionResult:
         return len(self.comps) > 0
 
     def has_results (self):
-        return len(self.comps) > 0 or len(self.hints) > 0 or len(self.toplevel) > 0
+        return len(self.comps) > 0 or len(self.hints) > 0 or (self.requires_toplevel_comps and len(self._toplevel_comps) > 0)
+
+    def requires_toplevel_comps(self):
+        prefix_is_whitespace = stringtools.is_whitespace_or_empty(self.ctx.prefix)
+        return not ((prefix_is_whitespace and self.has_hints() and self.ctx.options.types.has_hint()) or self.has_compiler_results())
 
     def all_comps (self):
-        res = list(self.toplevel)
+        res = []
+        if self.requires_toplevel_comps():
+            res.extend(list(self._toplevel_comps))
         res.extend(self.comps)
         return res
 

@@ -214,20 +214,7 @@ def completion_finished(ctx, comp_build, out, err):
     view = ctx.view
     
 
-    comp_result = output_to_result(ctx, temp_file, err, out)
-    
-    
-    # do we still need this completion, does it have any results
-
-
-
-    prefix_is_whitespace = stringtools.is_whitespace_or_empty(ctx.prefix)
-
-    if (prefix_is_whitespace and comp_result.has_hints() and ctx.options.types.has_hint()) or comp_result.has_compiler_results():
-        pass
-        log("DONT INCLUDE TOPLEVEL COMPS")
-    else:
-        comp_result.toplevel = get_toplevel_completions(ctx)
+    comp_result = output_to_result(ctx, temp_file, err, out, lambda:get_toplevel_completions(ctx))
 
     has_results = comp_result.has_results()
     
@@ -341,14 +328,14 @@ def log_completion_status(status, comps, hints):
             hxpanel.default_panel().writeln( status )    
 
 
-def output_to_result (ctx, temp_file, err, ret):
+def output_to_result (ctx, temp_file, err, ret, retrieve_tl_comps):
     hints, comps1, status, errors = get_completion_output(temp_file, ctx.orig_file, err, ctx.commas)
     # we don't need doc here
     comps1 = [(t.hint, t.insert) for t in comps1]
     ctx.project.completion_context.set_errors(errors)
     highlight_errors( errors, ctx.view )
     # top level completions are empty until they are really required
-    return CompletionResult(ret, comps1, status, hints, ctx )
+    return CompletionResult(ret, comps1, status, hints, ctx, retrieve_tl_comps )
 
 def use_completion_cache (last_input, current_input):
     return last_input.eq(current_input)
