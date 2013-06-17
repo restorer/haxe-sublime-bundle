@@ -31,6 +31,7 @@ class HxmlBuild :
 		self._update_time = None
 		self.mode_completion = False
 		self.defines = []
+		
 
 	@property
 	def title(self):
@@ -70,6 +71,9 @@ class HxmlBuild :
 		   
 	
 	def copy (self):
+
+		self.get_types()
+
 		hb = HxmlBuild(self.hxml, self.build_file)
 		hb.args = list(self.args)
 		hb.main = self.main
@@ -79,8 +83,8 @@ class HxmlBuild :
 		hb.std_bundle = self.std_bundle
 		hb.classpaths = list(self.classpaths)
 		hb.libs = list(self.libs)
-		hb.type_bundle = self.type_bundle if self.type_bundle is not None else None
-		
+		hb.type_bundle = self.type_bundle
+		hb._update_time = self._update_time
 		hb.show_times = self.show_times
 		hb.mode_completion = self.mode_completion
 		return hb
@@ -253,12 +257,16 @@ class HxmlBuild :
 
 	def _should_refresh_types(self, now):
 		
+		# if self._update_time is not None:
+		# 	log("update_diff:" + str(now - self._update_time))
+		# 	log("update_diff:" + str((now - self._update_time > 100)))
 		return self.type_bundle is None or self._update_time is None or (now - self._update_time) > 10
 
 	def get_types( self ) :
 		now = time.time()
 		
 		if self._should_refresh_types(now):
+			log("UPDATE THE TYPES NOW")
 			self._update_time = now
 			self._update_types()
 

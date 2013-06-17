@@ -40,6 +40,7 @@ class NmeBuild :
 	def hxml_build (self):
 		if self._hxml_build == None:
 			self._hxml_build = self._get_hxml_build_with_nme_display()
+			#self._hxml_build.get_types()
 
 		return self._hxml_build
 	

@@ -376,8 +376,8 @@ class CompletionInfo:
 
 class CompletionResult:
     @staticmethod
-    def empty_result (ctx):
-        return CompletionResult("", [], "", [], ctx)
+    def empty_result (ctx, retrieve_toplevel_comps = None):
+        return CompletionResult("", [], "", [], ctx, retrieve_toplevel_comps)
 
 
     def __init__(self, ret, comps, status, hints, ctx, retrieve_toplevel_comps = None):

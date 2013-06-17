@@ -8,6 +8,8 @@ from haxe.log import log
 
 import haxe.config as hxconfig
 
+import time
+
 
 TOP_LEVEL_KEYWORDS = [("trace\ttoplevel","trace"),("this\ttoplevel","this"),("super\ttoplevel","super")]
 
@@ -118,6 +120,7 @@ def get_type_comps (ctx, bundle, imported):
 
 
 def get_toplevel_completion( ctx  ) :
+    start_time = time.time()
     comps = []
     
     if not ctx.is_new:
@@ -127,7 +130,11 @@ def get_toplevel_completion( ctx  ) :
 
     imported = get_imports(ctx)
 
+    run_time1 = time.time() - start_time
+
     build_bundle = ctx.build.get_types()
+
+    run_time2 = time.time() - start_time
 
     std_bundle = ctx.build.std_bundle
 
@@ -137,11 +144,22 @@ def get_toplevel_completion( ctx  ) :
 
     merged_bundle = std_bundle.merge(build_bundle).filter(filter_privates)
 
+    run_time3 = time.time() - start_time
 
     comps1 = get_type_comps(ctx, merged_bundle, imported)
 
+    run_time4 = time.time() - start_time
+
     comps.extend(comps1)
     
+    run_time = time.time() - start_time
+
+    log("TOP LEVEL COMPLETION TIME1:" + str(run_time1))
+    log("TOP LEVEL COMPLETION TIME2:" + str(run_time2))
+    log("TOP LEVEL COMPLETION TIME3:" + str(run_time3))
+    log("TOP LEVEL COMPLETION TIME4:" + str(run_time4))
+    log("TOP LEVEL COMPLETION TIME END:" + str(run_time))
+
     return comps
 
 def get_toplevel_completion_filtered(ctx):

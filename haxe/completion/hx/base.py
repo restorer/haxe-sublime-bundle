@@ -103,7 +103,7 @@ def create_new_completions(project, view, offset, options, prefix):
         log("cancel completion, same is running")
         res = cancel_completion(ctx.view)
     elif not ctx.options.manual_completion:
-        #trigger_manual_completion(ctx.view, ctx.options.copy_as_manual() )
+        trigger_manual_completion(ctx.view, ctx.options.copy_as_manual() )
         res = cancel_completion(ctx.view)
     elif is_iterator_completion(ctx.src, ctx.offset):
         log("iterator completion")
@@ -144,9 +144,7 @@ def create_new_completions(project, view, offset, options, prefix):
                 
                 res = cancel_completion(view, True)
             else:
-                toplevel_comps = get_toplevel_completions(ctx)
-                comp_result = CompletionResult.empty_result(ctx)
-                comp_result.toplevel = toplevel_comps
+                comp_result = CompletionResult.empty_result(ctx, lambda:get_toplevel_completions(ctx))
                 res = combine_hints_and_comps(comp_result)
     return res
 
