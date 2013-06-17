@@ -115,7 +115,7 @@ class HaxeImportGenerator:
 		src = view.substr(sublime.Region(0, view.size()))
 		cname = self._get_classname(view, src)
 		
-		if cname[1] == "": 
+		if cname[1] == "" and statement == "import":
 			sublime.status_message("Nothing to " + statement)
 			self.panel.writeln("Nothing to " + statement)
 			return
@@ -123,8 +123,9 @@ class HaxeImportGenerator:
 		self._compact_classname(edit, view)
 
 		if re.search((statement + "\s+{0};").format("".join(cname)), src):
-			sublime.status_message("Already imported/used")
-			self.panel.writeln("Already imported/used")
+			info = "imported" if statement == "import" else "used"
+			sublime.status_message("Already " + info)
+			self.panel.writeln("Already " + info)
 			return 
 		 
 		self._insert_statement(edit, view, src, statement, regex)	
