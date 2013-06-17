@@ -34,65 +34,95 @@ if is_st3:
 
 
 
-# if not is_st3:
-#     prefix = "Haxe." if is_st3 else ""
+def reload_modules():
+    plugin_modules = [
+         
+          'haxe.build'
+         ,'haxe.build.hxmlbuild'
+         ,'haxe.build.nmebuild'
+         ,'haxe.build.openflbuild'
+         ,'haxe.build.tools'
+         
+         ,'haxe.commands'
+         ,'haxe.commands.build'
+         ,'haxe.commands.completion'
+         ,'haxe.commands.completion_server'
+         ,'haxe.commands.create_type'
+         ,'haxe.commands.execute'
+         ,'haxe.commands.find_declaration'
+         ,'haxe.commands.generate_import'
+         ,'haxe.commands.get_expr_type'
 
-#     plugin_modules = [
-#          prefix + 'haxe.config'
-#         ,prefix + 'haxe.project'
-#         ,prefix + 'haxe.build'
-#         ,prefix + 'haxe.completion.base'
-#         ,prefix + 'haxe.completion.hx.base'
-#         ,prefix + 'haxe.completion.hx.constants'
-#         ,prefix + 'haxe.completion.hx.types'
-#         ,prefix + 'haxe.completion.hx.toplevel'
-#         ,prefix + 'haxe.completion.hxsl.base'
-#         ,prefix + 'haxe.completion.hxml.base'
-#         ,prefix + 'haxe.commands'
-#         ,prefix + 'haxe.execute'
-#         ,prefix + 'haxe.codegen'
-#         ,prefix + 'haxe.compiler.server'
-#         ,prefix + 'haxe.compiler.output'
-#         ,prefix + 'haxe.lib'
-#         ,prefix + 'haxe.tools.path'
-#         ,prefix + 'haxe.tools.view'
-#         ,prefix + 'haxe.tools.scope'
-#         ,prefix + 'haxe.tools.cache'
-#         ,prefix + 'haxe.tools.decorator'
-#         ,prefix + 'haxe.panel'
-#         ,prefix + 'haxe.log'
-#         ,prefix + 'haxe.settings'
-#         ,prefix + 'haxe.startup'
-#         ,prefix + 'haxe.temp'
-#         ,prefix + 'haxe.types'
-#         ,prefix + 'haxe.hxtools'
-#         ,prefix + 'haxe.plugin'
-#     ]
+         ,'haxe.compiler'
+         ,'haxe.compiler.server'
+         ,'haxe.compiler.output'
 
-#     reload_mods = []
+         ,'haxe.completion'
+         ,'haxe.completion.base'
+         ,'haxe.completion.hx'
+         ,'haxe.completion.hx.base'
+         ,'haxe.completion.hx.constants'
+         ,'haxe.completion.hx.types'
+         ,'haxe.completion.hx.toplevel'
+         ,'haxe.completion.hxsl'
+         ,'haxe.completion.hxsl.base'
+         ,'haxe.completion.hxml'
+         ,'haxe.completion.hxml.base'
 
-#     for mod in sys.modules:
-#         if (mod[0:5] == 'haxe.' or mod == 'haxe' or mod == 'Haxe' or mod[0:5] == 'Haxe.') and sys.modules[mod] != None:
-#             reload_mods.append(mod) 
+         ,'haxe.panel'         
+         ,'haxe.panel.slidepanel'
+         ,'haxe.panel.tabpanel'
+         ,'haxe.panel.tools'
 
-#     reloaded = []
-#     imported = []
-#     for mod in plugin_modules:
-#         if mod in reload_mods:
-#             reloaded.append(mod)
-#             reload(sys.modules[mod])
-#         else:
-#             imported.append(mod)
-#             __import__(mod)
+         ,'haxe.project'
+         ,'haxe.project.base'
+         ,'haxe.project.completion_state'
+         ,'haxe.project.project'
+         ,'haxe.project.tools'
 
-#     def mod_str (mods):
-#         return (str(len(mods)) + " modules ")  + ("\n" + ", ".join(mods) if len(mods) > 0 else "")
+         ,'haxe.tools.cache'
+         ,'haxe.tools.decorator'
+         ,'haxe.tools.hxsrctools'
+         ,'haxe.tools.pathtools'
+         ,'haxe.tools.scopetools'
+         ,'haxe.tools.stringtools'
+         ,'haxe.tools.sublimetools'
+         ,'haxe.tools.viewtools'
 
-#     print("-----------------")
-#     print("Reloaded modules: " + mod_str(reloaded))
-#     print("\nImported modules: " + mod_str(imported))
-#     print("-----------------")
+         ,'haxe.codegen'
+         ,'haxe.config'
+         ,'haxe.execute'
+         ,'haxe.haxelib'
+         ,'haxe.log'
+         ,'haxe.plugin'
+         ,'haxe.panel'
+         ,'haxe.settings'
+         ,'haxe.temp'
+         ,'haxe.types'
+         ,'haxe'
+         
+    ]
+    reload_mods = []
+    for mod in sys.modules:
+        if (mod[0:5] == 'haxe.' or mod == 'haxe' or mod == 'Haxe' or mod[0:5] == 'Haxe.') and sys.modules[mod] != None:
+            reload_mods.append(mod) 
+    reloaded = []
+    imported = []
+    for mod in plugin_modules:
+        if mod in reload_mods:
+            reloaded.append(mod)
+            imp.reload(sys.modules[mod])
+        else:
+            imported.append(mod)
+            __import__(mod)
+    def mod_str (mods):
+        return (str(len(mods)) + " modules ")  + ("\n" + ", ".join(mods) if len(mods) > 0 else "")
+    print("-----------------")
+    print("Reloaded modules: " + mod_str(reloaded))
+    print("\nImported modules: " + mod_str(imported))
+    print("-----------------")
 
+sublime.set_timeout(reload_modules, 30)
 
 # all classes must be included manually, because sublimes autoreload does
 # not reload them otherwise (at runtime)
