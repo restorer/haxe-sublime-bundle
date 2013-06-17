@@ -39,7 +39,15 @@ class OpenFlBuild (NmeBuild):
 		out = self.title
 		return "{out} (OpenFL - {target})".format(out=out, target=self.target.name);
 
-	def is_package_available (self, pack):
+	def is_type_available (self, type):
+		pack = type.toplevel_pack
+		return pack is None or self.is_pack_available(pack)
+
+	def is_pack_available (self, pack):
+		if pack == "":
+			return True
+
+		pack = pack.split(".")[0]
 		target = self.hxml_build.target
 
 		tp = list(config.target_packages)

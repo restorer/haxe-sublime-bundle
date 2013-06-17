@@ -150,15 +150,17 @@ class Project:
         self._build(view, "run")
 
     def _update_compiler_info (self):
-        classes, packs, ver, std_paths = _collect_compiler_info(self.haxe_exec(), self.project_path)
+        bundle, ver, std_paths = _collect_compiler_info(self.haxe_exec(), self.project_path)
 
         #assume it's supported if no version available
         self.server_mode = ver is None or ver >= 209
         
+
+        self.std_bundle = bundle
         self.std_paths = std_paths
-        self.std_packages = packs
-        self.std_classes = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
-        self.std_classes.extend(classes)
+        #self.std_packages = packs
+        #self.std_classes = ["Void","String", "Float", "Int", "UInt", "Bool", "Dynamic", "Iterator", "Iterable", "ArrayAccess"]
+        #self.std_classes.extend(classes)
 
     
 
@@ -225,8 +227,8 @@ class Project:
         
         if len(self.builds) > 0 :
             self.current_build = self.builds[id]
-            self.current_build.set_std_classes(list(self.std_classes))
-            self.current_build.set_std_packs(list(self.std_packages))
+            self.current_build.set_std_bundle(self.std_bundle)
+
             hxpanel.default_panel().writeln( "build selected: " + self.current_build.to_string() )
         else:
             hxpanel.default_panel().writeln( "No build found/selected" )
@@ -388,11 +390,11 @@ def _collect_compiler_info (haxe_exec, project_path):
 
     std_classpaths = _extract_std_classpaths(out)
     
-    classes,packs = _collect_std_classes_and_packs(std_classpaths)
+    bundle = _collect_std_classes_and_packs(std_classpaths)
             
     ver = _extract_haxe_version(out)
     
-    return (classes, packs, ver, std_classpaths)
+    return (bundle, ver, std_classpaths)
 
 def _extract_haxe_version (out):
     ver = re.search( _haxe_version , out )
@@ -432,12 +434,11 @@ def _extract_std_classpaths (out):
 
 
 def _collect_std_classes_and_packs(std_cps):
-    classes = []
-    packs = []
+    bundle = hxsrctools.empty_type_bundle()
     for p in std_cps : 
-        classes_p, packs_p = hxtypes.extract_types( p, [], [], 0, [], False )
-        classes.extend(classes_p)
-        packs.extend(packs_p)
+        bundle1 = hxtypes.extract_types( p, [], [], 0, [], False )
+        bundle = bundle.merge(bundle1)
+        
 
-    return classes, packs
+    return bundle
 

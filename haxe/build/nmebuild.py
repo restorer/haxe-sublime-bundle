@@ -4,6 +4,7 @@ from haxe import config
 
 from haxe.log import log
 
+
 class NmeBuild :
 
 	def __init__(self, project, title, nmml, target, cb = None):
@@ -45,31 +46,28 @@ class NmeBuild :
 	def to_string(self) :
 		return "{title} (NME - {target})".format(title=self.title, target=self.target.name);
 		
-	def set_std_classes(self, std_classes):
-		self.hxml_build.set_std_classes(std_classes)
+	def set_std_bundle(self, std_bundle):
+		self.hxml_build.set_std_bundle(std_bundle)
 
-	def set_std_packs(self, std_packs):
-		self.hxml_build.set_std_packs(std_packs)
+	
 
 	def _filter_platform_specific(self, packs_or_classes):
-		res = []
-		for c in packs_or_classes:
-			if not c.startswith("native") and not c.startswith("browser") and not c.startswith("flash") and not c.startswith("flash9") and not c.startswith("flash8"):
-				res.append(c)
+	 	res = []
+	 	for c in packs_or_classes:
+	 		if not c.startswith("native") and not c.startswith("browser") and not c.startswith("flash") and not c.startswith("flash9") and not c.startswith("flash8"):
+	 			res.append(c)
 
-		return res
+	 	return res
 
 	def get_types(self):
-		classes, packages = self.hxml_build.get_types()
-		return self._filter_platform_specific(classes), self._filter_platform_specific(packages)
+		bundle = self.hxml_build.get_types()
+		return bundle
+
 
 	@property
-	def std_classes(self):
-		return self._filter_platform_specific(self.hxml_build.std_classes)
+	def std_bundle(self):
+		return self.hxml_build.std_bundle
 
-	@property
-	def std_packs(self):
-		return self._filter_platform_specific(self.hxml_build.std_packs)
 
 	def copy (self):
 		return NmeBuild(self.project, self.title, self.nmml, self.target, self.hxml_build.copy())
@@ -141,11 +139,18 @@ class NmeBuild :
 	def args (self):
 		return self.hxml_build.args
 
-	# checks if a toplevel package is available in the current build
-	def is_package_available (self, pack):
+	def is_type_available (self, type):
+		pack = type.toplevel_pack
+		return pack is None or self.is_pack_available(pack)
+
+
+	def is_pack_available (self, pack):
+		if pack == "":
+			return True
+
+		pack = pack.split(".")[0]
 		target = self.hxml_build.target
 		
-
 		tp = list(config.target_packages)
 		tp.extend(["native", "browser", "nme"])
 

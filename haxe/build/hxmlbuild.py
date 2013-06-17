@@ -6,6 +6,8 @@ import sublime
 from haxe import config
 from haxe import types as hxtypes
 from haxe import panel as hxpanel
+from haxe.tools import hxsrctools
+
 
 from haxe.execute import run_cmd, run_cmd_async
 from haxe.log import log
@@ -16,8 +18,7 @@ class HxmlBuild :
 	def __init__(self, hxml, build_file) :
 		
 		self.show_times = False
-		self.std_classes = []
-		self.std_packs = []
+		self.std_bundle = hxsrctools.empty_type_bundle()
 		self.args = []
 		self.main = None
 		self.target = None
@@ -26,8 +27,7 @@ class HxmlBuild :
 		self._build_file = build_file
 		self.classpaths = []
 		self.libs = []
-		self.classes = None
-		self.packages = None
+		self.type_bundle = None
 		self._update_time = None
 		self.mode_completion = False
 		self.defines = []
@@ -50,12 +50,10 @@ class HxmlBuild :
 	def get_name (self):
 		return "[No Main]" if self.main == None else self.main
 
-	def set_std_classes(self, std_classes):
-		self.std_classes = std_classes
+	def set_std_bundle(self, std_bundle):
+		self.std_bundle = std_bundle
 
-	def set_std_packs(self, std_packs):
-		self.std_packs = std_packs
-
+	
 	def equals (self, other):
 		
 		return (self.args == other.args 
@@ -78,12 +76,11 @@ class HxmlBuild :
 		hb.target = self.target
 		hb.output = self.output
 		hb.defines = list(self.defines)
-		hb.std_packs = self.std_packs
-		hb.std_classes = self.std_classes
+		hb.std_bundle = self.std_bundle
 		hb.classpaths = list(self.classpaths)
 		hb.libs = list(self.libs)
-		hb.classes = list(self.classes) if self.classes is not None else None
-		hb.packages = list(self.packages) if self.packages is not None else None
+		hb.type_bundle = self.type_bundle if self.type_bundle is not None else None
+		
 		hb.show_times = self.show_times
 		hb.mode_completion = self.mode_completion
 		return hb
@@ -249,15 +246,14 @@ class HxmlBuild :
 		#haxe.output_panel.HaxePanel.status("haxe-debug", "updating types")
 		log("update types for classpaths:" + str(self.classpaths))
 		log("update types for libs:" + str(self.libs))
-		classes, packages = hxtypes.find_types(self.classpaths, self.libs, self.get_build_folder(), [], [], include_private_types = False )
+		self.type_bundle = hxtypes.find_types(self.classpaths, self.libs, self.get_build_folder(), [], [], include_private_types = False )
 
-		self.classes = classes;
-		self.packages = packages;
+		
 
 
 	def _should_refresh_types(self, now):
 		
-		return self.classes is None or self.packages is None or self._update_time is None or (now - self._update_time) > 10
+		return self.type_bundle is None or self._update_time is None or (now - self._update_time) > 10
 
 	def get_types( self ) :
 		now = time.time()
@@ -266,7 +262,7 @@ class HxmlBuild :
 			self._update_time = now
 			self._update_types()
 
-		return self.classes, self.packages
+		return self.type_bundle
 
 	def prepare_check_cmd(self, project, server_mode, view):
 		cmd, build_folder = self.prepare_build_cmd(project, server_mode, view)
@@ -382,12 +378,21 @@ class HxmlBuild :
 			out, err = self._run_sync( project, view )
 			callback(out, err)
 
-	def is_package_available (self, pack):
+	def is_type_available (self, type):
+		pack = type.toplevel_pack
+		return pack is None or self.is_pack_available(pack)
+
+
+	def is_pack_available (self, pack):
+		if pack == "":
+			return True
+
+		pack = pack.split(".")[0]
 		target = self.target
 
 		available = True
 
-		if target != None and pack in config.target_packages:
+		if pack is not None and target is not None and pack in config.target_packages:
 			if target in config.target_std_packages:
 				if pack not in config.target_std_packages[target]:
 					available = False;
