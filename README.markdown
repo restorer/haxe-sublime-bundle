@@ -59,13 +59,18 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
 ### Shortcuts
 
  - Press **Ctrl+Shift+B** to either select among multiple builds, automatically generate an hxml file if none exist, or edit the build file if only one build exists
- - Press **Ctrl+Enter** to run the current/selected build
+ - Press **Ctrl+Enter** to only build the current/selected build
+ - Press **Ctrl+Shift+Enter** to build and run the current/selected build
  - Press **Ctrl+I** on a qualified class name to shorten it and generate the import statement. Safe to use if the class is already imported.
+ - Press **Ctrl+U** on a qualified class name to shorten it and generate the using statement. Safe to use if the class is already in "use".
  - Press **Ctrl+Shift+H** and then : 
       - **Ctrl+Shift+C** to create a new class,
       - **Ctrl+Shift+I** to create a new interface,
       - **Ctrl+Shift+E** to create a new enum,
       - **Ctrl+Shift+T** to create a new typedef
+      - **Ctrl+Shift+R** to restart the haxe completion server
+      - **Ctrl+Shift+F** to goto the definition of the type/function/var under the cursor, this is beta and does not work in all cases
+
 
 ### Settings
 
