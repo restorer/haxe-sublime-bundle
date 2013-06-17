@@ -71,7 +71,7 @@ def completion_field_to_entry(name, sig, doc):
 	insert = name
 	label = name
 	
-	smart_snippets = hxsettings.smart_snippets()
+	smart_snippets = hxsettings.smart_snippets_on_completion()
 	not_smart = not smart_snippets
 
 	if sig is not None :

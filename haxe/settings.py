@@ -108,7 +108,13 @@ def haxelib_exec (view = None):
 	return get_string("haxe_haxelib_exec", "haxelib", view)
 	
 def smart_snippets (view = None):
-	return get_bool("haxe_completion_smart_snippets", False, view)	
+	return get_bool("haxe_completion_smart_snippets", True, view)	
+
+def smart_snippets_on_completion (view = None):
+	return get_bool("haxe_completion_smart_snippets_on_completion", False, view)
+
+def smarts_snippets_just_current (view = None):
+	return get_bool("haxe_completion_smarts_snippets_just_current", False, view)	
 
 def use_debug_panel (view = None):
 	return get_bool("haxe_use_debug_panel", False, view)	
@@ -119,5 +125,4 @@ def build_on_save (view = None):
 def use_slide_panel (view = None):
 	return get_bool("haxe_use_slide_panel", True, view)	
 
-def smarts_hints_only_next (view = None):
-	return get_bool("haxe_smarts_hints_only_next", True, view)	
+

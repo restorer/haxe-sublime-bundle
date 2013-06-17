@@ -249,6 +249,8 @@ class CompletionContext:
         self.view_id = view.id()
 
         self.id = get_completion_id()
+
+        self.view_pos = viewtools.get_first_cursor_pos(view)
    
 
     @lazyprop

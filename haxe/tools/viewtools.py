@@ -19,6 +19,18 @@ _async_edit_id = 0
 _async_edit_dict = dict()
 
 
+
+def insert_snippet(view, snippet):
+	view.run_command("insert_snippet", {
+		'contents' : snippet
+	})
+	
+
+def insert_at_cursor(view, txt):
+	def do_edit(v, e):
+		v.insert(e, v.sel()[0].begin(), txt)
+	async_edit(view, do_edit)
+
 def async_edit(view, do_edit):
 	if is_st3:
 	    def start():

@@ -11,7 +11,7 @@ from haxe.completion.hx.types import CompletionOptions, CompletionSettings, Comp
 from haxe.completion.hx import constants as hxconst
 from haxe.compiler.output import get_completion_output
 from haxe.log import log
-
+from haxe.tools import viewtools
 
 
 # ------------------- FUNCTIONS ----------------------------------
@@ -48,6 +48,14 @@ def get_available_async_completions(comp_result, view):
     return cancel_completion(view) if discard_results else combine_hints_and_comps(comp_result)
 
 
+def completion_result_with_smart_snippets (view, comps, result, options):
+
+    if hxsettings.smart_snippets(view) and options.types.has_hint() and len(result.hints) == 1 and viewtools.get_first_cursor_pos(view) == result.ctx.view_pos:
+        only_hint = comps[0]
+        viewtools.insert_snippet(view, only_hint[1])
+        comps = cancel_completion()
+    return comps
+
 def auto_complete(project, view, offset, prefix):
 
     # if completion is triggered by a background completion process
@@ -60,6 +68,8 @@ def auto_complete(project, view, offset, prefix):
         use_async_results = async_result is not None and async_result.has_results()
         if use_async_results:
             res = get_available_async_completions(async_result, view)
+            res = completion_result_with_smart_snippets(view, res, async_result, options)
+            
         else:
             res = cancel_completion()
     else:
@@ -116,6 +126,7 @@ def create_new_completions(project, view, offset, options, prefix):
                 log("USE COMPLETION CACHE")
                 out = cache["output"]
                 res = combine_hints_and_comps(out)
+                res = completion_result_with_smart_snippets(view, res, out, ctx.options)
             elif supported_compiler_completion_char(ctx.complete_char):
                 
                 comp_build = create_completion_build(ctx)
@@ -179,7 +190,7 @@ def run_compiler_completion(comp_build, callback):
         project.completion_context.run_if_still_up_to_date(ctx.id, run)
         
     def on_result(out, err):
-        sublime.set_timeout(lambda : in_main(out, err), 20)
+        sublime.set_timeout(lambda : in_main(out, err), 2)
 
     # store the data of the currently running completion operation in cache to fetch it later
     project.completion_context.set_new_completion(ctx);
@@ -216,17 +227,22 @@ def hints_to_sublime_completions(hints):
         if is_only_type:
             res = (h[0] + " - No Completion", "${}")
         else:
-            only_next = hxsettings.smarts_hints_only_next()
+            
 
             params = h[0:len(h)-1];
-            params2 = params if not only_next else h[0:1]
+            params2 = h[0:1]
             show = "" + ", ".join([param for param in params]) + ""
-            insert = ",".join(["${" + str(index+1) + ":" + param + "}" for index, param in enumerate(params2)])
+            if hxsettings.smarts_snippets_just_current():
+                insert = ",".join(["${" + str(index+1) + ":" + param + "}" for index, param in enumerate(params2)])
+            else:
+                insert = "${1:" + ",".join(["${" + str(index+2) + ":" + param + "}" for index, param in enumerate(params)])  + "}"
             
             res = (show, insert)
         return res
 
     return [make_hint_comp(h) for h in hints]
+
+
 
 def combine_hints_and_comps (comp_result):
     all_comps = hints_to_sublime_completions(comp_result.hints)
@@ -234,8 +250,13 @@ def combine_hints_and_comps (comp_result):
     if not comp_result.ctx.options.types.has_hint() or len(comp_result.hints) == 0:
         log("TAKE TOP LEVEL COMPS")
         all_comps.extend(comp_result.all_comps())
-    if len(comp_result.hints) == 1:
-        hxpanel.default_panel().writeln(comp_result.doc);
+
+    
+        # insert hint directly
+
+
+    #if len(comp_result.hints) == 1:
+    #    hxpanel.default_panel().writeln(comp_result.doc);
     return all_comps
 
 
@@ -344,7 +365,7 @@ def trigger_async_completion(view, options):
     def run_complete():
         trigger_completion(view, async_options)
 
-    sublime.set_timeout(run_complete, 20)
+    sublime.set_timeout(run_complete, 2)
 
 def trigger_manual_completion(view, options):
 
@@ -361,5 +382,5 @@ def trigger_manual_completion(view, options):
         else:
             view.run_command("haxe_display_completion")
 
-    sublime.set_timeout(run_complete, 20)
+    sublime.set_timeout(run_complete, 2)
 

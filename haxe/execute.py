@@ -18,7 +18,7 @@ def run_cmd_async(args, callback, input=None, cwd=None, env=None):
 	def in_thread ():
 		out, err = run_cmd(args, input, cwd, env)
 		
-		sublime.set_timeout(lambda : callback(out, err), 10)
+		sublime.set_timeout(lambda : callback(out, err), 1)
 
 	thread.start_new_thread(in_thread, ())
 
