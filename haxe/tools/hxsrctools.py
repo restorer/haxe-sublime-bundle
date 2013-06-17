@@ -3,6 +3,11 @@ import os
 
 from haxe.tools.decorator import lazyprop
 
+import pprint
+
+pp = pprint.PrettyPrinter(indent=4, depth=3)
+
+
 compact_func = re.compile("\(.*\)")
 compact_prop = re.compile(":.*\.([a-z_0-9]+)", re.I)
 space_chars = re.compile("\s")
@@ -30,7 +35,8 @@ comments = re.compile("(//[^\n\r]*?[\n\r]|/\*(.*?)\*/)", re.MULTILINE | re.DOTAL
 
 
 
-
+# searches the next occurrence of `char` in `hx_src_section` on the same nesting level as the char at position `start_pos`
+# the search starts at position `start_pos` in `hx_src_section`.
 def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
 	open_pars = 0
 	open_braces = 0
@@ -91,6 +97,8 @@ def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
 			cur += c
 	return None
 
+# reverse search the next occurrence of `char` in `hx_src_section` on the same nesting level as the char at position `start_pos`.
+# the reverse search starts at position `start_pos` in `hx_src_section`.
 def reverse_search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
 	open_pars = 0
 	open_braces = 0
@@ -151,19 +159,19 @@ def reverse_search_next_char_on_same_nesting_level (hx_src_section, char, start_
 			cur = c + cur
 	return None
 
-
+# removes comments from a haxe source
 def strip_comments (src):
 	return comments.sub( "" , src )
 
+
+# returns the package a haxe source
 def get_package(src):
 	pack = ""
 	for ps in package_line.findall( src ) :
 		pack = ps
 	return pack
 
-import pprint
 
-pp = pprint.PrettyPrinter(indent=4, depth=3)
 
 def empty_type_bundle():
 	return HaxeTypeBundle(dict())
@@ -176,14 +184,15 @@ class HaxeTypeBundle:
 		return "HaxeTypeBundle(\n" + pp.pformat(self._types) + "\n)"
 
 
-	# merges 2 type bundles, types from other shadows the types of self if they have
-	# the same fullqualified name, which is the identifier
+	# merges `itself` and `other` into a new type bundle. Order matters, because types from `other` shadow the types of self if they have
+	# the same fullqualified name, which is the dict identifier.
 	def merge (self, other):
 		res = dict(self._types)
 		for k,v in other._types.items():
 			res[k] = v
 		return HaxeTypeBundle(res)
 
+	# returns all available packages based on the types inside of this bundle
 	def packs (self):
 		res = dict()
 		for k in self._types:
@@ -192,6 +201,7 @@ class HaxeTypeBundle:
 				res[p] = None
 
 		return list(res.keys())
+
 
 	def all_types_and_enum_constructors (self):
 		res = dict()
@@ -205,28 +215,10 @@ class HaxeTypeBundle:
 
 		return list(res.keys())
 
-	def raw_types(self):
+	# returns a list of all types stored in this type bundle
+	def all_types(self):
 		return list(self._types.values())
 
-	def all_types (self):
-		res = dict()
-		for k in self._types:
-			fq_name = self._types[k].full_qualified_name_with_optional_module
-			res[fq_name] = None
-
-		return list(res.keys())
-
-	def all_types_seen_from_file (self, file):
-		res = dict()
-		for k in self._types:
-			t = self._types[k]
-			if t.file == file:
-				fq_name = t.name
-			else:
-				fq_name = t.full_qualified_name_with_optional_module
-			res[fq_name] = None
-
-		return list(res.keys())
 
 	def filter (self, fn):
 		res = dict()
@@ -269,7 +261,6 @@ class EnumConstructor:
 		insert = self.to_snippet_insert(import_list, insert_file)
 
 		return (display, insert)
-
 
 
 class HaxeType:
@@ -429,7 +420,7 @@ def get_types_from_src (src, module_name, file):
 		full_type = HaxeType(pack, module_name, type_name, kind, is_private, is_module_type, is_std_type, is_extern, file)
 
 		if full_type.is_enum:
-			full_type._enum_constructors = extract_enum_constructors_from_src(src, decl.end(4))
+			full_type._enum_constructors = _extract_enum_constructors_from_src(src, decl.end(4))
 
 		if not full_type.full_qualified_name in res:
 			res[full_type.full_qualified_name] = full_type
@@ -438,7 +429,7 @@ def get_types_from_src (src, module_name, file):
 
 
 
-def extract_enum_constructors_from_src (src, start_pos):
+def _extract_enum_constructors_from_src (src, start_pos):
 
 	constructors = None
 	
@@ -446,13 +437,13 @@ def extract_enum_constructors_from_src (src, start_pos):
 	if start is not None:
 		end = search_next_char_on_same_nesting_level(src, "}", start[0]+1)
 		if end is not None:
-			constructors = extract_enum_constructors_from_enum(src[start[0]+1: end[0]-1])
+			constructors = _extract_enum_constructors_from_enum(src[start[0]+1: end[0]-1])
 			
 	return constructors
 
 enum_constructor_start_decl = re.compile("\s+([a-zA-Z_]+)" , re.M )
 
-def extract_enum_constructors_from_enum (enumStr):
+def _extract_enum_constructors_from_enum (enumStr):
 	
 	constructors = []
 	start = 0;
@@ -469,59 +460,3 @@ def extract_enum_constructors_from_enum (enumStr):
 		else:
 			break
 	return constructors
-
-
-
- 
-src = """
-	package x.y;
-
-	class Test {}
-
-	abstract X<T>(Int) {}
-
-
-	enum Hey {
-		Hey10;
-		Hey3(f:Int);
-	}
-
-	interface Supi {}
-
-	private class PrivateClass {}	
-
-	extern class ExternClass {}	
-
-	private extern class ExternClass {}	
-
-
-"""
-
-
-b1 = get_types_from_src(src, "Test", "/src/x/y/Test.hx")
-
-
-src = """
-	package;
-
-	enum Bool {
-		true;
-		false;
-	}
-
-"""
-
-
-b2 = get_types_from_src(src, "StdTypes", "/src2/Test2.hx")
-
-b3 = get_types_from_src(src, "StdTypes", "/src2/Test2.hx")
-
-
-b10 = b1.merge(b2).merge(b3)
-pp.pprint(b10)
-pp.pprint(b1)
-pp.pprint(b2)
-pp.pprint(b3)
-pp.pprint(b10.packs())
-pp.pprint(b10.filter_by_classpaths(["/src2"]))
-pp.pprint(b10.filter_by_classpaths(["/src"]))

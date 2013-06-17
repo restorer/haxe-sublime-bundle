@@ -104,7 +104,7 @@ def get_type_comps (ctx, bundle, imported):
     build_target = get_build_target(ctx)
     comps = []
     
-    for t in bundle.raw_types():
+    for t in bundle.all_types():
         if ctx.build.is_type_available(t):
             snippets = t.to_snippets(imported, ctx.orig_file)
             comps.extend(snippets)
