@@ -28,7 +28,7 @@ def insert_snippet(view, snippet):
 
 def insert_at_cursor(view, txt):
 	def do_edit(v, e):
-		v.insert(e, v.sel()[0].begin(), txt)
+		v.insert(e, get_first_cursor_pos(v), txt)
 	async_edit(view, do_edit)
 
 def async_edit(view, do_edit):

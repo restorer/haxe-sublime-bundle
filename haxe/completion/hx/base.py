@@ -12,6 +12,7 @@ from haxe.completion.hx import constants as hxconst
 from haxe.compiler.output import get_completion_output
 from haxe.log import log
 from haxe.tools import viewtools
+from haxe.tools import stringtools
 
 
 # ------------------- FUNCTIONS ----------------------------------
@@ -50,10 +51,15 @@ def get_available_async_completions(comp_result, view):
 
 def completion_result_with_smart_snippets (view, comps, result, options):
 
-    if hxsettings.smart_snippets(view) and options.types.has_hint() and len(result.hints) == 1 and viewtools.get_first_cursor_pos(view) == result.ctx.view_pos:
+    use_snippets = hxsettings.smart_snippets(view)
+    prefix_is_whitespace = stringtools.is_whitespace_or_empty(result.ctx.prefix)
+    has_one_hint = options.types.has_hint() and len(result.hints) == 1
+    same_cursor_pos = viewtools.get_first_cursor_pos(view) == result.ctx.view_pos
+    
+    if prefix_is_whitespace and use_snippets and has_one_hint and same_cursor_pos:
         only_hint = comps[0]
         viewtools.insert_snippet(view, only_hint[1])
-        comps = cancel_completion()
+        comps = cancel_completion(view)
     return comps
 
 def auto_complete(project, view, offset, prefix):
@@ -198,7 +204,7 @@ def run_compiler_completion(comp_build, callback):
     build.run(project, view, async, on_result)
 
 def completion_finished(ctx, comp_build, out, err):
-    toplevel_comps = get_toplevel_completions(ctx)
+    
     ctx = comp_build.ctx
     temp_file = comp_build.temp_file
     
@@ -207,9 +213,22 @@ def completion_finished(ctx, comp_build, out, err):
     project = ctx.project
     view = ctx.view
     
-    comp_result = output_to_result(ctx, temp_file, err, out, toplevel_comps)
+
+    comp_result = output_to_result(ctx, temp_file, err, out)
+    
     
     # do we still need this completion, does it have any results
+
+
+
+    prefix_is_whitespace = stringtools.is_whitespace_or_empty(ctx.prefix)
+
+    if (prefix_is_whitespace and comp_result.has_hints() and ctx.options.types.has_hint()) or comp_result.has_compiler_results():
+        pass
+        log("DONT INCLUDE TOPLEVEL COMPS")
+    else:
+        comp_result.toplevel = get_toplevel_completions(ctx)
+
     has_results = comp_result.has_results()
     
     if has_results:
@@ -280,6 +299,9 @@ def should_include_top_level_completion(ctx):
     
     toplevel_complete = ctx.complete_char in ":(,{;})" or ctx.in_control_struct or ctx.is_new
     
+
+
+
     return toplevel_complete
 
 
@@ -319,13 +341,14 @@ def log_completion_status(status, comps, hints):
             hxpanel.default_panel().writeln( status )    
 
 
-def output_to_result (ctx, temp_file, err, ret, toplevel_comps):
+def output_to_result (ctx, temp_file, err, ret):
     hints, comps1, status, errors = get_completion_output(temp_file, ctx.orig_file, err, ctx.commas)
     # we don't need doc here
     comps1 = [(t.hint, t.insert) for t in comps1]
     ctx.project.completion_context.set_errors(errors)
     highlight_errors( errors, ctx.view )
-    return CompletionResult(ret, comps1, status, hints, toplevel_comps, ctx )
+    # top level completions are empty until they are really required
+    return CompletionResult(ret, comps1, status, hints, ctx )
 
 def use_completion_cache (last_input, current_input):
     return last_input.eq(current_input)

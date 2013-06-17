@@ -7,7 +7,7 @@ from haxe.plugin import is_st3
 
 
 from haxe.tools.decorator import lazyprop
-from haxe.tools import viewtools
+from haxe.tools import viewtools, stringtools
 from haxe.log import log
 from haxe.completion.hx import constants as hcc
 
@@ -340,7 +340,21 @@ class CompletionContext:
         return self.src[:self.complete_offset] + "|" + self.src[self.complete_offset:]
 
 
+    @lazyprop
+    def prefix_is_whitespace(self):
+        return stringtools.is_whitespace_or_empty(self.prefix)
+
     def eq (self, other):
+
+        def prefix_check():
+            prefix_same = True
+            if self.options.types.has_hint():
+                prefix_same = self.prefix == other.prefix or (self.prefix_is_whitespace and other.prefix_is_whitespace)
+
+            log("same PREFIX:" + str(prefix_same))
+            log("PREFIXES:" + self.prefix + " - " + other.prefix)
+            return prefix_same
+
         return (
             self != None and other != None
         and self.orig_file == other.orig_file
@@ -348,7 +362,8 @@ class CompletionContext:
         and self.commas == other.commas
         and self.src_until_offset == other.src_until_offset
         and self.options.eq(other.options)
-        and self.complete_char == other.complete_char)
+        and self.complete_char == other.complete_char
+        and prefix_check())
 
 class CompletionInfo:
     def __init__(self, commas, complete_offset, toplevel_complete, is_new):
@@ -362,16 +377,22 @@ class CompletionInfo:
 class CompletionResult:
     @staticmethod
     def empty_result (ctx):
-        return CompletionResult("", [], "", [], [], ctx)
+        return CompletionResult("", [], "", [], ctx)
 
 
-    def __init__(self, ret, comps, status, hints, toplevel, ctx):
+    def __init__(self, ret, comps, status, hints, ctx):
         self.ret = ret
         self.comps = comps
         self.status = status
         self.hints = hints
         self.ctx = ctx
-        self.toplevel = toplevel
+        self.toplevel = []
+
+    def has_hints (self):
+        return len(self.hints) > 0
+
+    def has_compiler_results (self):
+        return len(self.comps) > 0
 
     def has_results (self):
         return len(self.comps) > 0 or len(self.hints) > 0 or len(self.toplevel) > 0
