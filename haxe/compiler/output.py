@@ -24,7 +24,17 @@ no_classes_found = re.compile("^No classes found in ", re.M)
 
 haxe_compiler_line = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
 
-def split_signature (signature):
+
+
+class CompletionEntry:
+	def __init__(self, hint, insert, doc):
+		self.hint = hint
+		self.insert = insert
+		self.doc = doc
+
+
+
+def split_function_signature (signature):
 	open_pars = 0
 	open_braces = 0
 	open_brackets = 0
@@ -86,7 +96,7 @@ def get_type_hint (types):
 	hints = []
 	for i in types :
 		hint = i.text.strip()
-		hint_types = split_signature(hint)
+		hint_types = hxsrctools.split_function_signature(hint)
 		hints.append( hint_types )
 	return hints
 
@@ -125,7 +135,7 @@ def completion_field_to_entry(name, sig, doc):
 	not_smart = not smart_snippets
 
 	if sig is not None :
-		types = split_signature(sig) 
+		types = hxsrctools.split_function_signature(sig) 
 		
 		types, type_params = get_function_type_params(name, types)
 
@@ -195,11 +205,6 @@ def collect_completion_fields (li):
 
 	return comps
 
-class CompletionEntry:
-	def __init__(self, hint, insert, doc):
-		self.hint = hint
-		self.insert = insert
-		self.doc = doc
 
 def extract_errors( str ):
 	errors = []

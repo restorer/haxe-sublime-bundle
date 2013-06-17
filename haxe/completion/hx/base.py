@@ -234,6 +234,8 @@ def combine_hints_and_comps (comp_result):
     if not comp_result.ctx.options.types.has_hint() or len(comp_result.hints) == 0:
         log("TAKE TOP LEVEL COMPS")
         all_comps.extend(comp_result.all_comps())
+    if len(comp_result.hints) == 1:
+        hxpanel.default_panel().writeln(comp_result.doc);
     return all_comps
 
 
