@@ -23,9 +23,9 @@
             }
         ]
     },
-    { 
+    /*{ 
         "keys": ["ctrl+shift+space"], 
-        "command": "haxe_display_completion",
+        "command": "haxe_display_macro_completion",
         "context":
         [
             {
@@ -34,7 +34,7 @@
                 "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
             }
         ]
-    },
+    },*/
     { 
         "keys": ["ctrl+shift+h","ctrl+shift+space"], 
         "command": "haxe_display_completion",
