@@ -23,6 +23,18 @@
             }
         ]
     },
+    { 
+        "keys": ["ctrl+shift+h", "ctrl+shift+d"], 
+        "command": "haxe_show_doc",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
     /*{ 
         "keys": ["ctrl+shift+space"], 
         "command": "haxe_display_macro_completion",

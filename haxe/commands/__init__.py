@@ -42,6 +42,9 @@ from haxe.commands.build import (
 	,HaxeBuildOnSaveListener
 )
 
+from haxe.commands.show_doc import (
+	 HaxeShowDocCommand
+)
 
 from haxe.commands.completion import (
 	 HaxeAsyncTriggeredCompletionCommand
