@@ -128,7 +128,7 @@ class ProjectListener( sublime_plugin.EventListener ):
             
     # if view is None it's a preview
     def on_activated( self , view ) :
-        log("on_activated")
+        
         if view is not None and view.file_name() is not None and viewtools.is_supported(view): 
             def on_load_delay():
                 current_project(view).generate_build( view )

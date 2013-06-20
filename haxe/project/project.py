@@ -98,8 +98,10 @@ class Project:
 
     def generate_build(self, view):
         fn = view.file_name()
-        log("generate build")
-        if self.current_build is not None and isinstance(self.current_build, hxbuild.HxmlBuild) and fn == self.current_build.hxml and view.size() == 0 :
+        
+        is_hxml_build = lambda: isinstance(self.current_build, hxbuild.HxmlBuild)
+
+        if self.current_build is not None and is_hxml_build() and fn == self.current_build.hxml and view.size() == 0 :
             log("do edit")
             def run_edit(v, e):
                 hxml_src = self.current_build.make_hxml()

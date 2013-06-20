@@ -23,14 +23,17 @@ def trigger_completion (view, options):
     def run():
         project = hxproject.current_project(view)
         
-        project.completion_context.set_trigger(view, options)
-        
-        view.run_command( "auto_complete" , {
-            "api_completions_only" : True,
-            "disable_auto_insert" : True,
-            "next_completion_if_showing" : True,
-            'auto_complete_commit_on_tab': True
-        } )
+        if project.has_build():
+            project.completion_context.set_trigger(view, options)
+            
+            view.run_command( "auto_complete" , {
+                "api_completions_only" : True,
+                "disable_auto_insert" : True,
+                "next_completion_if_showing" : True,
+                'auto_complete_commit_on_tab': True
+            } )
+        else:
+            project.extract_build_args(view, True)
 
     
 
@@ -58,6 +61,7 @@ def completion_result_with_smart_snippets (view, comps, result, options):
     
     if prefix_is_whitespace and use_snippets and has_one_hint and same_cursor_pos:
         only_hint = comps[0]
+        log("insert snippet:" + only_hint[1])
         viewtools.insert_snippet(view, only_hint[1])
         comps = cancel_completion(view)
     return comps
@@ -226,20 +230,40 @@ def completion_finished(ctx, comp_build, out, err):
 
 def hints_to_sublime_completions(hints):
     def make_hint_comp (h):
-        is_only_type = len(h) == 1
+        hint_is_only_type = len(h) == 1
+        
         res = None
-        if is_only_type:
+        
+        if hint_is_only_type:
             res = (h[0] + " - No Completion", "${}")
         else:
+            function_has_no_params = (len(h)) == 2 and h[0] == "Void"
             
-
-            params = h[0:len(h)-1];
-            params2 = h[0:1]
-            show = "" + ", ".join([param for param in params]) + ""
-            if hxsettings.smarts_snippets_just_current():
-                insert = ",".join(["${" + str(index+1) + ":" + param + "}" for index, param in enumerate(params2)])
+            if function_has_no_params:
+                insert = ")"
+                show = "Void"
             else:
-                insert = "${1:" + ",".join(["${" + str(index+2) + ":" + param + "}" for index, param in enumerate(params)])  + "}"
+
+                last_index = len(h)-1
+                params = h[0:last_index];
+                
+                show = ", ".join(params)
+
+                if hxsettings.smarts_snippets_just_current():
+                    # insert only the snippet for the current parameter
+                    first = h[0]
+                    insert = "${0:" + first + "}"
+                else:
+                    # the last param gets index 0, which is the exit mark for snippets
+                    def get_snippet_index(list_index):
+                        return str(list_index+1 if list_index < len(params)-1 else 0)
+
+                    def param_snippet(param, index):
+                        return "${" + get_snippet_index(index) + ":" + param + "}"
+
+                    snippet_list = [param_snippet(param, index) for index, param in enumerate(params)]
+
+                    insert = ",".join(snippet_list)
             
             res = (show, insert)
         return res

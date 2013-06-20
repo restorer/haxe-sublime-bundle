@@ -33,11 +33,11 @@ class HaxeRunBuildCommand( sublime_plugin.TextCommand ):
         log("run HaxeRunBuildCommand")
         project = hxproject.current_project(self.view)
 
-        if len(project.builds) == 0:
-            log("no builds available")
-            project.extract_build_args(view, True);
-        else:
+        if project.has_build():
             project.run_sublime_build( view )
+        else:
+            log("no builds selected")
+            project.extract_build_args(view, True);
 
 class HaxeSelectBuildCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
@@ -53,11 +53,7 @@ class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
                 if (settings.build_on_save()):
                     project = hxproject.current_project(view)
                 
-                    if len(project.builds) > 0:
+                    if project.has_build():
                         project.check_build( view )
-                    else:
-                        project.extract_build_args(view, False)
-                        build = project.get_build(view)
-                        if (build != None):
-                            project.check_build( view )
+                        
 

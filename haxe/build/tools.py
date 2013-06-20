@@ -36,8 +36,6 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 		if l == "" or l.startswith("#"):
 			continue
 		
-		log("hxml_line: " + l)
-
 		if l.startswith("--next") :
 			if len(current_build.classpaths) == 0:
 				log("no classpaths")
