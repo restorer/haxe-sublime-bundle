@@ -5,6 +5,7 @@ package hxsublime;
 using haxe.macro.ExprTools;
 using haxe.macro.TypeTools;
 
+import haxe.ds.Option;
 import haxe.macro.Context;
 import haxe.macro.Expr;
 import haxe.macro.Expr.ExprOf;
@@ -12,17 +13,51 @@ import haxe.macro.Type;
 import haxe.macro.TypeTools;
 import neko.Lib;
 using StringTools;
+
+typedef FieldInfosData = {
+	var pos(default,null):haxe.macro.Position;
+	var doc(default, null):Null<String>;
+}
+
+typedef FieldInfos = Option<FieldInfosData>; 
 #end
+
+
 
 class FindDeclaration 
 {
 
+
 	#if macro
+
+	static function outResult (info:FieldInfos, success:FieldInfosData->String = null, error = null) {
+		if (error == null) {
+			error = function () return "";
+		}
+		if (success == null) {
+			success = function (f) return formatPos(f.pos);
+		}
+
+
+		switch (info) {
+			case Some(f): 
+				out(Std.string(f));
+				out(success(f));
+			case None: out(error());
+		}
+
+	}
 	static function formatPos (pos:Position) 
 	{
 		var p = Context.getPosInfos( pos );
 		var file = p.file.split("\\").join("/");
 		return '|||||{ "file": "$file", "min" : ${p.min}, "max" : ${p.max} }|||||';
+	}
+
+	static function formatDoc (doc:Null<String>) 
+	{
+		var doc = doc == null ? "" : doc;
+		return '|||||{ "doc": "$doc" }|||||';
 	}
 
 	static function redirectTrace () 
@@ -41,68 +76,73 @@ class FindDeclaration
 		return '|||||{ "error": "${info}" }|||||';
 	}
 
-	static function fromIdent (x) 
+	static function fromIdent (x):FieldInfos 
 	{
 		return try {
 			var t = Context.typeof( x );
 
-			var pos = switch (t) {
-				case Type.TAbstract( t , _ ): t.get().pos;
-				case Type.TEnum( t , _ ): t.get().pos;
-				case Type.TInst( t , _ ): t.get().pos;
-				case Type.TType( t , _ ): t.get().pos;
-				case _: null;
+			var info:FieldInfos = switch (t) {
+				case Type.TAbstract( t , _ ): Some(t.get());
+				case Type.TEnum( t , _ ):     Some(t.get());
+				case Type.TInst( t , _ ):     Some(t.get());
+				case Type.TType( t , _ ):     Some(t.get());
+				case _: None;
 			}
-			pos;
+			info;
 
 		} catch (e:Dynamic) {
-			null;
+			None;
 		}
 	}
 
-	static function findInInstance (t:Ref<ClassType>, check) 
+	static function findInInstance (t:Ref<ClassType>, check):FieldInfos
 	{
 		var cur = t;
 
-		var res = null;
+		var res:FieldInfos = None;
 		var interf1 = [];
 
-		while (true) {
+		trace(t.get());
+		trace(t.get().meta.get());
+		while (res == None) {
 
 			var fields = cur.get().fields.get().filter( check );
 			
 			if (fields.length == 1)  {
-				res = fields[0].pos;	
-				break;
-			}
-			var x = cur.get().superClass;
-			if (x == null) break;
+				var x:FieldInfosData = fields[0];
+				res = Some(x);
+			} 
+			else 
+			{
+				var x = cur.get().superClass;
+				if (x == null) break;
 
-			cur = x.t;
+				cur = x.t;
 
+				for (i in cur.get().interfaces) {
 
-			for (i in cur.get().interfaces) {
-
-				interf1.push(i);
+					interf1.push(i);
+				}
 			}
 		}
-		if (res == null) {
+		if (res == None) {
 			var interf = t.get().interfaces.concat(interf1);
-			while (interf.length > 0) {
+			while (res == None && interf.length > 0) {
 				var new_interf = [];
 				for (i in interf) {
 					var fields = i.t.get().fields.get().filter( check );
 					if (fields.length == 1)  {
-						res = fields[0].pos;	
-						break;
-					}
-					for (i in i.t.get().interfaces) {
-						new_interf.push(i);
+						res = Some(fields[0]);
+						
+					} else {
+						for (i in i.t.get().interfaces) {
+							new_interf.push(i);
+						}
 					}
 				}
-				if (res != null) break;
-
-				interf = new_interf;
+				if (res == None) {
+					interf = new_interf;	
+				}
 				
 			}
 		}
@@ -110,7 +150,7 @@ class FindDeclaration
 		return res;
 	}
 
-	static function fromField (x, field:String):Position 
+	static function fromField (x, field:String):FieldInfos
 	{
 		out(field);
 		function check (x:ClassField) 
@@ -123,7 +163,7 @@ class FindDeclaration
 			}
 		}
 
-		var pos = try {
+		var info:FieldInfos = try {
 			trace("Trying to get the type of expression x");
 			trace("this could fail/stop without a thrown exception (Haxe Compiler Bug in Display mode)");
 			var t = Context.typeof( x );
@@ -140,29 +180,32 @@ class FindDeclaration
 					switch (t.get().type) {
 						case Type.TInst( t , _ ):
 							var statics = t.get().statics.get().filter( check );
-							var fields = t.get().fields.get().filter( check );
-							statics[0].pos;
+							//var fields = t.get().fields.get().filter( check );
+
+							trace(t.get());
+
+							Some(statics[0]);
 							
 							
 
 						case Type.TAnonymous( a ):
 							var fields = a.get().fields.filter(check);
-							fields[0].pos;
+							Some(fields[0]);
 
 						case _: 
 							trace("unsupported");
-							null;
+							None;
 
 
 					}
 				case Type.TAnonymous( a ):
 					trace("Search in TAnonymous");
 					var fields = a.get().fields.filter(check);
-					fields[0].pos;
+					Some(fields[0]);
 				case _:
 
 					trace("Declaration is not available");
-					null;
+					None;
 			}
 
 			// jump to field
@@ -181,30 +224,29 @@ class FindDeclaration
 			
 		}
 		out("hey5");
-		return pos;
+		return info;
 
 	}
 
 	static var out = Lib.println;
 
-	static function checkRegular (e) 
+	static function checkRegular (e):FieldInfos 
 	{
 		
-		switch (e.expr) 
+		return switch (e.expr) 
 		{
 			case EConst(CIdent(_)):
 				trace("Current Expression is an const Ident");
 				var p = fromIdent(e);
-				if (p != null) {
-					out( formatPos(p) );
-				}
+				p;
 			case EField(e, field):
 				trace("Current Expression is a field access (EField)");
 				var p = fromField(e,field);
 
-				if (p != null)
-					out( formatPos(p) );
-				else out(error());
+				if (p == null) 
+					out(error());
+				p;
+				
 
 			// compiler inlined expression
 			case ECall({expr:EFunction(_,
@@ -221,27 +263,33 @@ class FindDeclaration
 					case {expr:ECall({ expr : EField(e, field)}, _)}:
 						trace("Inlined Expression contains Field Access, try fromField");
 						var p = fromField(e,field);
-						if (p != null)
-							out( formatPos(p) )
-						else out(error());
+						if (p == null) 
+							out(error());
+						p;
+
 					case _:
 						trace("Inlined Expression cannot be resolved");
+						
 						trace("Trigger inline error for sublime, the inline workaround can be triggered from there.");
 						out(error("inlined"));
+						None;
+						
 						
 				}
 			case ECall({expr : EField(e,field)}, args) if (args.length == 0):
 				trace("Expression is an ECall from an EField, try fromField");
 				var p = fromField(e,field);
-				if (p != null) out(formatPos(p))
-				else out(error());
+				if (p == null) 
+					out(error());
+				p;
 
 			case _:
 				out(error());
+				None;
 		}
 	}
 
-	static function sublimeFindDecl (e:Expr, eIdent:Expr) 
+	static function sublimeFindDecl (e:Expr, eIdent:Expr, formatField:FieldInfosData->String) 
 	{
 		redirectTrace();
 
@@ -254,35 +302,48 @@ class FindDeclaration
 		// if a first regular call was not successfull. This could be
 		// the case if the expression was inlined by the compiler
 		// and couldn't be checked afterwards.
-		switch (eIdent.expr) 
+		var info = switch (eIdent.expr) 
 		{
 			case EConst(CIdent(fieldName)) if (fieldName != "null"):
 				trace("Using Inline Workaround for id " + fieldName);
 				var p = fromField(e, fieldName);
-				if (p != null) 
+				if (p != None) 
 				{
-					out( formatPos(p) );
-					return macro null;
+					p;
 				}
-				else out(error());
+				else 
+				{
+					out(error());
+					None;
+				};
 			case _:
+				None;
 		}
 
-		// if e is a type
-		switch (Context.typeof(e)) 
-		{
-			case TType(t, params):
-				trace("Expr is a TType");
-				out( formatPos(t.get().pos) );
-				return macro null;
-			case t:
-
-				trace("Type of Expr is << " + TypeTools.toString(t) + " >>");
+		if (info == None) {
+			// if e is a type
+			info = switch (Context.typeof(e)) 
+			{
+				case TType(t, params):
+					trace("Expr is a TType");
+					Some(t.get());
+					
+				case t:
+					trace("Type of Expr is << " + TypeTools.toString(t) + " >>");
+					None;
+			}
 		}
 
-		// find decl based on the structure of expression e
-		checkRegular(e);
+		if (info == None) {
 
+			// find decl based on the structure of expression e
+			info = checkRegular(e);
+
+			
+		}
+		if (info != None) {
+			outResult(info, formatField);
+		}
 		out("-------------------");
 		return macro null;
 	}
@@ -294,7 +355,11 @@ class FindDeclaration
 
 	macro public static function __sublimeFindDecl (e:ExprOf<Dynamic>, eIdent:Expr = null):Expr 
 	{
-		return sublimeFindDecl(e, eIdent);
+		return sublimeFindDecl(e, eIdent, function (f) return formatPos(f.pos));
+	}
+	macro public static function __sublimePrintDoc (e:ExprOf<Dynamic>, eIdent:Expr = null):Expr 
+	{
+		return sublimeFindDecl(e, eIdent, function (f) return formatDoc(f.doc));
 	}
 
 }

@@ -210,9 +210,10 @@ class Project:
         
         buildsView = [[b.to_string(), os.path.basename(b.build_file) ] for b in self.builds]
 
+        
         self.selecting_build = True
         sublime.status_message("Please select your build")
-
+        
         def on_selected (i):
             self.selecting_build = False
             self._set_current_build(view, i)   
