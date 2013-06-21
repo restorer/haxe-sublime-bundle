@@ -10,20 +10,11 @@ from haxe.log import log
 
 class HaxeShowDocCommand( HaxeFindDeclarationCommand ):
 
-
-
-
     def helper_method(self):
-        return "__sublimeShowDoc"
-
-    def using_class(self):
-        return "hxsublime.FindDeclaration"
+        return "hxsublime.FindDeclaration.__sublimeShowDoc"
 
 
-    
-
-
-    def handle_successfull_result(self, view, json_res, add, using_line, word_end, build, temp_path, temp_file, use_display, inline_workaround):
+    def handle_successfull_result(self, view, json_res, insert_before, insert_after, expr_end, build, temp_path, temp_file):
         doc = json_res["doc"]
         #log("json: " + str(json_res))
         #log("doc: " + str(doc))

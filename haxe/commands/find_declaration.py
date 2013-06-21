@@ -31,23 +31,6 @@ def get_word_at(view, src, pos):
     return word_str, word_start, word_end
 
 
-def get_new_src(view, inline_workaround, use_display, using_line, helper_method, word_str, add, start, end):
-    if inline_workaround:
-        add_x = helper_method         
-        add_y = ""
-        if use_display:
-            add_y = ".|"
-        new_src = start + add_x + "(" + word_str + ")" + add_y + end;
-    else:
-        new_src = start + word_str + add + end;
-    package_decl = re.search(hxsrctools.package_line, new_src)
-
-    if (package_decl == None):
-        new_src = using_line + new_src
-    else:
-        new_src = new_src[0:package_decl.end(0)]+using_line+new_src[package_decl.end(0):len(new_src)]
-    return new_src
-
 def prepare_build(view, project, use_display, new_src):
     build = project.get_build(view).copy()
     build.args.append(("-D", "no-inline"))
@@ -67,18 +50,14 @@ def prepare_build(view, project, use_display, new_src):
 class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
 
-
     def run( self , edit ) :
-        self.run1(True, False)
+        self.run1(True, 1)
 
     def helper_method(self):
-        return "__sublimeFindDecl"
-
-    def using_class(self):
-        return "hxsublime.FindDeclaration"
+        return "hxsublime.FindDeclaration.__sublimeFindDecl"
 
 
-    def run1 (self, use_display, inline_workaround = False):
+    def run1 (self, use_display, order = 1):
         print("run HaxeFindDeclarationCommand")
         view = self.view
 
@@ -97,27 +76,38 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         file_name = os.path.basename(view.file_name())
 
 
-        using_line = "\nusing " + self.using_class() + ";\n"
+        
 
         pos = view.sel()[0].a
 
         word_str, word_start, word_end = get_word_at(view, src, pos)
 
-        #prev_symbol = src[word_start-1]
+
+        chars = ["{", "+", "-", "(", "[", "*", "/", "=", ";"]
+        res = hxsrctools.reverse_search_next_char_on_same_nesting_level(src, chars, word_end-1);
         
-        #field_access = True if prev_symbol == "." else False
+        expr_end = word_end
+        expr_start = res[0]+1
         
-        added_call = "." + helper_method + "()"
+        src_before_expr = src[0:expr_start]
 
-        if use_display:
-            added_call += ".|"
+        src_after_expr = src[expr_end:]
 
-        src_before_word = src[0:word_start]
+        expr_string = src[expr_start:expr_end];
 
-        src_after_word = src[word_end:]
 
-        new_src = get_new_src(view, inline_workaround, use_display, using_line, helper_method, word_str, added_call, src_before_word, src_after_word)
+        display_str = ".|" if use_display else ""
+
+        insert_before = helper_method + "("
+
+
+        order_str = "1" if order == 1 else "2"
+        insert_after = ", " + order_str + ")" + display_str
+
+
+        new_src = src_before_expr + insert_before +  expr_string + insert_after + src_after_expr
         
+        log(new_src)
 
         build, temp_path, temp_file = prepare_build(view, project, use_display, new_src)
 
@@ -133,17 +123,15 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
                 json_res = json.loads(json_str)
                 if "error" in json_res:
                     error = json_res["error"]
-                    if (error =="inlined" and not inline_workaround):
-                        # try workaround when the current method was inlined (extern inlines are forced) by the compiler
-                        self.run1(use_display, True)
-                    else:
-                        log("nothing found (1), cannot find declaration")
-
+                    log("nothing found (1), cannot find declaration")
+                    if order == 1 and use_display:
+                        self.run1(True, 2)    
                 else:
-                    self.handle_successfull_result(view, json_res, added_call, using_line, word_end, build, temp_path, temp_file, use_display, inline_workaround)
+                    self.handle_successfull_result(view, json_res, insert_before, insert_after, expr_end, build, temp_path, temp_file)
             else:
-
-                if use_display:
+                if order == 1 and use_display:
+                    self.run1(True, 2)
+                elif use_display:
                     log("nothing found yet (2), try again without display (workaround)")
                     self.run1(False)
                 else:
@@ -152,7 +140,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         build.run(project, view, False, cb)
 
 
-    def handle_successfull_result(self, view, json_res, add, using_line, word_end, build, temp_path, temp_file, use_display, inline_workaround):
+    def handle_successfull_result(self, view, json_res, insert_before, insert_after, expr_end, build, temp_path, temp_file):
         file = json_res["file"]
         min = json_res["min"]
         max = json_res["max"]
@@ -164,9 +152,9 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
 
         if (abs_path == temp_file):
-            if min > word_end:
-                min -= len(add)
-            min -= len(using_line)
+            if min > expr_end:
+                min -= len(insert_after)
+                min -= len(insert_before)
             # we have manually stored a temp file with only \n line endings
             # so we don't have to adjust the real file position and the sublime
             # text position

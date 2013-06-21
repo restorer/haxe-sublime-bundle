@@ -2,7 +2,7 @@ import re
 import os
 
 from haxe.tools.decorator import lazyprop
-
+from haxe.log import log
 import pprint
 
 pp = pprint.PrettyPrinter(indent=4, depth=3)
@@ -38,6 +38,9 @@ comments = re.compile("(//[^\n\r]*?[\n\r]|/\*(.*?)\*/)", re.MULTILINE | re.DOTAL
 # searches the next occurrence of `char` in `hx_src_section` on the same nesting level as the char at position `start_pos`
 # the search starts at position `start_pos` in `hx_src_section`.
 def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
+	if not isinstance(char, list):
+		char = [char]
+
 	open_pars = 0
 	open_braces = 0
 	open_brackets = 0
@@ -54,7 +57,7 @@ def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
 
 		next = hx_src_section[pos+1] if pos < count-1 else None
 
-		if (c == char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
+		if (c in char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
 			return (pos,cur)
 						
 		if (c == "-" and next == ">"):
@@ -100,10 +103,14 @@ def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
 # reverse search the next occurrence of `char` in `hx_src_section` on the same nesting level as the char at position `start_pos`.
 # the reverse search starts at position `start_pos` in `hx_src_section`.
 def reverse_search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
+	if not isinstance(char, list):
+		char = [char]
 	open_pars = 0
 	open_braces = 0
 	open_brackets = 0
 	open_angle_brackets = 0
+	in_string = False
+	string_char = None
 
 	
 	cur = ""
@@ -112,14 +119,35 @@ def reverse_search_next_char_on_same_nesting_level (hx_src_section, char, start_
 		if pos <= -1:
 			break
 
+
+
 		c = hx_src_section[pos]
 
 		next = hx_src_section[pos-1] if pos > 0 else None
 
-		if (c == char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
+		if in_string:
+			pos -= 1
+			cur = c+cur
+			if c == string_char and next != "\\":
+				in_string = False
+			continue
+
+
+
+
+
+
+		#log(c + " in " + str(char) + ":" + str(c in char))
+		if (c in char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
 			return (pos,cur)
-						
-		if (c == ">" and next == "-"):
+				
+
+		if c == "'" or c == '"':
+			in_string = True
+			string_char = c
+			cur = c + cur
+			pos -= 1
+		elif (c == ">" and next == "-"):
 			cur = "->" + cur
 			pos -= 2
 		elif (c == "}"):
