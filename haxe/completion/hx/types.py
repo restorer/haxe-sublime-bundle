@@ -286,6 +286,11 @@ class CompletionContext:
     def src_until_complete_offset(self):
         return self.src[0:self.complete_offset]
 
+    @lazyprop 
+    def line_after_complete_offset(self):
+        line_end = self.src.find("\n", self.complete_offset)
+        return self.src[self.complete_offset:line_end]
+
     # src of current file
     @lazyprop
     def src (self):
