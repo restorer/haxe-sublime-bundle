@@ -75,10 +75,17 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
 
 ### Settings
 
- - `haxe_path` : Full path to the Haxe compiler, if not already in your PATH ("/usr/bin/haxe" or "C:\Program Files\Haxe\haxe.exe")
- - `haxe_library_path` : Full path to the standard lib, overriding HAXE_LIBRARY_PATH
- - `haxe_build_server_mode` (`true` by default) : Uses [compilation server](http://haxe.org/manual/completion#compilation-cache-server) for building. The server is always used for completion, and may be restarted if needed through the command palette.
- - `haxe_smart_snippets` (`true` by default) : Inserts smart snippets based on compiler hints after `(` and `,`
+ - `haxe_exec` : Full path to the Haxe compiler, if not already in your PATH ("/usr/bin/haxe" or "C:\Program Files\Haxe\haxe.exe")
+ - `haxe_haxelib_exec` : Full path to the Haxelib executable, if not already in your PATH ("/usr/bin/haxe" or "C:\Program Files\Haxe\haxe.exe")
+  - `haxe_library_path` : Full path to the standard lib, overriding HAXE_LIBRARY_PATH
+ - `haxe_use_servermode` (`true` by default) : Uses [compilation server](http://haxe.org/manual/completion#compilation-cache-server) for building. The server is always used for completion, and may be restarted if needed through the command palette.
+ - `haxe_completion_smart_snippets` (`true` by default) : Inserts smart snippets based on compiler hints after `(` and `,`
+ - `haxe_completion_smarts_snippets_just_current` (`true` by default) : Inserts a smart snippet only for the current parameter after `(` and `,`, `false` includes a smart snippet for all function parameters
+- `haxe_check_on_save` (`false` by default) : invokes the compiler on each save operation and shows compilation errors.
+
+
+ All of these Settings can be overriden with plattform specific settings by added a suffix like `_windows`, `_linux`, `_osx`, this can be useful when working in teams with different operating systems without changing the project file.
+
 
 ### Targeting NME/openfl
 
@@ -87,7 +94,8 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
 To target [openfl](https://github.com/openfl/openfl), use `.xml` instead, like `project.xml`.
 
  - press **Ctrl+Shift+B** to select a NME target
- - press **Ctrl+Enter** to build and run (regular Sublime Text build system won't work)
+ - press **Ctrl+Enter** to build (regular Sublime Text build system won't work)
+ - press **Ctrl+Shift+Enter** to build and run (regular Sublime Text build system won't work)
 
 ### Troubleshooting
 
