@@ -299,10 +299,14 @@ def hints_to_sublime_completions(hints):
 def combine_hints_and_comps (comp_result):
     all_comps = hints_to_sublime_completions(comp_result.hints)
 
+
+
     if not comp_result.ctx.options.types.has_hint() or len(comp_result.hints) == 0:
         log("TAKE TOP LEVEL COMPS")
         all_comps.extend(comp_result.all_comps())
-
+    else:
+        if (len(comp_result.hints) == 1):
+            sublime.status_message("signature: " + "->".join(comp_result.hints[0]))
     
         # insert hint directly
 
