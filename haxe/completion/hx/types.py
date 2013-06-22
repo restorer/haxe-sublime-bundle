@@ -287,9 +287,9 @@ class CompletionContext:
         return self.src[0:self.complete_offset]
 
     @lazyprop 
-    def line_after_complete_offset(self):
-        line_end = self.src.find("\n", self.complete_offset)
-        return self.src[self.complete_offset:line_end]
+    def line_after_offset(self):
+        line_end = self.src.find("\n", self.offset)
+        return self.src[self.offset:line_end]
 
     # src of current file
     @lazyprop
@@ -368,6 +368,7 @@ class CompletionContext:
         and self.src_until_offset == other.src_until_offset
         and self.options.eq(other.options)
         and self.complete_char == other.complete_char
+        and self.line_after_offset == other.line_after_offset
         and prefix_check())
 
 class CompletionInfo:

@@ -59,11 +59,14 @@ def completion_result_with_smart_snippets (view, comps, result, options):
     has_one_hint = options.types.has_hint() and len(result.hints) == 1
     same_cursor_pos = viewtools.get_first_cursor_pos(view) == result.ctx.view_pos
     
-    line_after = result.ctx.line_after_complete_offset.strip()
-    really_insert = len(line_after) == 0 or line_after[0] in "),"
+    
+    # we don't want to insert the snippet if there is already an argument
+    # in that case only the hint should be shown
+    line_after_offset = result.ctx.line_after_offset.strip()
+    really_insert = len(line_after_offset) == 0 or line_after_offset[0] in "),"
+  
     if really_insert and prefix_is_whitespace and use_snippets and has_one_hint and same_cursor_pos:
         only_hint = comps[0]
-        log("insert snippet:" + only_hint[1])
         viewtools.insert_snippet(view, only_hint[1])
         comps = cancel_completion(view)
     return comps
