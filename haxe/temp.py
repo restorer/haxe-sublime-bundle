@@ -33,7 +33,7 @@ def create_temp_path(build):
 def create_file(temp_path, build, orig_file, content):
 	orig_file = st2_to_unicode(orig_file)
 	relative = build.get_relative_path(orig_file)
-	log("relative:" + encode_utf8(relative))
+	log("relative:" + str(encode_utf8(relative)))
 	if relative is None:
 		return None
 	new_file = os.path.join(temp_path, relative)
