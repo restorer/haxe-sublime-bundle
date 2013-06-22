@@ -147,7 +147,7 @@ abstract ResultKindCast (ResultKind) {
 					
 
 				}
-				var res = [for (k in f.constructs.keys()) "\\t" + k + enumConstructorMap(f.constructs.get(k)) + ": "];
+				var res = [for (k in f.constructs.keys()) "\\tcase " + k + enumConstructorMap(f.constructs.get(k)) + ": "];
 
 				var switchSample = "---------------\\nswitch (x) {\\n" + res.join("\\n") + "\\n" + "}\\n---------------";
 
