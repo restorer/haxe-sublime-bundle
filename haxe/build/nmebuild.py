@@ -5,7 +5,7 @@ from haxe import config
 from haxe.log import log
 
 
-class NmeBuild :
+class NmeBuild(object) :
 
 	def __init__(self, project, title, nmml, target, cb = None):
 		self._title = title
