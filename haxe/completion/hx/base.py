@@ -257,7 +257,7 @@ def hints_to_sublime_completions(hints):
                 
                 show = ", ".join(params)
 
-                if hxsettings.smarts_snippets_just_current():
+                if hxsettings.smart_snippets_just_current():
                     # insert only the snippet for the current parameter
                     first = params[0]
                     

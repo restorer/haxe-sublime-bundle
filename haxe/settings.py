@@ -113,8 +113,8 @@ def smart_snippets (view = None):
 def smart_snippets_on_completion (view = None):
 	return get_bool("haxe_completion_smart_snippets_on_completion", False, view)
 
-def smarts_snippets_just_current (view = None):
-	return get_bool("haxe_completion_smarts_snippets_just_current", False, view)	
+def smart_snippets_just_current (view = None):
+	return get_bool("haxe_completion_smart_snippets_just_current", False, view)	
 
 def use_debug_panel (view = None):
 	return get_bool("haxe_use_debug_panel", False, view)	

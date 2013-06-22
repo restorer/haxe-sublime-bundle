@@ -7,7 +7,7 @@
 	// insert smart snippets on ( and ,
 	"haxe_completion_smart_snippets" : true,
 	// insert only the snippet for the next parameter on ( and ,
-	"haxe_completion_smarts_snippets_just_current" : true,
+	"haxe_completion_smart_snippets_just_current" : true,
 	// insert full smart snippet directly after selecting the completion entry
 	"haxe_completion_smart_snippets_on_completion": false,
 	// turn async completion on/off
