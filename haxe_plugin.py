@@ -53,6 +53,7 @@ def reload_modules():
          ,'haxe.commands.find_declaration'
          ,'haxe.commands.generate_import'
          ,'haxe.commands.get_expr_type'
+         ,'haxe.commands.haxelib'
          ,'haxe.commands.show_doc'
 
          ,'haxe.compiler'
@@ -72,6 +73,7 @@ def reload_modules():
          ,'haxe.completion.hxml.base'
 
          ,'haxe.panel'         
+         ,'haxe.panel.base'
          ,'haxe.panel.slidepanel'
          ,'haxe.panel.tabpanel'
          ,'haxe.panel.tools'
@@ -97,7 +99,6 @@ def reload_modules():
          ,'haxe.haxelib'
          ,'haxe.log'
          ,'haxe.plugin'
-         ,'haxe.panel'
          ,'haxe.settings'
          ,'haxe.temp'
          ,'haxe.types'
