@@ -47,8 +47,8 @@ class SlidePanel ():
 			v.sel().clear()
 			v.sel().add(sublime.Region(0))
 
-			region = sublime.Region(v.size()+1000, v.size()+1000)
-			sublime.set_timeout(lambda:v.show(region), 800)
+			#region = sublime.Region(v.size()+1000, v.size()+1000)
+			#sublime.set_timeout(lambda:v.show(region), 800)
 		
 		viewtools.async_edit(panel, do_edit)
 
