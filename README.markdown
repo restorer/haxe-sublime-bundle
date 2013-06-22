@@ -11,6 +11,10 @@ An Haxe Bundle for [Sublime Text 2](http://www.sublimetext.com/2) and [Sublime T
  - **Haxelib integration** (install / remove / upgrade libs) with -lib autocompletion
  - Code snippets, auto-import, Sublime build system integration
  - **[HScript](http://code.google.com/p/hscript/)**, **[Erazor](https://github.com/ciscoheat/erazor)** and **[HSS](http://ncannasse.fr/projects/hss)** support
+ - **Multi project Support**, in Sublime Text 3 you can now open multiple projects at the same time and work on them parallel. This feature is buggy in ST2 because of some missing API-functions.
+ - **Find Declaration**, jump to the declaration of the symbol under the cursor (uses the haxe compiler and it's type inference to find it)
+ - **Show Documentation**, show the documentation of the symbol under the cursor (uses the haxe compiler and it's type inference to extract the docs)
+
  
 and more to come :)
 
