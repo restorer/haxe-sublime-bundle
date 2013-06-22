@@ -26,5 +26,5 @@ def log (msg, to_file = False):
 		if settings.use_debug_panel():
 			
 			def f():
-				hxpanel.debug_panel().writeln(msg)
+				hxpanel.debug_panel().writeln(encode_utf8(msg))
 			sublime.set_timeout(f, 100)
