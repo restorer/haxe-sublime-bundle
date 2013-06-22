@@ -73,8 +73,9 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
       - **Ctrl+Shift+E** to create a new enum,
       - **Ctrl+Shift+T** to create a new typedef
       - **Ctrl+Shift+R** to restart the haxe completion server
-      - **Ctrl+Shift+F** to goto the definition of the type/function/var under the cursor, this is beta and does not work in all cases
-      - **Ctrl+Shift+D** show the documentation of the type/function/var under the cursor, this is beta and does not work in all cases
+      - **Ctrl+Shift+F** to jump to the definition of the type/function/var under the cursor, this is beta and does not work in all cases
+      - **Ctrl+Shift+D** to show the documentation of the type/function/var under the cursor, this is beta and does not work in all cases
+      - **Ctrl+Shift+Z** to show the type of the expression under the cursor
 
 
 ### Settings
