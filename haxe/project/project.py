@@ -121,13 +121,23 @@ class Project:
 
     def extract_build_args( self, view = None , force_panel = False ) :
 
+        if view == None:
+            view = sublime.active_window().active_view()
+
+
+
         folders = self._get_folders(view)
         
         self.builds = self._find_builds_in_folders(folders)
         
         num_builds = len(self.builds)
 
-        if num_builds == 1:
+        view_build_id = view.settings().get("haxe-current-build-id")
+        log("view_build_id:" + str(view_build_id))
+
+        if view_build_id is not None and view_build_id < num_builds and not force_panel:
+            self._set_current_build( view , int(view_build_id) )
+        elif num_builds == 1:
             if force_panel : 
                 sublime.status_message("There is only one build")
             self._set_current_build( view , int(0) )
@@ -229,6 +239,7 @@ class Project:
             id = 0
         
         if len(self.builds) > 0 :
+            view.settings().set("haxe-current-build-id", id)
             self.current_build = self.builds[id]
             self.current_build.set_std_bundle(self.std_bundle)
 

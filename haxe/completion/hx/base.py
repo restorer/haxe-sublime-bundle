@@ -23,6 +23,9 @@ def trigger_completion (view, options):
     def run():
         project = hxproject.current_project(view)
         
+        if not project.has_build():
+            project.extract_build_args(view, False)
+
         if project.has_build():
             project.completion_context.set_trigger(view, options)
             

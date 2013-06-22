@@ -4,6 +4,7 @@ import codecs
 from haxe.log import log
 from haxe.tools import pathtools
 
+from haxe.tools.stringtools import encode_utf8, st2_to_unicode
 
 def get_temp_path(build):
 
@@ -30,8 +31,9 @@ def create_temp_path(build):
 	return temp_path
 
 def create_file(temp_path, build, orig_file, content):
+	orig_file = st2_to_unicode(orig_file)
 	relative = build.get_relative_path(orig_file)
-	log("relative:" + str(relative))
+	log("relative:" + encode_utf8(relative))
 	if relative is None:
 		return None
 	new_file = os.path.join(temp_path, relative)

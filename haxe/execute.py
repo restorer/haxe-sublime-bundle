@@ -8,6 +8,8 @@ from haxe.plugin import STARTUP_INFO
 
 from haxe.plugin import is_st3
 
+from haxe.tools.stringtools import encode_utf8
+
 if is_st3:
 	import _thread as thread
 else:
@@ -79,4 +81,4 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 
 	except (OSError, ValueError) as e:
 		err = u'Error while running %s: in %s (%s)' % (args[0], cwd, e)
-		return ("", _decoded(err))
+		return ("", err)

@@ -4,6 +4,7 @@ from haxe import config
 
 from haxe.log import log
 
+from haxe.tools.stringtools import encode_utf8
 
 class NmeBuild(object) :
 
@@ -80,8 +81,8 @@ class NmeBuild(object) :
 		r = None
 		if self.nmml is not None:
 			r = os.path.dirname(self.nmml)
-		log("build_folder: " + str(r))
-		log("nmml: " + str(self.nmml))
+		log("build_folder: " + encode_utf8(r))
+		log("nmml: " + encode_utf8(self.nmml))
 		return r
 
 	def set_auto_completion(self, display, macro_completion):

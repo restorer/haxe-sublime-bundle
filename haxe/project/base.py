@@ -13,6 +13,8 @@ from haxe.tools.cache import Cache
 from haxe.project.tools import get_window
 from haxe.project.project import Project
 
+from haxe.tools.stringtools import encode_utf8
+
 
 _projects = Cache()
 _user_home = expanduser("~")
@@ -105,7 +107,7 @@ def current_project(view = None):
     id = get_project_id(file, win)
 
     log("project id:" + id)
-    log("project file:" + str(file))
+    log("project file:" + encode_utf8(file))
     log("win.id:" + str(win.id()))
 
     res = _projects.get_or_insert(id, lambda:create_project(id, file, win) )

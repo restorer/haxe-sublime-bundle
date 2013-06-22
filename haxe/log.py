@@ -2,6 +2,8 @@ import sublime
 
 import codecs
 
+from haxe.tools.stringtools import encode_utf8
+
 
 
 
@@ -11,9 +13,11 @@ def debug(msg):
 	log(msg, False)
 
 def log (msg, to_file = False):
+	if isinstance(msg, list):
+		msg = ",".join(msg)
 	if to_file:
 		f = codecs.open( "st3_haxe_log.txt" , "wb" , "utf-8" , "ignore" )
-		f.append( str(msg) + "\n" )
+		f.append( encode_utf8(msg) + "\n" )
 		f.close()
 	else:
 		from haxe import settings
@@ -22,5 +26,5 @@ def log (msg, to_file = False):
 		if settings.use_debug_panel():
 			
 			def f():
-				hxpanel.debug_panel().writeln(str(msg))
+				hxpanel.debug_panel().writeln(msg)
 			sublime.set_timeout(f, 100)

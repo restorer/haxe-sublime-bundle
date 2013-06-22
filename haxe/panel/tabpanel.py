@@ -4,6 +4,7 @@ from haxe.tools import viewtools
 
 from haxe.panel import tools as paneltools
 
+from haxe.tools.stringtools import encode_utf8,to_unicode, st2_encode_utf8, st3_encode_utf8
 
 def make_tab_panel (win, name, syntax):
 	active = win.active_view()
@@ -57,7 +58,9 @@ class TabPanel():
 
 				if (v != None):
 					def do_edit(v, edit):
-						v.insert(edit, 0, msg1)
+						
+						print(str(type(msg1)))
+						v.insert(edit, 0, st3_encode_utf8(to_unicode(msg1)))
 						v.end_edit( edit )
 					viewtools.async_edit(v, do_edit)
 					
@@ -66,9 +69,11 @@ class TabPanel():
 
 	
 	def writeln (self, msg):
+		print(str(type(msg)))
 		self.write(msg + "\n")
 
 	
 	def status (self, title, msg):
+		
 		if paneltools.valid_message(msg):
 			self.writeln(title + ": " + msg)

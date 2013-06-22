@@ -8,6 +8,8 @@ from haxe.plugin import is_st3
 from haxe.tools import viewtools
 from haxe.log import log
 
+from haxe.tools.stringtools import encode_utf8, to_unicode
+
 if is_st3:
     import _thread as thread
 else:
@@ -81,7 +83,8 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
         self.proc = None
         if not self.quiet:
-            print("Running Command : " + " ".join(cmd))
+            
+            print("Running Command : " + " ".join(map(encode_utf8, cmd)))
 
             sublime.status_message("Building")
 
@@ -146,7 +149,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
 
         try:
             if not is_st3 or isinstance(data, bytes):
-                st = data.decode(self.encoding)
+                st = to_unicode(data)
             else:
                 st = data
                     

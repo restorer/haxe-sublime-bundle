@@ -7,6 +7,7 @@ from haxe import config
 from haxe import types as hxtypes
 from haxe import panel as hxpanel
 from haxe.tools import hxsrctools
+from haxe.tools.stringtools import to_unicode, encode_utf8, st2_to_unicode
 
 
 from haxe.execute import run_cmd, run_cmd_async
@@ -120,13 +121,17 @@ class HxmlBuild :
 		self.add_arg( ("-lib", lib.name))
 
 	def get_classpath_of_file (self, file):
+		file = st2_to_unicode(file)
 		
 		file = self.align_drive_letter(file)
 		
 		cps = list(self.classpaths)
 
-		cps.append(self.get_build_folder())
+		build_folder = self.get_build_folder()
+		if build_folder is not None:
+			cps.append(build_folder)
 		for cp in cps:
+			cp = st2_to_unicode(cp)
 			prefix = os.path.commonprefix([cp, file])
 			if prefix == cp:
 				return cp
@@ -138,10 +143,13 @@ class HxmlBuild :
 		return self.get_classpath_of_file(file) is not None
 
 	def get_relative_path (self, file):
-		
+		file = st2_to_unicode(file)
 		file = self.align_drive_letter(file)
 
 		cp = self.get_classpath_of_file(file)
+
+		#print("cp:" + str(type(cp)))
+		#print("file:" + str(type(file)))
 
 		return file.replace(cp, "")[1:] if cp is not None else None
 

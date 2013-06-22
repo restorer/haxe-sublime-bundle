@@ -11,6 +11,8 @@ from haxe.tools import pathtools
 from haxe.execute import run_cmd
 from haxe.log import log
 
+from haxe.tools.stringtools import encode_utf8, to_unicode
+
 from haxe.build.hxmlbuild import HxmlBuild
 from haxe.build.nmebuild import NmeBuild
 from haxe.build.openflbuild import OpenFlBuild
@@ -181,7 +183,7 @@ def find_hxml_projects( project, folder ) :
 		
 		
 		b = _hxml_to_builds(project, hxml, folder)
-		log("builds in hxml " + str(hxml) + ":" + str(len(b)))
+		log("builds in hxml " + encode_utf8(hxml) + ":" + str(len(b)))
 		builds.extend(b)
 
 	return builds
