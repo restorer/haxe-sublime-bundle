@@ -413,7 +413,9 @@ class CompletionResult:
         return len(self.comps) > 0 or len(self.hints) > 0 or (self.requires_toplevel_comps() and len(self._toplevel_comps) > 0)
 
     def show_top_level_snippets (self):
-        return self.requires_toplevel_comps() and not self.ctx.is_new
+        return self.requires_toplevel_comps() and self.ctx.is_new
+
+    
 
     def requires_toplevel_comps(self):
         prefix_is_whitespace = stringtools.is_whitespace_or_empty(self.ctx.prefix)
@@ -429,7 +431,7 @@ class CompletionResult:
             log("yes required toplevel comps")
             res.extend(list(self._toplevel_comps))
         res.extend(self.comps)
-        res.sort()
+        res.sort();
         return res
 
 
