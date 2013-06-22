@@ -39,8 +39,6 @@ def trigger_completion (view, options, show_top_level_snippets = False):
         else:
             project.extract_build_args(view, True)
 
-    
-
     view.run_command('hide_auto_complete')
 
     sublime.set_timeout(run, 0)
@@ -263,6 +261,9 @@ def hints_to_sublime_completions(hints):
                 show = "Void"
             else:
 
+                def param_escape(p):
+                    return "\\}".join(p.split("}"))
+
                 last_index = len(h)-1
                 params = h[0:last_index];
                 
@@ -270,7 +271,7 @@ def hints_to_sublime_completions(hints):
 
                 if hxsettings.smart_snippets_just_current():
                     # insert only the snippet for the current parameter
-                    first = params[0]
+                    first = param_escape(params[0])
                     
                     if len(params) == 1:
                         insert = "${1:" + first + "})${0}"
@@ -282,7 +283,7 @@ def hints_to_sublime_completions(hints):
                         return str(list_index+1)
 
                     def param_snippet(param, index):
-                        return "${" + get_snippet_index(index) + ":" + param + "}"
+                        return "${" + get_snippet_index(index) + ":" + param_escape(param) + "}"
 
                     snippet_list = [param_snippet(param, index) for index, param in enumerate(params)]
 
