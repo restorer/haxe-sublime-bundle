@@ -256,19 +256,23 @@ def hints_to_sublime_completions(hints):
 
                 if hxsettings.smarts_snippets_just_current():
                     # insert only the snippet for the current parameter
-                    first = h[0]
-                    insert = "${0:" + first + "}"
+                    first = params[0]
+                    
+                    if len(params) == 1:
+                        insert = "${1:" + first + "})${0}"
+                    else:
+                        insert = "${0:" + first + "}"
                 else:
                     # the last param gets index 0, which is the exit mark for snippets
                     def get_snippet_index(list_index):
-                        return str(list_index+1 if list_index < len(params)-1 else 0)
+                        return str(list_index+1)
 
                     def param_snippet(param, index):
                         return "${" + get_snippet_index(index) + ":" + param + "}"
 
                     snippet_list = [param_snippet(param, index) for index, param in enumerate(params)]
 
-                    insert = ",".join(snippet_list)
+                    insert = ",".join(snippet_list) + ")${0}"
             
             res = (show, insert)
         return res
