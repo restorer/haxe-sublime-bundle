@@ -119,8 +119,8 @@ def smarts_snippets_just_current (view = None):
 def use_debug_panel (view = None):
 	return get_bool("haxe_use_debug_panel", False, view)	
 
-def build_on_save (view = None):
-	return get_bool("haxe_build_on_save", True, view)
+def check_on_save (view = None):
+	return get_bool("haxe_check_on_save", True, view)
 
 def use_slide_panel (view = None):
 	return get_bool("haxe_use_slide_panel", True, view)	

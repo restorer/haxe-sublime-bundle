@@ -50,7 +50,7 @@ class HaxeBuildOnSaveListener ( sublime_plugin.EventListener ):
         log("on_post_save")
         if view is not None and view.file_name() is not None:
             if viewtools.is_supported(view) or view.file_name().endswith(".erazor.html"):
-                if (settings.build_on_save()):
+                if (settings.check_on_save()):
                     project = hxproject.current_project(view)
                 
                     if project.has_build():
