@@ -81,10 +81,10 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
  - `haxe_use_servermode` (`true` by default) : Uses [compilation server](http://haxe.org/manual/completion#compilation-cache-server) for building. The server is always used for completion, and may be restarted if needed through the command palette.
  - `haxe_completion_smart_snippets` (`true` by default) : Inserts smart snippets based on compiler hints after `(` and `,`
  - `haxe_completion_smarts_snippets_just_current` (`true` by default) : Inserts a smart snippet only for the current parameter after `(` and `,`, `false` includes a smart snippet for all function parameters
-- `haxe_check_on_save` (`false` by default) : invokes the compiler on each save operation and shows compilation errors.
+ - `haxe_check_on_save` (`false` by default) : invokes the compiler on each save operation and shows compilation errors.
 
 
- All of these Settings can be overriden with plattform specific settings by added a suffix like `_windows`, `_linux`, `_osx`, this can be useful when working in teams with different operating systems without changing the project file.
+All of these Settings can be overriden with plattform specific settings by added a suffix like `_windows`, `_linux`, `_osx`, this can be useful when working in teams with different operating systems without changing the project file.
 
 
 ### Targeting NME/openfl
