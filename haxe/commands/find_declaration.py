@@ -69,6 +69,15 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         project = hxproject.current_project(view)
         
 
+        if not project.has_build():
+            project.extract_build_args(view, False)
+
+        if not project.has_build():
+            project.extract_build_args(view, True)            
+            return
+
+
+
         helper_method = self.helper_method()
         
         src = viewtools.get_content(view)
