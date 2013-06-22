@@ -75,6 +75,16 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
         file_name = os.path.basename(view.file_name())
 
+        package_match = re.match(hxsrctools.package_line, src)
+
+        using_pos = 0 if package_match == None else package_match.end()
+
+        using_insert = "using hxsublime.FindDeclaration;"
+
+        src_before_using = src[0: using_pos]
+        src_after_using = src[using_pos:]
+
+
 
         
 
@@ -89,7 +99,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         expr_end = word_end
         expr_start = res[0]+1
         
-        src_before_expr = src[0:expr_start]
+        src_before_expr = src[using_pos:expr_start]
 
         src_after_expr = src[expr_end:]
 
@@ -105,7 +115,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         insert_after = ", " + order_str + ")" + display_str
 
 
-        new_src = src_before_expr + insert_before +  expr_string + insert_after + src_after_expr
+        new_src = src_before_using + using_insert + src_before_expr + insert_before +  expr_string + insert_after + src_after_expr
         
         log(new_src)
 
@@ -127,7 +137,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
                     if order == 1 and use_display:
                         self.run1(True, 2)    
                 else:
-                    self.handle_successfull_result(view, json_res, insert_before, insert_after, expr_end, build, temp_path, temp_file)
+                    self.handle_successfull_result(view, json_res, using_insert, insert_before, insert_after, expr_end, build, temp_path, temp_file)
             else:
                 if order == 1 and use_display:
                     self.run1(True, 2)
@@ -140,7 +150,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         build.run(project, view, False, cb)
 
 
-    def handle_successfull_result(self, view, json_res, insert_before, insert_after, expr_end, build, temp_path, temp_file):
+    def handle_successfull_result(self, view, json_res, using_insert, insert_before, insert_after, expr_end, build, temp_path, temp_file):
         file = json_res["file"]
         min = json_res["min"]
         max = json_res["max"]
@@ -155,6 +165,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
             if min > expr_end:
                 min -= len(insert_after)
                 min -= len(insert_before)
+            min -= len(using_insert)
             # we have manually stored a temp file with only \n line endings
             # so we don't have to adjust the real file position and the sublime
             # text position

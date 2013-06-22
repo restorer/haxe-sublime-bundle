@@ -36,11 +36,12 @@ abstract ResultKindCast (ResultKind) {
 	@:from public static function fromAbstractType(t:AbstractType) {
 		return new ResultKindCast(RKAbstractType(t));
 	}
-	@:from public static function fromClassField(t:ClassField) {
-		if (t == null) throw "t is null";
-		
-		return new ResultKindCast(RKClassField(t));
+
+
+	@:from public static function fromResultKind(t:ResultKind) {
+		return new ResultKindCast(t);
 	}
+	
 
 	public var pos(get, never):Position;
 	public var name(get, never):String;
@@ -54,7 +55,11 @@ abstract ResultKindCast (ResultKind) {
 			case RKAnonType(f): "anon";
 			case RKClassType(f): f.name;
 			case RKAbstractType(f): f.name;
-			case RKClassField(f): f.name;
+			case RKClassField(f,_): f.name;
+			case RKAnonField(f, _): f.name;
+			case RKAnonDefField(f, _): f.name;
+			case RKStaticField(f, _): f.name;
+			case RKAbstractField(f, _): f.name;
 		}
 	}
 	function get_doc() {
@@ -65,7 +70,11 @@ abstract ResultKindCast (ResultKind) {
 			case RKAnonType(f): f.fields[0].doc;
 			case RKClassType(f): f.doc;
 			case RKAbstractType(f): f.doc;
-			case RKClassField(f): f.doc;
+			case RKClassField(f,_): f.doc;
+			case RKAnonField(f, _): f.doc;
+			case RKAnonDefField(f, _): f.doc;
+			case RKStaticField(f, _): f.doc;
+			case RKAbstractField(f, _): f.doc;
 		}
 	}
 	function get_pos() {
@@ -75,7 +84,13 @@ abstract ResultKindCast (ResultKind) {
 			case RKAnonType(f): f.fields[0].pos;
 			case RKClassType(f): f.pos;
 			case RKAbstractType(f): f.pos;
-			case RKClassField(f): f.pos;
+
+			case RKClassField(f,_): f.pos;
+			case RKAnonField(f, _): f.pos;
+			case RKAnonDefField(f, _): f.pos;
+			case RKStaticField(f, _): f.pos;
+			case RKAbstractField(f, _): f.pos;
+
 		}
 	}
 
@@ -89,13 +104,31 @@ abstract ResultKindCast (ResultKind) {
 
 	public function info(type:Type) {
 
-		function infoTFun(cf:ClassField, args, ret ) {
-			trace(cf.type);
-			function paramToString (t) return t.name + ":" + TypeTools.toString(t.t);
-			var signature = "(" + args.map(paramToString).join(", ") + "): " + TypeTools.toString(ret);
+		function typeStrFromTypeDef(b:BaseType) {
+			var t = if (b.module.endsWith(b.name)) b.name else b.module + "." + b.name;
+			var params = b.params.map(function (x) return x.name).join(",");
 
-			var infix = if (isStaticClass(type)) "::" else ".";
-			return typestr(type) + infix + cf.name + signature;
+			return t + if (params.length > 0) "<" + params + ">" else "";
+
+			
+		}
+
+		function substitueTypeParams(p:String, typeName, funcName) {
+			return p.split(funcName + ".").join("").split(typeName + ".").join("");
+		}
+
+		function infoTFun(cf:ClassField, args, ret, name:String, fullType:String, isStatic:Bool) 
+		{
+			var params = cf.params.map(function (p) return p.name.split(cf.name + ".").join("")).join(",");
+			var paramsStr = if (params.length > 0) "<" + params + ">" else "";
+
+			
+			function paramToString (t) return t.name + ":" + substitueTypeParams(TypeTools.toString(t.t), name, cf.name);
+			var signature = paramsStr + "(" + args.map(paramToString).join(", ") + "): " + substitueTypeParams(TypeTools.toString(ret), name, cf.name);
+
+			var infix = if (isStatic) "::" else ".";
+			var ts = fullType;
+			return ts + infix + cf.name + signature;
 		}
 
 		return switch (this) {
@@ -133,25 +166,96 @@ abstract ResultKindCast (ResultKind) {
 			case RKAnonType(f): "typedef " + typestr(type);
 			case RKClassType(f): "class " + typestr(type);
 			case RKAbstractType(f): "abstract" + typestr(type);
-			case RKClassField(cf = { kind : FVar(vk,va)}): 
-				var infix = if (isStaticClass(type)) "::" else ".";
+			case RKClassField(cf = { kind : FVar(vk,va)}, t): 
+				var infix = ".";
 				typestr(type) + infix + cf.name;
-			case RKClassField(cf = { type : TFun(args,ret)}): 
-				infoTFun(cf, args, ret);
-			case RKClassField(cf = { type : TLazy(lazyT)}):
+			case RKClassField(cf = { type : TFun(args,ret)},t): 
+				var fullType = typeStrFromTypeDef(t);
+				infoTFun(cf, args, ret, t.name, fullType, false);
+			case RKClassField(cf = { type : TLazy(lazyT)}, t):
+				var fullType = typeStrFromTypeDef(t);
 				switch (lazyT()) {
-					case TFun(args, ret):
-						infoTFun(cf, args, ret);
-					case _ : 
-						"lazy other";
+					case TFun(args, ret): infoTFun(cf, args, ret, t.name, fullType, false);
+					case _ : "lazy other";
 				}
-			case RKClassField(cf):
+
+			case RKClassField(cf, t):
 				trace(cf); 
 				"other";
+			case RKAnonField(cf = { kind : FVar(vk,va)}, _): 
+				var infix = if (isStaticClass(type)) "::" else ".";
+				typestr(type) + infix + cf.name;
+			case RKAnonField(cf = { type : TFun(args,ret)},_): 
+				
+				infoTFun(cf, args, ret, "{ Anonymous Type }", "{ Anonymous Type }", false);
+			case RKAnonField(cf = { type : TLazy(lazyT)}, _):
+				switch (lazyT()) {
+					case TFun(args, ret): infoTFun(cf, args, ret, "{ Anonymous Type }", "{ Anonymous Type }", false);
+					case _ : "lazy other";
+				}
+				
+			case RKAnonField(cf, t):
+
+				trace(cf); 
+				"other";
+			case RKAnonDefField(cf = { kind : FVar(vk,va)}, t): 
+				var infix = if (isStaticClass(type)) "::" else ".";
+				typestr(type) + infix + cf.name;
+			case RKAnonDefField(cf = { type : TFun(args,ret)},t): 
+				var fullType = typeStrFromTypeDef(t);
+				infoTFun(cf, args, ret, t.name, fullType, false);
+			case RKAnonDefField(cf = { type : TLazy(lazyT)}, t):
+				var fullType = typeStrFromTypeDef(t);
+				switch (lazyT()) {
+					case TFun(args, ret): infoTFun(cf, args, ret, t.name, fullType, false);
+					case _ : "lazy other";
+				}
+				
+			case RKAnonDefField(cf, t):
+
+				trace(cf); 
+				"other";
+
+
+			case RKStaticField(cf = { kind : FVar(vk,va)}, t): 
+				var fullType = typeStrFromTypeDef(t);
+				fullType + "::" + cf.name;
+			case RKStaticField(cf = { type : TFun(args,ret)},t): 
+				var fullType = typeStrFromTypeDef(t);
+				infoTFun(cf, args, ret, t.name, fullType, false);
+			case RKStaticField(cf = { type : TLazy(lazyT)}, t):
+				var fullType = typeStrFromTypeDef(t);
+				switch (lazyT()) {
+					case TFun(args, ret): infoTFun(cf, args, ret,t.name, fullType, false);
+					case _ : "lazy other";
+				}
+				
+			case RKStaticField(cf, t):
+				trace(cf); 
+				"other";
+			case RKAbstractField(cf = { kind : FVar(vk,va)}, t): 
+				var infix = if (isStaticClass(type)) "::" else ".";
+				var fullType = typeStrFromTypeDef(t);
+				fullType + infix + cf.name;
+			case RKAbstractField(cf = { type : TFun(args,ret)},t): 
+				var fullType = typeStrFromTypeDef(t);
+				infoTFun(cf, args, ret,t.name, fullType, false);
+			case RKAbstractField(cf = { type : TLazy(lazyT)}, t):
+				var fullType = typeStrFromTypeDef(t);
+				switch (lazyT()) {
+					case TFun(args, ret): infoTFun(cf, args, ret, t.name, fullType, false);
+					case _ : "lazy other";
+				}
+				
+			case RKAbstractField(cf, t):
+				trace(cf); 
+				"other";
+			
 
 		}
 	}
 }
+
 
 
 enum ResultKind {
@@ -160,7 +264,11 @@ enum ResultKind {
 	RKDefType(t:DefType);
 	RKAnonType(t:AnonType);
 	RKAbstractType(t:AbstractType);
-	RKClassField(f:ClassField);
+	RKClassField(f:ClassField, t:ClassType);
+	RKAnonField(f:ClassField, t:AnonType);
+	RKStaticField(f:ClassField, t:ClassType);
+	RKAbstractField(f:ClassField, t:AbstractType);
+	RKAnonDefField(f:ClassField, t:DefType);
 }
 
 typedef FieldInfosWithTypeData = {
@@ -294,7 +402,7 @@ class FindDeclaration
 
 		var statics = t.get().statics.get().filter( check );
 		if (statics.length > 0) {
-			return mkFieldInfos(statics[0], ttype, true);
+			return mkFieldInfos(RKStaticField(statics[0], t.get()), ttype, true);
 		}
 		
 		
@@ -303,9 +411,9 @@ class FindDeclaration
 			var fields = cur.get().fields.get().filter( check );
 			
 			if (fields.length == 1)  {
-				var x:FieldInfosData = fields[0];
+				var x = fields[0];
 
-				res = mkFieldInfos(x, ttype);
+				res = mkFieldInfos(RKClassField(x, cur.get()), ttype);
 			} 
 			else 
 			{
@@ -328,7 +436,7 @@ class FindDeclaration
 				for (i in interf) {
 					var fields = i.t.get().fields.get().filter( check );
 					if (fields.length == 1)  {
-						res = mkFieldInfos(fields[0], TInst(i.t, i.params));
+						res = mkFieldInfos(RKClassField(fields[0], i.t.get()), TInst(i.t, i.params));
 						
 					} else {
 						for (i in i.t.get().interfaces) {
@@ -378,18 +486,19 @@ class FindDeclaration
 							if (fields.length == 0) 
 								None 
 							else
-								mkFieldInfos(fields[0], t, true);
+								mkFieldInfos(RKClassField(fields[0], t2.get()), t, true);
 						} else {
-							mkFieldInfos(statics[0], t, true);
+							mkFieldInfos(RKStaticField(statics[0], t2.get()), t, true);
 						}
 						
 						
 
 					case Type.TAnonymous( a ):
+
 						trace("TAnonymous");
 						var fields = a.get().fields.filter(check);
 						if (fields.length > 0) {
-							mkFieldInfos(fields[0], t);
+							mkFieldInfos(RKAnonDefField(fields[0], t1.get()), t);
 						} else {
 							try {
 								var t = Context.getType(TypeTools.toString(t).split("#").join(""));
@@ -413,7 +522,7 @@ class FindDeclaration
 				var fields = a.get().fields.filter(check);
 
 				if (fields.length > 0) {
-					mkFieldInfos(fields[0], t);
+					mkFieldInfos(RKAnonField(fields[0], a.get()), t);
 				} else {
 					None;
 				}
@@ -425,7 +534,7 @@ class FindDeclaration
 				var fields = a.get().impl.get().statics.get().filter(check);
 
 				if (fields.length > 0) {
-					mkFieldInfos(fields[0], t);
+					mkFieldInfos(RKAbstractField(fields[0], a.get()), t);
 				} else {
 					None;
 				}
@@ -439,6 +548,7 @@ class FindDeclaration
 
 	static function fromField (x, field:String):FieldInfos
 	{
+		
 		out(field);
 		var check = check.bind(_, field);
 
@@ -470,6 +580,8 @@ class FindDeclaration
 	}
 
 	static var out = Lib.println;
+
+
 
 	static function checkRegular (e):FieldInfos 
 	{
@@ -587,7 +699,7 @@ class FindDeclaration
 		}
 	}
 
-	static function sublimeFindDecl (e:Expr, formatField:FieldInfosWithTypeData->String, id:Int) 
+	static function sublimeFindDecl (e:Expr, formatField:FieldInfosWithTypeData->String, id:Int, macroCall:String) 
 	{
 		redirectTrace();
 
@@ -595,14 +707,30 @@ class FindDeclaration
 		trace("Find Declaration of Expr: " + e.toString());
 
 
-		var order = id == 1 ? [checkRegular, checkByType] : [checkByType, checkRegular];
-
 		var info = None;
 
-		for (o in order) {
-			info = o(e);
-			if (info != None) break;
+		switch (id) {
+			case 1: 
+				info = checkRegular(e);
+				if (info == None) info = checkByType(e);
+
+				var m = macro $e.$macroCall(10);
+				if (info == None) return m;
+
+			case 2: [checkByType, checkRegular];
+				info = checkByType(e);
+				if (info == None) info = checkRegular(e);
+
+				var m = macro $e.$macroCall(10);
+				if (info == None) return m;
+							
+			case 10: [checkRegular, checkByType];
+				info = checkRegular(e);
+				if (info == None) info = checkByType(e);			
+			case _:
 		}
+
+		
 
 		
 
@@ -621,11 +749,11 @@ class FindDeclaration
 
 	macro public static function __sublimeFindDecl (e:ExprOf<Dynamic>, id:Int):Expr 
 	{
-		return sublimeFindDecl(e, function (f) return formatPos(f.field.pos), id);
+		return sublimeFindDecl(e, function (f) return formatPos(f.field.pos), id, "__sublimeFindDecl");
 	}
 	macro public static function __sublimeShowDoc (e:ExprOf<Dynamic>, id:Int):Expr 
 	{
-		return sublimeFindDecl(e, function (f) return formatDoc(f), id);
+		return sublimeFindDecl(e, function (f) return formatDoc(f), id, "__sublimeShowDoc");
 	}
 
 }

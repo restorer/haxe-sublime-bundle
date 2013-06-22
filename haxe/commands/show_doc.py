@@ -14,7 +14,7 @@ class HaxeShowDocCommand( HaxeFindDeclarationCommand ):
         return "hxsublime.FindDeclaration.__sublimeShowDoc"
 
 
-    def handle_successfull_result(self, view, json_res, insert_before, insert_after, expr_end, build, temp_path, temp_file):
+    def handle_successfull_result(self, view, json_res, using_insert, insert_before, insert_after, expr_end, build, temp_path, temp_file):
         doc = json_res["doc"]
         #log("json: " + str(json_res))
         #log("doc: " + str(doc))
