@@ -20,4 +20,3 @@ class HaxeShowDocCommand( HaxeFindDeclarationCommand ):
         #log("doc: " + str(doc))
         panel.slide_panel().writeln("\n" + doc)
 
-

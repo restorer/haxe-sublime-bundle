@@ -51,7 +51,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
 
     def run( self , edit ) :
-        self.run1(True, 1)
+        self.run1(True)
 
     def helper_method(self):
         return "hxsublime.FindDeclaration.__sublimeFindDecl"
@@ -93,7 +93,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         word_str, word_start, word_end = get_word_at(view, src, pos)
 
 
-        chars = ["{", "+", "-", "(", "[", "*", "/", "=", ";"]
+        chars = ["{", "+", "-", "(", "[", "*", "/", "=", ";", ":"]
         res = hxsrctools.reverse_search_next_char_on_same_nesting_level(src, chars, word_end-1);
         
         expr_end = word_end
@@ -111,7 +111,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
         insert_before = helper_method + "("
 
 
-        order_str = "1" if order == 1 else "2"
+        order_str = str(order)
         insert_after = ", " + order_str + ")" + display_str
 
 
@@ -136,11 +136,15 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
                     log("nothing found (1), cannot find declaration")
                     if order == 1 and use_display:
                         self.run1(True, 2)    
+                    elif order == 2 and use_display:
+                        self.run1(True, 3)    
                 else:
                     self.handle_successfull_result(view, json_res, using_insert, insert_before, insert_after, expr_end, build, temp_path, temp_file)
             else:
                 if order == 1 and use_display:
                     self.run1(True, 2)
+                elif order == 2 and use_display:
+                    self.run1(True, 3)
                 elif use_display:
                     log("nothing found yet (2), try again without display (workaround)")
                     self.run1(False)

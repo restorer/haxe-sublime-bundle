@@ -105,7 +105,10 @@ abstract ResultKindCast (ResultKind) {
 	public function info(type:Type) {
 
 		function typeStrFromTypeDef(b:BaseType) {
-			var t = if (b.module.endsWith(b.name)) b.name else b.module + "." + b.name;
+
+			var name = b.name.startsWith("#") ? b.name.substr(1) : b.name;
+
+			var t = if (b.module.endsWith(name)) name else b.module + "." + name;
 			var params = b.params.map(function (x) return x.name).join(",");
 
 			return t + if (params.length > 0) "<" + params + ">" else "";
@@ -202,12 +205,14 @@ abstract ResultKindCast (ResultKind) {
 				var infix = if (isStaticClass(type)) "::" else ".";
 				typestr(type) + infix + cf.name;
 			case RKAnonDefField(cf = { type : TFun(args,ret)},t): 
+				var isStatic = if (t.name.startsWith("#")) true else false;
 				var fullType = typeStrFromTypeDef(t);
-				infoTFun(cf, args, ret, t.name, fullType, false);
+				infoTFun(cf, args, ret, t.name, fullType, isStatic);
 			case RKAnonDefField(cf = { type : TLazy(lazyT)}, t):
+			var isStatic = if (t.name.startsWith("#")) true else false;
 				var fullType = typeStrFromTypeDef(t);
 				switch (lazyT()) {
-					case TFun(args, ret): infoTFun(cf, args, ret, t.name, fullType, false);
+					case TFun(args, ret): infoTFun(cf, args, ret, t.name, fullType, isStatic);
 					case _ : "lazy other";
 				}
 				
@@ -222,11 +227,11 @@ abstract ResultKindCast (ResultKind) {
 				fullType + "::" + cf.name;
 			case RKStaticField(cf = { type : TFun(args,ret)},t): 
 				var fullType = typeStrFromTypeDef(t);
-				infoTFun(cf, args, ret, t.name, fullType, false);
+				infoTFun(cf, args, ret, t.name, fullType, true);
 			case RKStaticField(cf = { type : TLazy(lazyT)}, t):
 				var fullType = typeStrFromTypeDef(t);
 				switch (lazyT()) {
-					case TFun(args, ret): infoTFun(cf, args, ret,t.name, fullType, false);
+					case TFun(args, ret): infoTFun(cf, args, ret,t.name, fullType, true);
 					case _ : "lazy other";
 				}
 				
@@ -327,8 +332,9 @@ class FindDeclaration
 
 		}
 
+		trace(d.field);
 		var info = d.field.info(d.type);
-		var infix = isStatic ? "::" : ".";
+		
 
 		trace("info:" + info);
 		
@@ -556,7 +562,8 @@ class FindDeclaration
 			trace("Trying to get the type of expression x");
 			trace("this could fail/stop without a thrown exception (Haxe Compiler Bug in Display mode)");
 			var t = Context.typeof( x );
-			trace("x was successfull typed as: << " + TypeTools.toString(t) + " >>");
+
+			trace(ExprTools.toString(x) + " was successfull typed as: << " + TypeTools.toString(t) + " >>");
 			
 			searchField(t, check);
 
@@ -717,16 +724,19 @@ class FindDeclaration
 				var m = macro $e.$macroCall(10);
 				if (info == None) return m;
 
-			case 2: [checkByType, checkRegular];
+			case 2: 
 				info = checkByType(e);
 				if (info == None) info = checkRegular(e);
 
 				var m = macro $e.$macroCall(10);
 				if (info == None) return m;
+			case 3: 
+				var m = macro $e.$macroCall(10);
+				if (info == None) return m;
 							
-			case 10: [checkRegular, checkByType];
+			case 10:
 				info = checkRegular(e);
-				if (info == None) info = checkByType(e);			
+				if (info == None) info = checkByType(e);
 			case _:
 		}
 
@@ -754,6 +764,16 @@ class FindDeclaration
 	macro public static function __sublimeShowDoc (e:ExprOf<Dynamic>, id:Int):Expr 
 	{
 		return sublimeFindDecl(e, function (f) return formatDoc(f), id, "__sublimeShowDoc");
+	}
+
+	macro public static function __getType (e:ExprOf<Dynamic>, id:Int):Expr 
+	{
+
+		var es = ExprTools.toString(e).split('"').join('\\"');
+		var t = TypeTools.toString(Context.typeof(e));
+		trace(t);
+		out('|||||{ "type" : "$t", "expr" : "$es" }|||||');
+		return macro null;
 	}
 
 }

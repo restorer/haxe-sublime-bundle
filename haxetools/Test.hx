@@ -16,6 +16,7 @@ class Test {
 		hxsublime.FindDeclaration.__sublimeShowDoc(Iterator, 1);
 
 		hxsublime.FindDeclaration.__sublimeShowDoc("".endsWith, 1);
+		hxsublime.FindDeclaration.__getType("".endsWith, 1);
 		
 	}
 
