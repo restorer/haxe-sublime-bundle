@@ -74,7 +74,7 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 			input = input.encode('utf-8')
 		elif is_st3 and isinstance(input, str):
 			input = input.encode("utf-8")
-		print("INPUT:" + str(input))
+		#print("INPUT:" + str(input))
 		out, err = p.communicate(input=input)
 
 		return _decoded(out), _decoded(err)

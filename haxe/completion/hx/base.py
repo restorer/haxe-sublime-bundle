@@ -18,8 +18,9 @@ from haxe.tools import stringtools
 # ------------------- FUNCTIONS ----------------------------------
 
 
-def trigger_completion (view, options):
+def trigger_completion (view, options, show_top_level_snippets = False):
 
+    log("show_top_level_snippets: " + str(show_top_level_snippets))
     def run():
         project = hxproject.current_project(view)
         
@@ -30,7 +31,7 @@ def trigger_completion (view, options):
             project.completion_context.set_trigger(view, options)
             
             view.run_command( "auto_complete" , {
-                "api_completions_only" : True,
+                "api_completions_only" : not show_top_level_snippets,
                 "disable_auto_insert" : True,
                 "next_completion_if_showing" : True,
                 'auto_complete_commit_on_tab': True
@@ -143,8 +144,12 @@ def create_new_completions(project, view, offset, options, prefix):
             if use_completion_cache(ctx,last_ctx) :
                 log("USE COMPLETION CACHE")
                 out = cache["output"]
-                res = combine_hints_and_comps(out)
-                res = completion_result_with_smart_snippets(view, res, out, ctx.options)
+                update_completion_cache(cache, out)
+                project.completion_context.add_completion_result(out)
+                res = cancel_completion(view)
+                trigger_async_completion(view, ctx.options, out.show_top_level_snippets())
+                #res = combine_hints_and_comps(out)
+                #res = completion_result_with_smart_snippets(view, res, out, ctx.options)
             elif supported_compiler_completion_char(ctx.complete_char):
                 
                 comp_build = create_completion_build(ctx)
@@ -156,8 +161,13 @@ def create_new_completions(project, view, offset, options, prefix):
                 
                 res = cancel_completion(view, True)
             else:
+
                 comp_result = CompletionResult.empty_result(ctx, lambda:get_toplevel_completions(ctx))
-                res = combine_hints_and_comps(comp_result)
+                update_completion_cache(cache, comp_result)
+                project.completion_context.add_completion_result(comp_result)
+                res = cancel_completion(view)
+                trigger_async_completion(view, ctx.options, comp_result.show_top_level_snippets())
+                #res = combine_hints_and_comps(comp_result)
     return res
 
 def create_completion_build (ctx):
@@ -231,7 +241,8 @@ def completion_finished(ctx, comp_build, out, err):
     if has_results:
         update_completion_cache(cache, comp_result)
         project.completion_context.add_completion_result(comp_result)
-        trigger_async_completion(view, ctx.options)
+        show_top_level_snippets = comp_result.show_top_level_snippets()
+        trigger_async_completion(view, ctx.options, show_top_level_snippets)
     else:
         log("ignore background completion on finished")    
 
@@ -402,12 +413,12 @@ def cancel_completion(view, hide_complete = True):
     return [("  ...  ", "")]
 
 
-def trigger_async_completion(view, options):
+def trigger_async_completion(view, options, show_top_level_snippets = False):
 
     async_options = options.copy_as_async()
     
     def run_complete():
-        trigger_completion(view, async_options)
+        trigger_completion(view, async_options, show_top_level_snippets)
 
     sublime.set_timeout(run_complete, 2)
 

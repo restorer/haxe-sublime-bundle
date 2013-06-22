@@ -410,17 +410,26 @@ class CompletionResult:
         return len(self.comps) > 0
 
     def has_results (self):
-        return len(self.comps) > 0 or len(self.hints) > 0 or (self.requires_toplevel_comps and len(self._toplevel_comps) > 0)
+        return len(self.comps) > 0 or len(self.hints) > 0 or (self.requires_toplevel_comps() and len(self._toplevel_comps) > 0)
+
+    def show_top_level_snippets (self):
+        return self.requires_toplevel_comps() and not self.ctx.is_new
 
     def requires_toplevel_comps(self):
         prefix_is_whitespace = stringtools.is_whitespace_or_empty(self.ctx.prefix)
+        log("prefix_is_whitespace:" + str(prefix_is_whitespace))
+        log("has_hints:" + str(self.has_hints()))
+        log("has_hint:" + str(self.ctx.options.types.has_hint()))
+        log("has_compiler_results:" + str(self.has_compiler_results()))
         return not ((prefix_is_whitespace and self.has_hints() and self.ctx.options.types.has_hint()) or self.has_compiler_results())
 
     def all_comps (self):
         res = []
         if self.requires_toplevel_comps():
+            log("yes required toplevel comps")
             res.extend(list(self._toplevel_comps))
         res.extend(self.comps)
+        res.sort()
         return res
 
 

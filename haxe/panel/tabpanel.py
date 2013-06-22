@@ -59,7 +59,7 @@ class TabPanel():
 				if (v != None):
 					def do_edit(v, edit):
 						
-						print(str(type(msg1)))
+						
 						v.insert(edit, 0, st3_encode_utf8(to_unicode(msg1)))
 						v.end_edit( edit )
 					viewtools.async_edit(v, do_edit)
@@ -69,7 +69,6 @@ class TabPanel():
 
 	
 	def writeln (self, msg):
-		print(str(type(msg)))
 		self.write(msg + "\n")
 
 	
