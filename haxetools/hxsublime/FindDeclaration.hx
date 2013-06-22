@@ -135,7 +135,25 @@ abstract ResultKindCast (ResultKind) {
 		}
 
 		return switch (this) {
-			case RKEnumType(f): "enum " + typestr(type);
+			case RKEnumType(f): 
+				function enumConstructorMap(ec:EnumField) {
+					return switch (ec.type) {
+						case TFun(args, ret):
+							if (args.length > 0) {
+								"(" + [for (a in args) a.name].join(",") + ")";
+							} else "";
+						default: "";
+					}
+					
+
+				}
+				var res = [for (k in f.constructs.keys()) "\\t" + k + enumConstructorMap(f.constructs.get(k)) + ": "];
+
+				var switchSample = "---------------\\nswitch (x) {\\n" + res.join("\\n") + "\\n" + "}\\n---------------";
+
+
+
+				"enum " + typestr(type) + "\\n\\n" + switchSample;
 			case RKDefType(f): 
 				function ts (t:Type):String {
 					return switch (t) {
