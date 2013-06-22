@@ -143,7 +143,7 @@ _extract_tag = re.compile("<([a-z0-9_-]+).*?\s(name|main|title|file)=\"([ a-z0-9
 
 def _find_nme_project_title(nmml_file):
 	f = codecs.open( nmml_file , "r+", "utf-8" , "ignore" )
-	title = ["No Title"]
+	title = None
 	while 1:
 		l = f.readline()
 		if not l :
@@ -191,9 +191,9 @@ def find_nme_projects( project, folder ) :
 	builds = []
 	for nmml in nmmls:
 		title = _find_nme_project_title(nmml)
-		for t in config.nme_targets:
-
-			builds.append(NmeBuild(project, title, nmml, t))
+		if title is not None:
+			for t in config.nme_targets:
+				builds.append(NmeBuild(project, title, nmml, t))
 	return builds
 
 def find_openfl_projects( project, folder ) :
@@ -202,7 +202,7 @@ def find_openfl_projects( project, folder ) :
 	builds = []
 	for openfl_xml in openfl_xmls:
 		title = _find_nme_project_title(openfl_xml)
-		if title != None:
+		if title is not None:
 			for t in config.openfl_targets:
 				builds.append(OpenFlBuild(project, title, openfl_xml, t))
 
