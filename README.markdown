@@ -12,8 +12,9 @@ An Haxe Bundle for [Sublime Text 2](http://www.sublimetext.com/2) and [Sublime T
  - Code snippets, auto-import, Sublime build system integration
  - **[HScript](http://code.google.com/p/hscript/)**, **[Erazor](https://github.com/ciscoheat/erazor)** and **[HSS](http://ncannasse.fr/projects/hss)** support
  - **Multi project Support**, in Sublime Text 3 you can now open multiple projects at the same time and work on them parallel. This feature is buggy in ST2 because of some missing API-functions.
- - **Find Declaration**, jump to the declaration of the symbol under the cursor (uses the haxe compiler and it's type inference to find it)
- - **Show Documentation**, show the documentation of the symbol under the cursor (uses the haxe compiler and it's type inference to extract the docs)
+ - **Jump to declaration**, jump to the declaration of the symbol under the cursor (uses the haxe compiler and it's type inference to find it)
+ - **Show documentation**, show the documentation of the symbol under the cursor (uses the haxe compiler and it's type inference to extract the docs)
+  - **Show type of expression**, show the type of the symbol under the cursor (uses the haxe compiler and it's type inference to extract the docs)
 
  
 and more to come :)
@@ -73,7 +74,7 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
       - **Ctrl+Shift+E** to create a new enum,
       - **Ctrl+Shift+T** to create a new typedef
       - **Ctrl+Shift+R** to restart the haxe completion server
-      - **Ctrl+Shift+F** to jump to the definition of the type/function/var under the cursor, this is beta and does not work in all cases
+      - **Ctrl+Shift+F** to jump to the declaration of the type/function/var under the cursor, this is beta and does not work in all cases
       - **Ctrl+Shift+D** to show the documentation of the type/function/var under the cursor, this is beta and does not work in all cases
       - **Ctrl+Shift+Z** to show the type of the expression under the cursor
 
@@ -89,8 +90,13 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
  - `haxe_check_on_save` (`false` by default) : invokes the compiler on each save operation and shows compilation errors.
  - `haxe_completion_smart_snippets_on_completion` (`false` by default) : include the full smart snippet directly when selecting a suggested completion function from the dropdown list.
 
+These settings can be overriden at two places:
+  1. `syntax specific user settings` : in this case all settings must have a prefix `plugin_`, if you don't want to overrule all project specific settings. The default behaviour of sublime is that syntax specific settings override project settings and the intention of this prefix is to allow project settings to take precedence.
+  2. `project specific settings` : in this case you define them without prefix, all of these settings take precendence over `prefixed` settings.
 
-All of these Settings can be overriden with plattform specific settings by added a suffix like `_windows`, `_linux`, `_osx`, this can be useful when working in teams with different operating systems without changing the project file.
+Additionally all of these settings can be overriden with plattform specific settings by added a suffix like `_windows`, `_linux`, `_osx`, this can be useful when working in teams with different operating systems without changing the project file. E.g. `haxe_exec_linux` takes precendence over `haxe_exec` on linux plattforms.
+
+
 
 
 ### Targeting NME/openfl
