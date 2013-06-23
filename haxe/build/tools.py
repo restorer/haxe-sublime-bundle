@@ -13,6 +13,8 @@ from haxe.log import log
 
 from haxe.tools.stringtools import encode_utf8, to_unicode
 
+
+
 from haxe.build.hxmlbuild import HxmlBuild
 from haxe.build.nmebuild import NmeBuild
 from haxe.build.openflbuild import OpenFlBuild
@@ -38,6 +40,9 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 		if l == "" or l.startswith("#"):
 			continue
 		
+
+
+
 		if l.startswith("--next") :
 			if len(current_build.classpaths) == 0:
 				log("no classpaths")
@@ -50,6 +55,15 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 			
 		l = l.strip()
 		
+		if l.endswith(".hxml"):
+			
+			log("found ref of hxml file:" + l)
+			path = os.path.dirname(hxml)
+			sub_builds = _hxml_to_builds(project, path + os.sep + l, folder)
+			if len(sub_builds) == 1:
+				b = sub_builds[0]
+				current_build.merge(b)
+
 		if l.startswith("-main") :
 			spl = l.split(" ")
 			if len( spl ) == 2 :
@@ -61,8 +75,12 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 			spl = l.split(" ")
 			if len( spl ) == 2 :
 				lib = project.haxelib_manager.get( spl[1] )
-				log("lib to build:" + str(lib))
-				current_build.add_lib( lib )
+				if lib is not None:
+					log("lib to build:" + str(lib))
+					current_build.add_lib( lib )
+				else:
+					from haxe import panel
+					panel.default_panel().writeln("haxelib lib " + str(spl[1]) + " is not installed" )
 			else :
 				sublime.status_message( "Invalid build.hxml : lib not found" )
 

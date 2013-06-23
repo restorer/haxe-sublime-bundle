@@ -13,7 +13,8 @@ class OpenFlBuild (NmeBuild):
 		
 
 	def copy (self):
-		r = OpenFlBuild(self.project, self.title, self.nmml, self.target, self.hxml_build.copy())
+		hxml_copy = self.hxml_build.copy() if self._hxml_build is not None else None
+		r = OpenFlBuild(self.project, self.title, self.nmml, self.target, hxml_copy)
 		
 		return r
 

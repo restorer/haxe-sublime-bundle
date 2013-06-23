@@ -84,7 +84,14 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
         self.proc = None
         if not self.quiet:
             
-            print("Running Command : " + " ".join(map(encode_utf8, cmd)))
+            def escape_arg(a):
+                a = '\\"'.join(a.split('"'))
+                if len(a) >= 2:
+                    a = '"' + a[2:] if a.startswith('\\"') else a
+                    a = a[0:len(a)-2] + '"' if a.endswith('\\"') else a
+                return encode_utf8(a)                
+
+            log("Running Command : " + " ".join(map(escape_arg, cmd)))
 
             sublime.status_message("Building")
 

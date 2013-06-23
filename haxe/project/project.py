@@ -259,10 +259,10 @@ class Project:
         env = _haxe_build_env(self.project_dir("."))
         
         if self.has_build():
-            build = self.get_build(view)
+            build = self.get_original_build(view)
         else:
             self.extract_build_args(view)
-            build = self.get_build(view)
+            build = self.get_original_build(view)
 
         if type == "run": # build and run
             cmd, build_folder = build.prepare_run_cmd(self, self.server_mode, view)
@@ -338,13 +338,16 @@ class Project:
         build.hxml = os.path.join( src_dir , "build.hxml")
         return build
 
-
-    def get_build( self, view ) :
+    def get_original_build( self, view ) :
         
         if self.current_build is None and view.score_selector(0,"source.haxe.2") > 0 :
             self.current_build = self._create_default_build(view)
            
-        return self.current_build.copy()  
+        return self.current_build
+
+
+    def get_build( self, view ) :
+        return self.get_original_build(view).copy()
 
 
 def _haxe_build_env (project_dir):

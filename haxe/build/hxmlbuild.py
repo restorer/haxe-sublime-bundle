@@ -50,7 +50,7 @@ class HxmlBuild :
 		self.main = main
 	
 	def get_name (self):
-		return "[No Main]" if self.main == None else self.main
+		return "[No Main]" if self.main is None else self.main
 
 	def set_std_bundle(self, std_bundle):
 		self.std_bundle = std_bundle
@@ -70,6 +70,14 @@ class HxmlBuild :
 			and self.defines == other.defines
 			and self._build_file == other._build_file)
 		   
+	def merge (self, other_build):
+		ob = other_build
+		self.args.extend(ob.args)
+		self.classpaths.extend(ob.classpaths)
+		self.libs.extend(ob.libs)
+		self.defines.extend(ob.defines)
+		if self.main is None:
+			self.main = ob.main
 	
 	def copy (self):
 
@@ -286,7 +294,7 @@ class HxmlBuild :
 		return cmd, build_folder
 	
 	def prepare_run_cmd (self, project, server_mode, view):
-		cmd, build_folder, nekox_file = self._prepare_run(project, view, False)
+		cmd, build_folder, nekox_file = self._prepare_run(project, view, True)
 
 		if sublime.platform() == "linux":
 			default_open_ext = "xdg-open"

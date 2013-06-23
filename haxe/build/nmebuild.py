@@ -39,7 +39,7 @@ class NmeBuild(object) :
 
 	@property
 	def hxml_build (self):
-		if self._hxml_build == None:
+		if self._hxml_build is None:
 			self._hxml_build = self._get_hxml_build_with_nme_display()
 			#self._hxml_build.get_types()
 
@@ -76,7 +76,8 @@ class NmeBuild(object) :
 
 
 	def copy (self):
-		return NmeBuild(self.project, self.title, self.nmml, self.target, self.hxml_build.copy())
+		hxml_copy = self.hxml_build.copy() if self._hxml_build is not None else None
+		return NmeBuild(self.project, self.title, self.nmml, self.target, hxml_copy)
 
 	def get_relative_path(self, file):
 		return self.hxml_build.get_relative_path(file)
