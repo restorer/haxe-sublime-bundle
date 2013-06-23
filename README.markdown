@@ -14,7 +14,7 @@ An Haxe Bundle for [Sublime Text 2](http://www.sublimetext.com/2) and [Sublime T
  - **Multi project Support**, in Sublime Text 3 you can now open multiple projects at the same time and work on them parallel. This feature is buggy in ST2 because of some missing API-functions.
  - **Jump to declaration**, jump to the declaration of the symbol under the cursor (uses the haxe compiler and it's type inference to find it)
  - **Show documentation**, show the documentation of the symbol under the cursor (uses the haxe compiler and it's type inference to extract the docs)
- - **Show type of expression**, show the type of the expression under the cursor (uses the haxe compiler and it's type inference to extract the docs)
+ - **Show type of expression**, show the type of the expression under the cursor (uses the haxe compiler and it's type inference to get the type)
 
  
 and more to come :)
