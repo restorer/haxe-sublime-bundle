@@ -36,11 +36,14 @@ class TabPanel():
 		self.panel_syntax = panel_syntax
 
 	
-	def write (self, msg):
+	def write (self, msg, show_timestamp=True):
 		
 		def f () : 
 			self.all = self.all[0:300]
-			msg1 = paneltools.timestamp_msg(msg)
+			if show_timestamp:
+				msg1 = paneltools.timestamp_msg(msg)
+			else:
+				msg1 = msg
 			if paneltools.valid_message(msg):
 				self.all.insert(0,msg1)
 
@@ -68,11 +71,11 @@ class TabPanel():
 		sublime.set_timeout(f,40)
 
 	
-	def writeln (self, msg):
+	def writeln (self, msg, show_timestamp=True):
 		self.write(msg + "\n")
 
 	
-	def status (self, title, msg):
+	def status (self, title, msg, show_timestamp=True):
 		
 		if paneltools.valid_message(msg):
 			self.writeln(title + ": " + msg)

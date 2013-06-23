@@ -13,7 +13,7 @@ class SlidePanel ():
 	def clear(self) :
 		self.output_view = self.win.get_output_panel("haxe")
 
-	def write( self , text , scope = None ) :
+	def write( self , text , scope = None, show_timestamp = True ) :
 		
 		win = self.win
 
@@ -25,8 +25,9 @@ class SlidePanel ():
 		win.get_output_panel("haxe")
 		
 		panel = self.output_view
-			
-		text = timestamp_msg(text);
+		
+		if show_timestamp:	
+			text = timestamp_msg(text);
 		
 		win.run_command("show_panel",{"panel":"output.haxe"})
 		
@@ -54,9 +55,9 @@ class SlidePanel ():
 
 		return panel
 
-	def writeln (self, msg, scope = None):
+	def writeln (self, msg, scope = None, show_timestamp = True):
 		if valid_message(msg):
-			self.write(msg + "\n", scope)
+			self.write(msg + "\n", scope, show_timestamp)
 
 	def status (self, title, msg):
 		if valid_message(msg):
