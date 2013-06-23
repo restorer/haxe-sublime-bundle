@@ -55,7 +55,7 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 
 
 		# safely remove empty strings from args
-		args = filter(lambda s: s != "", args)
+		args = list(filter(lambda s: s != "", args))
 		
 		def encode_arg(a):
 			try:
