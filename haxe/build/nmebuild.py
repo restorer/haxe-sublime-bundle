@@ -71,6 +71,10 @@ class NmeBuild(object) :
 		return self.hxml_build.std_bundle
 
 
+	def add_arg(self, arg):
+		self.hxml_build.add_arg(arg)
+
+
 	def copy (self):
 		return NmeBuild(self.project, self.title, self.nmml, self.target, self.hxml_build.copy())
 
@@ -97,8 +101,8 @@ class NmeBuild(object) :
 	def add_classpath(self, cp):
 		self.hxml_build.add_classpath(cp)
 
-	def run(self, project, view, async, on_result):
-		self.hxml_build.run(project, view, async, on_result)
+	def run(self, project, view, async, on_result, server_mode = None):
+		self.hxml_build.run(project, view, async, on_result, server_mode)
 
 
 	def _get_run_exec(self, project, view):

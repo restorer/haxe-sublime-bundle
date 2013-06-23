@@ -344,11 +344,11 @@ class HxmlBuild :
 	def _get_run_exec(self, project, view):
 		return project.haxe_exec(view)
 
-	def _run_async (self, project, view, callback):
+	def _run_async (self, project, view, callback, server_mode = None):
 
 		env = project.haxe_env(view)
-		cmd, build_folder, nekox_file_name = self._prepare_run(project, view)
-		
+		cmd, build_folder, nekox_file_name = self._prepare_run(project, view, server_mode)
+		log(" ".join(cmd))
 		def cb (out, err):
 			self._on_run_complete(out, err, build_folder, nekox_file_name)
 			callback(out, err)
@@ -357,11 +357,11 @@ class HxmlBuild :
 	
 	
 
-	def _run_sync (self, project, view):
+	def _run_sync (self, project, view, server_mode = None):
 		
 		env = project.haxe_env(view)
-		cmd, build_folder, nekox_file_name = self._prepare_run(project, view)
-			
+		cmd, build_folder, nekox_file_name = self._prepare_run(project, view, server_mode)
+		log(" ".join(cmd))
 		out, err = run_cmd( args=cmd, input="", cwd=build_folder, env=env )
 		
 		self._on_run_complete(out, err, build_folder, nekox_file_name)
@@ -385,13 +385,13 @@ class HxmlBuild :
 		hxpanel.default_panel().writeln(out)
 		hxpanel.default_panel().writeln(err)
 
-	def run(self, project, view, async, callback):
+	def run(self, project, view, async, callback, server_mode = None):
 		if async:
 			log("RUN ASYNC COMPLETION")
-			self._run_async( project, view, callback )
+			self._run_async( project, view, callback, server_mode )
 		else:
 			log("RUN SYNC COMPLETION")
-			out, err = self._run_sync( project, view )
+			out, err = self._run_sync( project, view, server_mode )
 			callback(out, err)
 
 	def is_type_available (self, type):
