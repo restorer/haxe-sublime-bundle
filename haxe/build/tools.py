@@ -79,6 +79,8 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 					log("lib to build:" + str(lib))
 					current_build.add_lib( lib )
 				else:
+
+					current_build.add_arg( ("-lib", spl[1] ) )
 					from haxe import panel
 					panel.default_panel().writeln("Error: haxelib library " + str(spl[1]) + " is not installed" )
 			else :
