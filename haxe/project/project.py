@@ -356,9 +356,12 @@ def _haxe_build_env (project_dir):
     haxe_inst_path = hxsettings.haxe_inst_path()
     neko_inst_path = hxsettings.neko_inst_path()
 
-    envPath = os.environ.copy()["PATH"]
+
+    env = os.environ.copy()
+
+    env_path = os.environ.copy()["PATH"]
     
-    env = {}
+    
 
     paths = []
 
@@ -386,7 +389,7 @@ def _haxe_build_env (project_dir):
 
     
     if len(paths) > 0:
-        env["PATH"] = os.pathsep.join(paths) + os.pathsep + envPath
+        env["PATH"] = os.pathsep.join(paths) + os.pathsep + env_path
 
     
     print(str(env))
