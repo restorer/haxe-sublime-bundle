@@ -26,7 +26,7 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 			b = extract_types( p, filtered_classes, filtered_packages, 0, [], include_private_types )
 			bundle = bundle.merge(b)
 		else:
-			panel.default_panel().writeln("The classpath " + p + " does not exist, maybe you need to build the project first (nme, openfl)")
+			panel.default_panel().writeln("Error: The classpath " + p + " does not exist, in case of nme or openfl you need have to build (CTRL + ENTER) the project first (the build creates these paths)")
 
 	return bundle
 

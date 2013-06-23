@@ -80,7 +80,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 					current_build.add_lib( lib )
 				else:
 					from haxe import panel
-					panel.default_panel().writeln("haxelib lib " + str(spl[1]) + " is not installed" )
+					panel.default_panel().writeln("Error: haxelib library " + str(spl[1]) + " is not installed" )
 			else :
 				sublime.status_message( "Invalid build.hxml : lib not found" )
 
