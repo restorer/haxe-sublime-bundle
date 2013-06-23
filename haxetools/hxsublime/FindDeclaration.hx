@@ -646,9 +646,6 @@ class FindDeclaration
 						p;
 
 					case _:
-						trace("Inlined Expression cannot be resolved");
-						
-						trace("Trigger inline error for sublime, the inline workaround can be triggered from there.");
 						out(error("inlined"));
 						None;
 						
@@ -739,20 +736,20 @@ class FindDeclaration
 				info = checkRegular(e);
 				if (info == None) info = checkByType(e);
 
-				var m = macro $e.$macroCall(10);
+				var m = macro $e.$macroCall(100);
 				if (info == None) return m;
 
 			case 2: 
 				info = checkByType(e);
 				if (info == None) info = checkRegular(e);
 
-				var m = macro $e.$macroCall(10);
+				var m = macro $e.$macroCall(100);
 				if (info == None) return m;
 			case 3: 
-				var m = macro $e.$macroCall(10);
+				var m = macro $e.$macroCall(100);
 				if (info == None) return m;
 							
-			case 10:
+			case 100:
 				info = checkRegular(e);
 				if (info == None) info = checkByType(e);
 			case _:
