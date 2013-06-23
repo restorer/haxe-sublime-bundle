@@ -1,6 +1,7 @@
 import os, codecs, glob, re
 
 from haxe import config as hxconfig
+from haxe import panel
 from haxe.tools import hxsrctools
 from haxe.log import log
 
@@ -18,11 +19,14 @@ def find_types (classpaths, libs, base_path, filtered_classes = None, filtered_p
 
 	for path in cp :
 
+
 		p = os.path.join( base_path, path )
 
-		b = extract_types( p, filtered_classes, filtered_packages, 0, [], include_private_types )
-
-		bundle = bundle.merge(b)
+		if os.path.exists(p):
+			b = extract_types( p, filtered_classes, filtered_packages, 0, [], include_private_types )
+			bundle = bundle.merge(b)
+		else:
+			panel.default_panel().writeln("The classpath " + p + " does not exist, maybe you need to build the project first (nme, openfl)")
 
 	return bundle
 
@@ -45,8 +49,13 @@ def extract_types( path , filtered_classes = None, filtered_packages = None, dep
 		cl, ext = os.path.splitext( f )
 							
 		if cl not in filtered_classes:
-			module_bundle = extract_types_from_file(os.path.join( path , f ), cl, include_private_types)
-			bundle = bundle.merge(module_bundle)
+			
+			file = os.path.join( path , f )
+			if os.path.exists(file):
+				module_bundle = extract_types_from_file(file, cl, include_private_types)
+				bundle = bundle.merge(module_bundle)
+			
+				
 	
 	for f in os.listdir( path ) :
 		if is_valid_package(f):
