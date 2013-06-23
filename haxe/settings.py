@@ -139,4 +139,7 @@ def check_on_save (view = None):
 def use_slide_panel (view = None):
 	return get_bool("haxe_use_slide_panel", True, view)	
 
+def use_haxe_servermode_for_builds(view = None):
+	return get_bool("haxe_use_servermode_for_builds", False, view)		
+
 

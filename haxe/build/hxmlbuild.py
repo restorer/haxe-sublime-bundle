@@ -294,7 +294,7 @@ class HxmlBuild :
 		return cmd, build_folder
 	
 	def prepare_run_cmd (self, project, server_mode, view):
-		cmd, build_folder, nekox_file = self._prepare_run(project, view, True)
+		cmd, build_folder, nekox_file = self._prepare_run(project, view, server_mode)
 
 		if sublime.platform() == "linux":
 			default_open_ext = "xdg-open"
@@ -326,7 +326,7 @@ class HxmlBuild :
 
 	def _prepare_run (self, project, view, server_mode = None):
 
-		server_mode = project.server_mode if server_mode is None else server_mode
+		server_mode = project.is_server_mode() if server_mode is None else server_mode
 		
 		run_exec = self._get_run_exec(project, view)
 		b = self.copy()

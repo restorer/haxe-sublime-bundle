@@ -134,6 +134,9 @@ class NmeBuild(object) :
 		cmd.append(self.target.plattform)
 		cmd.extend(self.target.args)
 
+		if server_mode:
+			cmd.extend(["--connect", str(project.server.get_server_port())])
+
 		return (cmd, self.get_build_folder())
 
 	def _prepare_run(self, project, view, server_mode):

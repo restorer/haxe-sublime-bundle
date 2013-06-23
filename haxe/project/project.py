@@ -96,6 +96,8 @@ class Project:
     def is_server_mode (self):
         return self.server_mode and hxsettings.use_haxe_servermode()
 
+    def is_server_mode_for_builds (self):
+        return self.is_server_mode() and hxsettings.use_haxe_servermode_for_builds()
 
     def generate_build(self, view):
         fn = view.file_name()
@@ -266,11 +268,11 @@ class Project:
             build = self.get_original_build(view)
 
         if type == "run": # build and run
-            cmd, build_folder = build.prepare_run_cmd(self, self.server_mode, view)
+            cmd, build_folder = build.prepare_run_cmd(self, self.is_server_mode_for_builds(), view)
         elif type == "build": # just build
-            cmd, build_folder = build.prepare_build_cmd(self, self.server_mode, view)
+            cmd, build_folder = build.prepare_build_cmd(self, self.is_server_mode_for_builds(), view)
         else: # only check for errors
-            cmd, build_folder = build.prepare_check_cmd(self, self.server_mode, view)
+            cmd, build_folder = build.prepare_check_cmd(self, self.is_server_mode(), view)
         
         
         hxpanel.default_panel().writeln("running: " + " ".join(cmd))
