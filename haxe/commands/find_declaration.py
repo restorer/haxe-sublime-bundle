@@ -14,6 +14,8 @@ from haxe.tools import viewtools
 from haxe.tools import pathtools
 from haxe.tools import hxsrctools
 
+from haxe import panel
+
 from haxe.log import log
 
 plugin_path = plugin_base_dir()
@@ -158,6 +160,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
                     log("nothing found yet (2), try again without display (workaround)")
                     self.run1(False)
                 else:
+                    panel.default_panel().writeln("Cannot find declaration for expression " + expr_string.strip())
                     log("nothing found (3), cannot find declaration")    
 
         build.run(project, view, False, cb)

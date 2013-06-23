@@ -21,5 +21,5 @@ class HaxeGetTypeOfExprCommand (HaxeFindDeclarationCommand ):
         
         msg = "Expr: " + e + "\n" + "Type: " + t
 
-        panel.slide_panel().writeln("\n" + msg)
+        panel.slide_panel().writeln(msg=msg, show_timestamp=False)
     

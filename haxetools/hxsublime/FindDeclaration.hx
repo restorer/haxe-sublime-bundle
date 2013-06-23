@@ -764,7 +764,7 @@ class FindDeclaration
 			outResult(info, formatField);
 		}
 		out("-------------------");
-		return macro null;
+		return e;
 	}
 
 
@@ -788,7 +788,7 @@ class FindDeclaration
 		var t = TypeTools.toString(Context.typeof(e));
 		trace(t);
 		out('|||||{ "type" : "$t", "expr" : "$es" }|||||');
-		return macro null;
+		return e;
 	}
 
 }

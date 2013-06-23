@@ -18,5 +18,5 @@ class HaxeShowDocCommand( HaxeFindDeclarationCommand ):
         doc = json_res["doc"]
         #log("json: " + str(json_res))
         #log("doc: " + str(doc))
-        panel.slide_panel().writeln("\n" + doc)
+        panel.slide_panel().writeln(msg=doc, show_timestamp=False)
 
