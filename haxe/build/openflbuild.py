@@ -32,9 +32,6 @@ class OpenFlBuild (NmeBuild):
 
 		return res
 
-	def get_build_command(self):
-		return ["haxelib", "run", "openfl"]
-
 	def to_string(self) :
 		#out = os.path.basename(self.hxml_build.output)
 		out = self.title

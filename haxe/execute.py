@@ -67,6 +67,7 @@ def run_cmd( args, input=None, cwd=None, env=None ):
 			except:
 				a = a.encode(sys.getfilesystemencoding())
 			return a
+		print("env: " + str(env))
 		encoded_args = [encode_arg(a) for a in args]
 		p = Popen(encoded_args, cwd=cwd, stdout=PIPE, stderr=PIPE, stdin=PIPE, 
 				startupinfo=STARTUP_INFO, env=env)

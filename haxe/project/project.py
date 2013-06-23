@@ -60,18 +60,19 @@ class Project:
             
 
     def nme_exec (self, view = None):
-        return ["nme"]
+        return [hxsettings.haxelib_exec(), "run", "nme"]
 
     def openfl_exec (self, view = None):
-        return ["openfl"]
+        return [hxsettings.haxelib_exec(), "run", "openfl"]
 
     def haxelib_exec (self, view = None):
         return [hxsettings.haxelib_exec()]
 
     def haxe_exec (self, view = None):
         haxe_exec = hxsettings.haxe_exec(view)
-        if (haxe_exec != "haxe"):
+        if not os.path.isabs(haxe_exec) and haxe_exec != "haxe":
             cwd = self.project_dir(".")
+
             haxe_exec = os.path.normpath(os.sep.join(os.path.join(cwd, hxsettings.haxe_exec(view)).split("/")))
         return [haxe_exec]
 
@@ -274,6 +275,8 @@ class Project:
         
         hxpanel.default_panel().writeln("running: " + " ".join(cmd))
 
+
+        print("env: " + str(env))
         
         win.run_command("haxe_exec", {
             "cmd": cmd,
@@ -397,12 +400,13 @@ def _haxe_build_env (project_dir):
 
 
 def _get_compiler_info_env (project_path):
+
     return _haxe_build_env(project_path)
 
 
 def _collect_compiler_info (haxe_exec, project_path):
     env = _get_compiler_info_env(project_path)
-
+    print("env: " + str(env))
     cmd = haxe_exec
     cmd.extend(["-main", "Nothing", "-v", "--no-output"])
 

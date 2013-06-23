@@ -1,5 +1,5 @@
 import os
-
+import sublime 
 from haxe import config
 
 from haxe.log import log
@@ -32,7 +32,8 @@ class NmeBuild(object) :
 		return self._target.plattform
 
 	def _get_hxml_build_with_nme_display(self):
-		display_cmd = list(self.get_build_command())
+		view = sublime.active_window().active_view()
+		display_cmd = list(self.get_build_command(self.project, view))
 		display_cmd.append("display")
 		from haxe.build.tools import create_haxe_build_from_nmml
 		return create_haxe_build_from_nmml(self.project, self.target, self.nmml, display_cmd)
@@ -109,8 +110,8 @@ class NmeBuild(object) :
 	def _get_run_exec(self, project, view):
 		return project.nme_exec(view)
 
-	def get_build_command(self):
-		return ["haxelib", "run", "nme"]
+	def get_build_command(self, project, view):
+		return list(self._get_run_exec(project, view))
 
 	def prepare_check_cmd(self, project, server_mode, view):
 		cmd, folder = self.prepare_build_cmd(project, server_mode, view)
@@ -126,7 +127,7 @@ class NmeBuild(object) :
 
 
 	def _prepare_cmd(self, project, server_mode, view, command):
-		cmd = self.get_build_command()
+		cmd = self.get_build_command(project, view)
 
 		cmd.append(command)
 		cmd.append(self.build_file)
