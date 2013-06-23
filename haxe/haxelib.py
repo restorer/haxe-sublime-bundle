@@ -29,6 +29,7 @@ class HaxeLibManager:
 		if( name in self.available.keys()):
 			return self.available[name]
 		else :
+			
 			sublime.status_message( "Haxelib : "+ name +" project not installed" )
 			return None
 
@@ -54,7 +55,8 @@ class HaxeLibManager:
 		cmd.append("list")
 
 		hlout, hlerr = run_cmd( cmd )
-
+		log("haxelib output: " + hlout)
+		log("haxelib error: " + hlerr)
 		for l in hlout.split("\n") :
 			found = libLine.match( l )
 			if found is not None :
