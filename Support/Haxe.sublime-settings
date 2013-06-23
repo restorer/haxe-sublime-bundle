@@ -2,37 +2,44 @@
 	"auto_complete_selectors": "source - string - comment - keyword.control.directive.conditional.haxe.2",
 	"auto_complete_triggers": [ {"selector": "source.haxe.2", "characters": "."} ],
 	
+
+	/* To overwrite these settings inside of your project, just add the desired setting without the
+	  "plugin_" prefix
+	*/
+
+
 	// show completion times on completion
-	"haxe_completion_show_times" : false,
+	
+	"plugin_haxe_completion_show_times" : false,
 	// insert smart snippets on ( and ,
-	"haxe_completion_smart_snippets" : true,
+	"plugin_haxe_completion_smart_snippets" : true,
 	// insert only the snippet for the next parameter on ( and ,
-	"haxe_completion_smart_snippets_just_current" : true,
+	"plugin_haxe_completion_smart_snippets_just_current" : true,
 	// insert full smart snippet directly after selecting the completion entry
-	"haxe_completion_smart_snippets_on_completion": false,
+	"plugin_haxe_completion_smart_snippets_on_completion": false,
 	// turn async completion on/off
-	"haxe_completion_async" : true,
+	"plugin_haxe_completion_async" : true,
 	// path to the haxe executable
-	"haxe_exec": "haxe",
+	"plugin_haxe_exec": "haxe",
 
 	// use servermode for completion
-	"haxe_use_servermode": true,
+	"plugin_haxe_use_servermode": true,
 
 	// path to the haxe std library
-	// "haxe_library_path"
+	// "plugin_haxe_library_path"
 
 	// path to the haxelib executable
-	"haxe_haxelib_exec": "haxelib",
+	"plugin_haxe_haxelib_exec": "haxelib",
 	
 	
 	// print debug stuff into a tab panel
-	"haxe_use_debug_panel": false,	
+	"plugin_haxe_use_debug_panel": false,	
 
 	// check build on save
-	"haxe_check_on_save": false,
+	"plugin_haxe_check_on_save": false,
 
 	// true: use the slide panel for infos 
 	// false : use a tab panel for infos
-	"haxe_use_slide_panel": true	
+	"plugin_haxe_use_slide_panel": true	
 	
 }

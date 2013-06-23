@@ -4,6 +4,20 @@ import os
 from haxe.plugin import is_st2
 
 
+def plugin_settings(): 
+	return sublime.load_settings('Haxe.sublime-settings')
+
+
+def get_from_settings(id, settings, plugin):
+	prefix = "plugin_" if plugin else ""
+	res = None
+	pf = sublime.platform()
+	if (settings.has(prefix + id + "_" + pf)):
+		res = settings.get(prefix + id + "_" + pf)
+	if res is None and settings.has(prefix + id):
+		res = settings.get(prefix + id)
+	return res
+
 def get (id, view = None):
 	if view is None:
 		win = sublime.active_window()
@@ -11,13 +25,13 @@ def get (id, view = None):
 			view = sublime.active_window().active_view();
 
 	res = None
-	if (view is not None):
+	if view is not None:
 		settings = view.settings()
-		pf = sublime.platform()
-		if (settings.has(id + "_" + pf)):
-			res = settings.get(id + "_" + pf)
-		if res is None and settings.has(id):
-			res = settings.get(id)
+		res = get_from_settings(id, settings, False)
+
+	if res is None:
+		res = get_from_settings(id, plugin_settings(), True)
+		
 	return res;
 
 def get_bool (id, default, view = None):
