@@ -86,7 +86,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
         package_match = re.match(hxsrctools.package_line, src)
 
-        using_pos = 0 if package_match == None else package_match.end()
+        using_pos = 0 if package_match == None else package_match.end(0)
 
         using_insert = "using hxsublime.FindDeclaration;"
 

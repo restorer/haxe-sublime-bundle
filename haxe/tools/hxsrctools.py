@@ -14,7 +14,7 @@ space_chars = re.compile("\s")
 word_chars = re.compile("[a-z0-9._]", re.I)
 import_line = re.compile("^([ \t]*)import\s+([a-z0-9._]+);", re.I | re.M)
 using_line = re.compile("^([ \t]*)using\s+([a-z0-9._]+);", re.I | re.M)
-package_line = re.compile("package\s*([a-z0-9.]*);", re.I)
+package_line = re.compile("\s*package\s*([a-z0-9.]*)\s*;", re.I)
 
 type_decl_with_scope = re.compile("(private\s+)?(?:extern\s+)?(class|typedef|enum|interface|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9_,]+>)?" , re.M )
 
