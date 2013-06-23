@@ -53,3 +53,6 @@ from haxe.commands.completion import (
 	,HaxeHintDisplayCompletionCommand
 	,HaxeMacroHintDisplayCompletionCommand
 )
+from haxe.commands.find_occurences import (
+	HaxeFindOccurencesCommand
+)

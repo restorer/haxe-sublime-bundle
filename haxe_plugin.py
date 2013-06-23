@@ -55,7 +55,7 @@ def reload_modules():
          ,'haxe.commands.get_expr_type'
          ,'haxe.commands.haxelib'
          ,'haxe.commands.show_doc'
-
+         ,'haxe.commands.find_occurences'
          ,'haxe.compiler'
          ,'haxe.compiler.server'
          ,'haxe.compiler.output'
@@ -191,6 +191,7 @@ from haxe.commands import (
     ,HaxeFindDeclarationListener
     ,HaxeInstallLibCommand
     ,HaxeShowDocCommand
+    ,HaxeFindOccurencesCommand
 
 ) 
 

@@ -35,6 +35,30 @@
             }
         ]
     },
+    { 
+        "keys": ["ctrl+shift+h", "ctrl+shift+o"], 
+        "command": "haxe_find_occurences",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
+    { 
+        "keys": ["ctrl+shift+h", "ctrl+shift+z"], 
+        "command": "haxe_get_type_of_expr",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
     /*{ 
         "keys": ["ctrl+shift+space"], 
         "command": "haxe_display_macro_completion",
