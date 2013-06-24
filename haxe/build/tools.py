@@ -94,7 +94,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 		
 		if l.startswith("--macro"):
 			spl = l.split(" ")
-			current_build.add_arg( ( "--macro" , '"' +  "\"".join( " ".join(spl[1:]).split("\"")  ) + '"' ))	
+			current_build.add_arg( ( "--macro" , " ".join(spl[1:])  ) )	
 
 		if l.startswith("-D"):
 			tup = tuple(l.split(" "))
