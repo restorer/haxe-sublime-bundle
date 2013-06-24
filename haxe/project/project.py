@@ -87,7 +87,7 @@ class Project:
         
         env = self.haxe_env()
         
-        self.server.start(haxe_exec, cwd, env)
+        self.server.start(haxe_exec, cwd, env=env)
     
 
     def restart_server (self, view):
