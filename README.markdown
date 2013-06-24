@@ -49,7 +49,7 @@ Using [git bash](http://code.google.com/p/msysgit/)
 
 ### Std Library Path
 
-You should also make sure that you have an environment variable called HAXE_STD_PATH set which points to the std folder in you haxe sdk. Alternatively you can set them in your Syntax specific Haxe settings as "plugin_haxe_library_path" for each Haxe project or in your project settings as "haxe_library_path". See settings for more information.
+You should also make sure that you have an environment variable called `HAXE_STD_PATH` set which points to the std folder in you haxe sdk. Alternatively you can set them in your syntax specific Haxe settings as `plugin_haxe_library_path` for each Haxe project or in your project settings as `haxe_library_path`. See settings for more information.
 
 Restart Sublime Text.
 
