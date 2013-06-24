@@ -33,7 +33,41 @@ param_default = re.compile("(=\s*\"*[^\"]*\")", re.M)
 is_type = re.compile("^[A-Z][a-zA-Z0-9_]*$")
 comments = re.compile("(//[^\n\r]*?[\n\r]|/\*(.*?)\*/)", re.MULTILINE | re.DOTALL )
 
+def skip_whitespace_or_comments(hx_src_section, start_pos):
+	in_single_comment = False
+	in_multi_comment = False
 
+	count = len(hx_src_section)
+	pos = start_pos
+
+	while True:
+
+		if pos > count-1:
+			break
+		c = hx_src_section[pos]
+		next = hx_src_section[pos+1] if pos < count-1 else None
+
+		if in_single_comment and c == "\n":
+			pos += 1
+			in_single_comment = False
+		elif in_multi_comment and c == "*" and next == "/":
+			in_multi_comment = False
+			pos += 2
+		elif in_single_comment or in_multi_comment:
+			pos += 1
+		elif c == "/" and next == "/":
+			pos += 2
+			in_single_comment = True
+		elif c == "/" and next == "*":
+			pos += 2
+			in_multi_comment = True
+		elif c == " " or c == "\t" or c == "\n":
+			pos += 1
+		else:
+			# we are done
+			return (pos, hx_src_section[start_pos:pos])
+
+	return None
 
 # searches the next occurrence of `char` in `hx_src_section` on the same nesting level as the char at position `start_pos`
 # the search starts at position `start_pos` in `hx_src_section`.
@@ -138,6 +172,15 @@ def reverse_search_next_char_on_same_nesting_level (hx_src_section, char, start_
 
 
 		#log(c + " in " + str(char) + ":" + str(c in char))
+
+		# single line comment
+		if (c == "/" and next == "/"):
+			pos -= 2
+			cur = "//" + c
+			continue
+
+
+
 		if (c in char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
 			return (pos,cur)
 				

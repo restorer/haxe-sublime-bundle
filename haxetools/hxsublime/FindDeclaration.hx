@@ -364,7 +364,7 @@ class FindDeclaration
 			return StringTools.ltrim(if (StringTools.startsWith(s,"*")) s.substr(1) else s);
 		}
 		doc = doc.split("\n").map(StringTools.ltrim).map(removeStar).join("\n");
-		doc = doc.split("\n").join("\\n").split("\t").join("\\t").split('"').join('\\"').split("\r").join("");
+		doc = doc.split("\r").join("").split("\n").join("\\n").split("\t").join("\\t").split('"').join('\\"').split("\r").join("");
 
 		doc = typestr + "\\n" + doc;
 		return '|||||{ "doc": "$doc" }|||||';

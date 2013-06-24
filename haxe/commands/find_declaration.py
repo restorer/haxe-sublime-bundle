@@ -98,17 +98,26 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
 
         
+        sel = view.sel()[0]
+        pos = sel.begin()
 
-        pos = view.sel()[0].a
+        if (sel.end() == pos):
 
-        word_str, word_start, word_end = get_word_at(view, src, pos)
+            word_str, word_start, word_end = get_word_at(view, src, pos)
 
 
-        chars = ["{", "+", "-", "(", "[", "*", "/", "=", ";", ":"]
-        res = hxsrctools.reverse_search_next_char_on_same_nesting_level(src, chars, word_end-1);
-        
-        expr_end = word_end
-        expr_start = res[0]+1
+            chars = ["{", "+", "-", "(", "[", "*", "/", "=", ";", ":"]
+            res = hxsrctools.reverse_search_next_char_on_same_nesting_level(src, chars, word_end-1);
+            
+            res = hxsrctools.skip_whitespace_or_comments(src, res[0]+1)
+
+
+
+            expr_end = word_end
+            expr_start = res[0]
+        else:
+            expr_start = pos
+            expr_end = sel.end()
         
         src_before_expr = src[using_pos:expr_start]
 
