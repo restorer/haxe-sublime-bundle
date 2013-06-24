@@ -15,7 +15,7 @@ class HaxeShowDocCommand( HaxeFindDeclarationCommand ):
 
 
     def handle_successfull_result(self, view, json_res, using_insert, insert_before, insert_after, expr_end, build, temp_path, temp_file):
-        if "doc" in json_res :
+        if "doc" in json_res.keys() :
         	doc = json_res["doc"]
         else :
         	doc = "No documentation found"
