@@ -100,7 +100,7 @@ class HaxeLibManager:
 		cmd = self.project.haxelib_exec()
 		env = self.project.haxe_env()
 		cmd.append("search")
-		cmd.append(" ")
+		cmd.append("_")
 		out,err = run_cmd(cmd, env=env);
 		return self._collect_libraries(out)
 
