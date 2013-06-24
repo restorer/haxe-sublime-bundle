@@ -71,6 +71,7 @@ class HaxeLibManager:
 		env = self.project.haxe_env()
 		cmd.append("install")
 		cmd.append(lib)
+		log(str(cmd))
 		run_cmd(cmd, env=env)
 		self.scan()
 
@@ -79,6 +80,7 @@ class HaxeLibManager:
 		env = self.project.haxe_env()
 		cmd.append("remove")
 		cmd.append(lib)
+		log(str(cmd))
 		run_cmd(cmd,env=env)
 		self.scan()
 
@@ -86,6 +88,7 @@ class HaxeLibManager:
 		cmd = self.project.haxelib_exec()
 		env = self.project.haxe_env()
 		cmd.append("upgrade")
+		log(str(cmd))
 		run_cmd(cmd, env=env)
 		self.scan()
 
@@ -93,6 +96,7 @@ class HaxeLibManager:
 		cmd = self.project.haxelib_exec()
 		env = self.project.haxe_env()
 		cmd.append("selfupdate")
+		log(str(cmd))
 		run_cmd(cmd, env=env)
 		self.scan()
 
@@ -101,6 +105,7 @@ class HaxeLibManager:
 		env = self.project.haxe_env()
 		cmd.append("search")
 		cmd.append("_")
+		log(str(cmd))
 		out,err = run_cmd(cmd, env=env);
 		return self._collect_libraries(out)
 

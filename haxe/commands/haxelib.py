@@ -35,16 +35,21 @@ class HaxeInstallLibCommand( sublime_plugin.WindowCommand ):
 
     def _entry_selected( self, libs, manager, i ):
 
+        log("install lib command selected " + str(i))
         if i < 0 :
             return
         if i == len(libs) :
+            log("upgrade all")
             manager.upgrade_all()
             
         if i == len(libs)+1 :
+            log("self update")
             manager.self_update()
         else :
             lib = libs[i]
             if lib in manager.available :
+                log("remove " + lib)
                 manager.remove_lib(lib)
             else :
+                log("install " + lib)
                 manager.install_lib(lib)
