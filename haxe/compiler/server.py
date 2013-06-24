@@ -69,7 +69,7 @@ class Server ():
 				time.sleep(0.05)
 					
 				log("server started at port: " + str(self._server_port))
-				hxpanel.default_panel().writeln("server started at port: " + str(self._server_port))
+				# hxpanel.default_panel().writeln("server started at port: " + str(self._server_port))
 			except(OSError, ValueError) as e:
 				err = u'Error starting server %s: %s' % (" ".join(cmd), e)
 				sublime.error_message(err)
@@ -82,7 +82,7 @@ class Server ():
 					msg = "Cannot start haxe compilation server on ports {0}-{1}"
 					msg = msg.format((self._orig_server_port, self._server_port))
 					log("Server starting error")
-					hxpanel.default_panel().writeln(msg)
+					#hxpanel.default_panel().writeln(msg)
 					#sublime.error_message(msg)
 			except Exception as e:
 				log("ERROR : " + str(e))
