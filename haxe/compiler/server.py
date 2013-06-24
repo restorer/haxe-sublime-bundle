@@ -52,8 +52,12 @@ class Server ():
 							else:
 								val = unicode(env[k], "ISO-8859-1").encode(sys.getfilesystemencoding())
 						except:
-							val = env[k].encode(sys.getfilesystemencoding())
+							if is_st3:
+								val = env[k]
+							else:
+								val = env[k].encode(sys.getfilesystemencoding())
 						
+
 						full_env[k] = os.path.expandvars(val)
 				
 
