@@ -248,9 +248,11 @@ class Project:
             self.current_build = self.builds[id]
             self.current_build.set_std_bundle(self.std_bundle)
 
-            hxpanel.default_panel().writeln( "build selected: " + self.current_build.to_string() )
+            view.set_status("haxe-build",self.current_build.to_string())
+            #hxpanel.default_panel().writeln( "build selected: " + self.current_build.to_string() )
         else:
-            hxpanel.default_panel().writeln( "No build found/selected" )
+            view.set_status("haxe-build","No build found/selected")
+            #hxpanel.default_panel().writeln( "No build found/selected" )
             
     
     
