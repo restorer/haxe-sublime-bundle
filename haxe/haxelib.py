@@ -53,8 +53,8 @@ class HaxeLibManager:
 
 		cmd = self.project.haxelib_exec()
 		cmd.append("list")
-
-		hlout, hlerr = run_cmd( cmd )
+		env = self.project.haxe_env()
+		hlout, hlerr = run_cmd( cmd, env=env )
 		log("haxelib output: " + hlout)
 		log("haxelib error: " + hlerr)
 		for l in hlout.split("\n") :
@@ -67,35 +67,40 @@ class HaxeLibManager:
 
 	def install_lib(self, lib):
 		cmd = self.project.haxelib_exec()
+		env = self.project.haxe_env()
 		cmd.append("install")
 		cmd.append(lib)
-		run_cmd(cmd)
+		run_cmd(cmd, env=env)
 		self.scan()
 
 	def remove_lib(self, lib):
 		cmd = self.project.haxelib_exec()
+		env = self.project.haxe_env()
 		cmd.append("remove")
 		cmd.append(lib)
-		run_cmd(cmd)
+		run_cmd(cmd,env=env)
 		self.scan()
 
 	def upgrade_all(self):
 		cmd = self.project.haxelib_exec()
+		env = self.project.haxe_env()
 		cmd.append("upgrade")
-		run_cmd(cmd)
+		run_cmd(cmd, env=env)
 		self.scan()
 
 	def self_update(self):
 		cmd = self.project.haxelib_exec()
+		env = self.project.haxe_env()
 		cmd.append("selfupdate")
-		run_cmd(cmd)
+		run_cmd(cmd, env=env)
 		self.scan()
 
 	def search_libs(self):
 		cmd = self.project.haxelib_exec()
+		env = self.project.haxe_env()
 		cmd.append("search")
 		cmd.append(" ")
-		out,err = run_cmd(cmd);
+		out,err = run_cmd(cmd, env=env);
 		return self._collect_libraries(out)
 
 	def _collect_libraries(self, out):
