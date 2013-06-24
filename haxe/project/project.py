@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sublime
 import os
 import re
@@ -130,6 +131,7 @@ class Project:
 
 
         folders = self._get_folders(view)
+        print(folders)
         
         self.builds = self._find_builds_in_folders(folders)
         

@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import sys
 import sublime
 import imp
@@ -38,7 +39,7 @@ if is_st3:
 def reload_modules():
     plugin_modules = [
          
-          'haxe.build'
+         'haxe.build'
          ,'haxe.build.hxmlbuild'
          ,'haxe.build.nmebuild'
          ,'haxe.build.openflbuild'

@@ -1,4 +1,6 @@
+# -*- coding: utf-8 -*-
 import os
+import sys
 import re
 import glob
 import codecs
@@ -151,6 +153,9 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 	return builds
 
 def _find_build_files_in_folder(folder, extension):
+	if not os.path.isdir(folder) :
+		return []
+		
 	files = glob.glob( os.path.join( folder , "*."+extension ) )
 	for dir in os.listdir(folder):
 		files.extend(glob.glob( os.path.join( os.path.join(folder, dir) , "*."+extension ) ))
