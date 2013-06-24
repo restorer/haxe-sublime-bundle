@@ -47,6 +47,10 @@ Using [git bash](http://code.google.com/p/msysgit/)
     cd /c/Users/<username>/AppData/Roaming/Sublime\ Text\ 2/Packages
     git clone https://github.com/<fork author>/haxe-sublime-bundle.git Haxe
 
+### Std Library Path
+
+You should also make sure that you have an environment variable called HAXE_STD_PATH set which points to the std folder in you haxe sdk. Alternatively you can set them in your Syntax specific Haxe settings as "plugin_haxe_library_path" for each Haxe project or in your project settings as "haxe_library_path". See settings for more information.
+
 Restart Sublime Text.
 
 ## Sublime Text 3
@@ -85,16 +89,18 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
  - `haxe_haxelib_exec` : Full path to the Haxelib executable, if not already in your PATH ("/usr/bin/haxe" or "C:\Program Files\Haxe\haxe.exe")
   - `haxe_library_path` : Full path to the standard lib, overriding HAXE_LIBRARY_PATH
  - `haxe_use_servermode` (`true` by default) : Uses [compilation server](http://haxe.org/manual/completion#compilation-cache-server) for building. The server is always used for completion, and may be restarted if needed through the command palette.
+ list.
+ - `haxe_use_servermode_for_builds` (`false` by default) : enable completion server for building
  - `haxe_completion_smart_snippets` (`true` by default) : Inserts smart snippets based on compiler hints after `(` and `,`
  - `haxe_completion_smart_snippets_just_current` (`true` by default) : Inserts a smart snippet only for the current parameter after `(` and `,`, `false` includes a smart snippet for all function parameters
  - `haxe_check_on_save` (`false` by default) : invokes the compiler on each save operation and shows compilation errors.
- - `haxe_completion_smart_snippets_on_completion` (`false` by default) : include the full smart snippet directly when selecting a suggested completion function from the dropdown list.
+ - `haxe_completion_smart_snippets_on_completion` (`false` by default) : include the full smart snippet directly when selecting a suggested completion function from the dropdown 
 
 These settings can be overriden at two places:
   1. `syntax specific user settings` : in this case all settings must have a prefix `plugin_`, if you don't want to overrule all project specific settings. The default behaviour of sublime is that syntax specific settings override project settings and the intention of this prefix is to allow project settings to take precedence.
   2. `project specific settings` : in this case you define them without prefix, all of these settings take precendence over `prefixed` settings.
 
-Additionally all of these settings can be overriden with plattform specific settings by added a suffix like `_windows`, `_linux`, `_osx`, this can be useful when working in teams with different operating systems without changing the project file. E.g. `haxe_exec_linux` takes precendence over `haxe_exec` on linux plattforms.
+Additionally all of these settings can be overriden with platform specific settings by adding a suffix like `_windows`, `_linux`, `_osx`. This can be useful when working in teams with different operating systems without changing the project file. E.g. `haxe_exec_linux` takes precendence over `haxe_exec` on linux platforms, while `haxe_exec_windows` takes precendence on windows platforms.
 
 
 
