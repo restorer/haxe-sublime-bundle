@@ -43,17 +43,18 @@ class HaxeLibManager:
 
 	def scan(self) :
 		self.scanned = True
+		env = self.project.haxe_env()
 		log("do scan")
 		cmd = self.project.haxelib_exec()
 		cmd.append("config")
-		hlout, hlerr = run_cmd( cmd )
+		hlout, hlerr = run_cmd( cmd, env=env )
 		self.basePath = hlout.strip()
 
 		self._available = {}
 
 		cmd = self.project.haxelib_exec()
 		cmd.append("list")
-		env = self.project.haxe_env()
+		
 		hlout, hlerr = run_cmd( cmd, env=env )
 		log("haxelib output: " + hlout)
 		log("haxelib error: " + hlerr)
