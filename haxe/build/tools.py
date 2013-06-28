@@ -39,7 +39,16 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 		if not l: 
 			break;
 
-		if l == "" or l.startswith("#"):
+		if l == "":
+			continue
+
+		l = l.strip()
+
+		if l.startswith("#build-name="):
+			current_build.name = l[12:]
+			continue
+
+		if l.startswith("#"):
 			continue
 		
 
@@ -55,7 +64,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 			current_build = HxmlBuild(hxml, build_file)
 			continue
 			
-		l = l.strip()
+		
 		
 		if l.endswith(".hxml"):
 			
