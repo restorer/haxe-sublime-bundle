@@ -38,6 +38,8 @@ class HxmlBuild :
 	def title(self):
 		return self.output
 
+	
+
 	@property
 	def build_file(self):
 		return self._build_file
@@ -293,6 +295,15 @@ class HxmlBuild :
 		cmd.append("--no-output")
 		return cmd, build_folder
 	
+
+	@property
+	def absolute_output(self):
+		if os.path.isabs(self.output):
+			return self.output
+		else:
+			return self.get_build_folder() + "/" + self.output	
+		
+
 	def prepare_run_cmd (self, project, server_mode, view):
 		cmd, build_folder, nekox_file = self._prepare_run(project, view, server_mode)
 
@@ -302,19 +313,19 @@ class HxmlBuild :
 		if nekox_file != None:
 			cmd.extend(["-cmd", "neko " + nekox_file])
 		elif self.target == "swf" and default_open_ext != None:
-			cmd.extend(["-cmd", default_open_ext + " " + self.output])
+			cmd.extend(["-cmd", default_open_ext + " " + self.absolute_output])
 		elif self.target == "neko":
-			cmd.extend(["-cmd", "neko " + self.output])
+			cmd.extend(["-cmd", "neko " + self.absolute_output])
 		elif self.target == "cpp":
-			cmd.extend(["-cmd", os.path.join(self.output,self.main) + "-debug"])
+			cmd.extend(["-cmd", os.path.join(self.absolute_output,self.main) + "-debug"])
 		elif self.target == "js" and "nodejs" in self.defines:
-			cmd.extend(["-cmd", "nodejs " + self.output])
+			cmd.extend(["-cmd", "nodejs " + self.absolute_output])
 		elif self.target == "java":
-			sep_index = self.output.rfind(os.path.sep)
-			jar = self.output + ".jar" if sep_index == -1 else self.output[sep_index+1:] + ".jar"
-			cmd.extend(["-cmd", "java -jar " + os.path.join(self.output, jar)])
+			sep_index = self.absolute_output.rfind(os.path.sep)
+			jar = self.absolute_output + ".jar" if sep_index == -1 else self.absolute_output[sep_index+1:] + ".jar"
+			cmd.extend(["-cmd", "java -jar " + os.path.join(self.absolute_output, jar)])
 		elif self.target == "cs":
-			cmd.extend(["-cmd", "cd " + self.output])
+			cmd.extend(["-cmd", "cd " + self.absolute_output])
 			cmd.extend(["-cmd", "gmcs -recurse:*.cs -main:" + self.main + " -out:" + self.main + ".exe-debug"])
 			cmd.extend(["-cmd", os.path.join(".", self.main + ".exe-debug")])
 
