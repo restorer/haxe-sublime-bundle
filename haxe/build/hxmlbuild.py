@@ -8,7 +8,7 @@ from haxe import types as hxtypes
 from haxe import panel as hxpanel
 from haxe.tools import hxsrctools
 from haxe.tools.stringtools import to_unicode, encode_utf8, st2_to_unicode
-
+from haxe import settings as hxsettings
 
 from haxe.execute import run_cmd, run_cmd_async
 from haxe.log import log
@@ -296,8 +296,8 @@ class HxmlBuild :
 	def prepare_run_cmd (self, project, server_mode, view):
 		cmd, build_folder, nekox_file = self._prepare_run(project, view, server_mode)
 
-		if sublime.platform() == "linux":
-			default_open_ext = "xdg-open"
+		
+		default_open_ext = hxsettings.open_with_default_app()
 
 		if nekox_file != None:
 			cmd.extend(["-cmd", "neko " + nekox_file])
