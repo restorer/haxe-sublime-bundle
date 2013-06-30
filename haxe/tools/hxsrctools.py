@@ -358,10 +358,11 @@ class HaxeType:
 
 	# convert this type into insert snippets. Multiple snippets when it's an enum, separated into the enum itself and it's constructors.
 	def to_snippets(self, import_list, insert_file):
-	    if self.is_enum:
-	        return [ev.to_snippet(insert_file, import_list) for ev in self.enum_constructors]
-	    else:
-	        return [self.to_snippet(insert_file, import_list)]
+		res = [self.to_snippet(insert_file, import_list)]
+
+		if self.is_enum:
+			res.extend([ev.to_snippet(insert_file, import_list) for ev in self.enum_constructors])
+		return res
 
 
 	def to_snippet_insert (self, import_list, insert_file):
