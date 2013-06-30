@@ -32,6 +32,7 @@ class HxmlBuild :
 		self._update_time = None
 		self.mode_completion = False
 		self.defines = []
+		self.name = None
 		
 
 	@property
@@ -52,7 +53,12 @@ class HxmlBuild :
 		self.main = main
 	
 	def get_name (self):
-		return "[No Main]" if self.main is None else self.main
+
+		if self.name is not None:
+			n = self.name
+		else:
+			n = "[No Main]" if self.main is None else self.main
+		return n
 
 	def set_std_bundle(self, std_bundle):
 		self.std_bundle = std_bundle
@@ -62,6 +68,7 @@ class HxmlBuild :
 		
 		return (self.args == other.args 
 			and self.main == other.main
+			and self.name == other.name
 			and self.target == other.target
 			and self.output == other.output
 			and self.hxml == other.hxml
@@ -80,6 +87,8 @@ class HxmlBuild :
 		self.defines.extend(ob.defines)
 		if self.main is None:
 			self.main = ob.main
+		if self.name is None:
+			self.name = ob.name
 	
 	def copy (self):
 
@@ -88,6 +97,7 @@ class HxmlBuild :
 		hb = HxmlBuild(self.hxml, self.build_file)
 		hb.args = list(self.args)
 		hb.main = self.main
+		hb.name = self.name
 		hb.target = self.target
 		hb.output = self.output
 		hb.defines = list(self.defines)
@@ -173,6 +183,7 @@ class HxmlBuild :
 		return target
 
 	def to_string(self) :
+
 		out = os.path.basename(self.output)
 		
 		return "{main} ({target} - {out})".format(self=self, out=out, main=self.get_name(), target=self.target_to_string());
