@@ -145,4 +145,5 @@ def use_slide_panel (view = None):
 def use_haxe_servermode_for_builds(view = None):
 	return get_bool("haxe_use_servermode_for_builds", False, view)		
 
-
+def use_offset_completion(view = None):
+	return get_bool("haxe_use_offset_completion", False, view)

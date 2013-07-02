@@ -10,6 +10,7 @@ from haxe.tools.decorator import lazyprop
 from haxe.tools import viewtools, stringtools
 from haxe.log import log
 from haxe.completion.hx import constants as hcc
+from haxe import settings
 
 control_struct = re.compile( "\s+(if|switch|for|while)\s*\($" );
 
@@ -260,6 +261,7 @@ class CompletionContext:
             s_bytes = s.encode()
         else:
             s_bytes = s.encode("utf-8")
+        
         return len(s_bytes)
 
     @lazyprop
@@ -451,4 +453,5 @@ class CompletionBuild:
 
     @lazyprop
     def display(self):
-        return self.temp_file + "@" + str(self.ctx.complete_offset_in_bytes)
+        pos = ("0" if not settings.use_offset_completion() else  str(self.ctx.complete_offset_in_bytes))
+        return self.temp_file + "@" + pos
