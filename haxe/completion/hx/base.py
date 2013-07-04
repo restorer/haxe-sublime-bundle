@@ -89,7 +89,7 @@ def auto_complete(project, view, offset, prefix):
             res = completion_result_with_smart_snippets(view, res, async_result, options)
             
         else:
-            res = cancel_completion()
+            res = cancel_completion(view)
     else:
         res = create_new_completions(project, view, offset, options, prefix)
     return res
