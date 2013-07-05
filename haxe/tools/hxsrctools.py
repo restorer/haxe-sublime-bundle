@@ -274,16 +274,20 @@ class HaxeTypeBundle:
 		return list(res.keys())
 
 
-	def all_types_and_enum_constructors (self):
+	def all_types_and_enum_constructors_with_info (self):
 		res = dict()
 		for k in self._types:
 			t = self._types[k]
 			if t.is_enum:
 				for ec in t.full_qualified_enum_constructors_with_optional_module:
-					res[ec] = None
+					res[ec] = t
 			fq_name = t.full_qualified_name_with_optional_module
-			res[fq_name] = None
+			res[fq_name] = t
 
+		return res
+
+	def all_types_and_enum_constructors (self):
+		res = self.all_types_and_enum_constructors_with_info()
 		return list(res.keys())
 
 	# returns a list of all types stored in this type bundle
@@ -335,7 +339,11 @@ class EnumConstructor:
 
 
 class HaxeType:
-	def __init__(self, pack, module, name, kind, is_private, is_module_type, is_std_type, is_extern, file):
+	def __init__(self, pack, module, name, kind, is_private, is_module_type, is_std_type, is_extern, file, src, src_with_comments, match_decl):
+		self.src = src
+		self.src_with_comments = src_with_comments
+		self.match_decl = match_decl
+
 		self.is_private = is_private
 		self.pack = pack
 		self.module = module
@@ -348,6 +356,14 @@ class HaxeType:
 		self.file = file
 
 		self._enum_constructors = None
+
+	def find_src_pos (self):
+		for decl in _type_decl_with_scope.finditer( self.src_with_comments ):
+			log(str(decl.group(0)))
+			log(str(self.match_decl.group(0)))
+			if decl.group(0) == self.match_decl.group(0):
+				return decl.start(0)
+		return None
 
 	def to_snippet(self, insert_file, import_list):
 		location = " (" + self.full_pack_with_optional_module + ")" if len(self.full_pack_with_optional_module) > 0 else ""
@@ -468,7 +484,7 @@ class HaxeType:
 
 _type_decl_with_scope = re.compile("(private\s+)?(extern\s+)?(class|typedef|enum|interface|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9,_]+>)?(:?\{|\s+)" , re.M )
 
-def get_types_from_src (src, module_name, file):
+def get_types_from_src (src, module_name, file, src_with_comments):
 	if module_name == None:
 		module_name = os.path.splitext( os.path.basename(file) )[0]
 
@@ -489,7 +505,7 @@ def get_types_from_src (src, module_name, file):
 		is_module_type = type_name == module_name
 		is_std_type = module_name == "StdTypes"
 
-		full_type = HaxeType(pack, module_name, type_name, kind, is_private, is_module_type, is_std_type, is_extern, file)
+		full_type = HaxeType(pack, module_name, type_name, kind, is_private, is_module_type, is_std_type, is_extern, file, src, src_with_comments, decl)
 
 		if full_type.is_enum:
 			full_type._enum_constructors = _extract_enum_constructors_from_src(src, decl.end(4))

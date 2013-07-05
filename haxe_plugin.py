@@ -56,6 +56,7 @@ def reload_modules():
          ,'haxe.commands.get_expr_type'
          ,'haxe.commands.haxelib'
          ,'haxe.commands.show_doc'
+         ,'haxe.commands.list_build_types'
 
          ,'haxe.compiler'
          ,'haxe.compiler.server'
@@ -192,7 +193,8 @@ from haxe.commands import (
     ,HaxeFindDeclarationListener
     ,HaxeInstallLibCommand
     ,HaxeShowDocCommand
-
+    ,HaxeListBuildTypesCommand
+    ,HaxeListBuildTypesListener
 ) 
 
 

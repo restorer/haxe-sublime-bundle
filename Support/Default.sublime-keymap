@@ -35,6 +35,18 @@
             }
         ]
     },
+    { 
+        "keys": ["alt+p"], 
+        "command": "haxe_list_build_types",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
     /*{ 
         "keys": ["ctrl+shift+space"], 
         "command": "haxe_display_macro_completion",

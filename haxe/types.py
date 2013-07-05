@@ -90,10 +90,11 @@ def extract_types_from_file (file, module_name = None, include_private_types = T
 		module_name = os.path.splitext( os.path.basename(file) )[0]
 
 	s = codecs.open( file , "r" , "utf-8" , "ignore" )
-	src = hxsrctools.strip_comments(s.read())
+	src_with_comments = s.read()
+	src = hxsrctools.strip_comments(src_with_comments)
 	
 
-	bundle = hxsrctools.get_types_from_src(src, module_name, file)
+	bundle = hxsrctools.get_types_from_src(src, module_name, file, src_with_comments)
 
 	file_type_cache[file] = (mtime, bundle)
 
