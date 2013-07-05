@@ -16,6 +16,7 @@ An Haxe Bundle for [Sublime Text 2](http://www.sublimetext.com/2) and [Sublime T
  - **Show documentation**, show the documentation of the symbol under the cursor (uses the haxe compiler and it's type inference to extract the docs)
  - **Show type of expression**, show the type of the expression under the cursor (uses the haxe compiler and it's type inference to get the type)
  - **Jump to Type**, quick jump to any type of the current build
+ - **Jump to Field**, quick jump to any field (statics and instance methods of classes and abstracts) of the current build
 
  
 and more to come :)
@@ -83,6 +84,7 @@ For manual installation, the folders should be `sublime-text-3` (Linux) or `Subl
       - **Ctrl+Shift+D** to show the documentation of the type/function/var under the cursor, this is beta and does not work in all cases
       - **Ctrl+Shift+Z** to show the type of the expression under the cursor
  - Press **alt+P** to jump to any type of the current build (uses the current selection or the word under the cursor as default filter)
+ - Press **alt+M** to jump to any defined field (functions and variables) of the current build (uses the current selection or the word under the cursor as default filter)
 
 ### Settings
 

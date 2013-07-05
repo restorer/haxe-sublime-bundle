@@ -37,7 +37,31 @@
     },
     { 
         "keys": ["alt+p"], 
-        "command": "haxe_list_build_types",
+        "command": "haxe_goto_build_types",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
+    { 
+        "keys": ["alt+m"], 
+        "command": "haxe_goto_build_fields",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
+    { 
+        "keys": ["ctrl+shift+h", "ctrl+shift+p"], 
+        "command": "haxe_list_public_static_functions",
         "context":
         [
             {
@@ -191,7 +215,7 @@
     {
         "keys": ["ctrl+shift+h","ctrl+shift+r"],
         "command": "haxe_restart_server",
-        "args" : {}
+        "context" : []
     },
 
 

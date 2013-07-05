@@ -8,10 +8,17 @@ from haxe.commands.execute import (
 	HaxeExecCommand
 )
 
-from haxe.commands.list_build_types import (
-	 HaxeListBuildTypesCommand
-	,HaxeListBuildTypesListener
+from haxe.commands.goto_build_types import (
+	 HaxeGotoBuildTypesCommand
+	,HaxeGotoBuildTypesListener
 )
+
+from haxe.commands.goto_build_fields import (
+	 HaxeGotoBuildFieldsCommand
+	,HaxeGotoBuildFieldsListener
+)
+
+
 
 from haxe.commands.get_expr_type import (
 	HaxeGetTypeOfExprCommand

@@ -15,7 +15,7 @@ find_decl_pos = None
 init_text = ""
 is_open = False
 
-class HaxeListBuildTypesCommand( sublime_plugin.TextCommand ):
+class HaxeGotoBuildTypesCommand( sublime_plugin.TextCommand ):
     def run( self , edit ) :
         log("run HaxeListBuildTypeCommand")
 
@@ -48,7 +48,7 @@ class HaxeListBuildTypesCommand( sublime_plugin.TextCommand ):
 
 
         bundle_list = [[k, filtered_types[k].file] for k in filtered_types]
-        bundle_list_data = [(k,filtered_types[k]) for k  in filtered_types]
+        bundle_list_data = [(k,filtered_types[k]) for k in filtered_types]
 
         
 
@@ -78,11 +78,12 @@ class HaxeListBuildTypesCommand( sublime_plugin.TextCommand ):
             if i >= 0:
                 
                 selected_type = bundle_list_data[i]
-                log("selected type: " + str(selected_type[0]))
-                
+                log("selected type:" + str(selected_type))
+                log("selected type[0]: " + str(selected_type[0]))
+                log("selected type[1]: " + str(selected_type[1]))
 
 
-                src_pos = selected_type[1].find_src_pos()
+                src_pos = selected_type[1].src_pos
                 find_decl_file = selected_type[1].file
                 log("find_decl_file: " + str(find_decl_file))
                 if src_pos is not None:
@@ -110,7 +111,7 @@ class HaxeListBuildTypesCommand( sublime_plugin.TextCommand ):
 
 
 
-class HaxeListBuildTypesListener(sublime_plugin.EventListener):
+class HaxeGotoBuildTypesListener(sublime_plugin.EventListener):
 
     def on_activated(self, view):
         
