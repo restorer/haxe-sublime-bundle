@@ -43,8 +43,10 @@ class Server ():
 				
 				log(" ".join(cmd))
 				full_env = os.environ.copy()
-
-				if env != None:
+				if env is not None:
+					full_env.update(env)
+					
+				if env is not None:
 					for k in env:
 						try:
 							if is_st3:
@@ -62,7 +64,7 @@ class Server ():
 				
 
 				log("server env:" + str(full_env))
-				self._server_proc = Popen(cmd, cwd=cwd, env = full_env, stdin=PIPE, stdout=PIPE, startupinfo=STARTUP_INFO)
+				self._server_proc = Popen(cmd, cwd=cwd, env=full_env, stdin=PIPE, stdout=PIPE, startupinfo=STARTUP_INFO)
 				
 				self._server_proc.poll()
 
