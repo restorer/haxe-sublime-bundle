@@ -39,7 +39,16 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 		if not l: 
 			break;
 
-		if l == "" or l.startswith("#"):
+		if l == "":
+			continue
+
+		l = l.strip()
+
+		if l.startswith("#build-name="):
+			current_build.name = l[12:]
+			continue
+
+		if l.startswith("#"):
 			continue
 		
 
@@ -55,7 +64,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 			current_build = HxmlBuild(hxml, build_file)
 			continue
 			
-		l = l.strip()
+		
 		
 		if l.endswith(".hxml"):
 			
@@ -94,7 +103,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 		
 		if l.startswith("--macro"):
 			spl = l.split(" ")
-			current_build.add_arg( ( "--macro" , " ".join(spl[1:]) ))	
+			current_build.add_arg( ( "--macro" , " ".join(spl[1:])  ) )	
 
 		if l.startswith("-D"):
 			tup = tuple(l.split(" "))
@@ -156,9 +165,10 @@ def _find_build_files_in_folder(folder, extension):
 	if not os.path.isdir(folder) :
 		return []
 		
-	files = glob.glob( os.path.join( folder , "*."+extension ) )
+	files = list(map(lambda x: (x, folder), glob.glob( os.path.join( folder , "*."+extension ) )))
 	for dir in os.listdir(folder):
-		files.extend(glob.glob( os.path.join( os.path.join(folder, dir) , "*."+extension ) ))
+		f = os.path.join(folder, dir)
+		files.extend(map(lambda x: (x, f), glob.glob( os.path.join( f , "*."+extension ) )) )
 	return files
 
 def _hxml_to_builds (project, hxml, folder):
@@ -203,31 +213,35 @@ def create_haxe_build_from_nmml (project, target, nmml, display_cmd):
 def find_hxml_projects( project, folder ) :
 	
 	builds = []
-	hxmls = _find_build_files_in_folder(folder, "hxml")
-	for hxml in hxmls:
+	found = _find_build_files_in_folder(folder, "hxml")
+	for build in found:
 		
+		hxml_file = build[0]
+		hxml_folder = build[1]
 		
-		b = _hxml_to_builds(project, hxml, folder)
-		log("builds in hxml " + encode_utf8(hxml) + ":" + str(len(b)))
+		b = _hxml_to_builds(project, hxml_file, hxml_folder)
+		log("builds in hxml " + encode_utf8(hxml_file) + ":" + str(len(b)))
 		builds.extend(b)
 
 	return builds
 
 def find_nme_projects( project, folder ) :
-	nmmls = _find_build_files_in_folder(folder, "nmml")
+	found = _find_build_files_in_folder(folder, "nmml")
 	builds = []
-	for nmml in nmmls:
-		title = _find_nme_project_title(nmml)
+	for build in found:
+		nmml_file = build[0]
+		title = _find_nme_project_title(nmml_file)
 		if title is not None:
 			for t in config.nme_targets:
-				builds.append(NmeBuild(project, title, nmml, t))
+				builds.append(NmeBuild(project, title, nmml_file, t))
 	return builds
 
 def find_openfl_projects( project, folder ) :
 
-	openfl_xmls = _find_build_files_in_folder(folder, "xml")
+	found = _find_build_files_in_folder(folder, "xml")
 	builds = []
-	for openfl_xml in openfl_xmls:
+	for build in found:
+		openfl_xml = build[0]
 		title = _find_nme_project_title(openfl_xml)
 		if title is not None:
 			for t in config.openfl_targets:

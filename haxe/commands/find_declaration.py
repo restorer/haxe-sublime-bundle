@@ -43,6 +43,8 @@ def prepare_build(view, project, use_display, new_src):
 
     build.add_classpath(os.path.join(plugin_path, "haxetools"))
     
+    build.add_arg(("-dce", "no"))
+
     if use_display:
         build.set_auto_completion(temp_file + "@0", False)
 

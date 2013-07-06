@@ -1,4 +1,4 @@
 -cp .
--main Test.hx
--neko ../test.n
+-main HxSublimeTest
+-neko bin/test.n
 --no-output

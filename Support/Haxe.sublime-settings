@@ -40,6 +40,10 @@
 
 	// true: use the slide panel for infos 
 	// false : use a tab panel for infos
-	"plugin_haxe_use_slide_panel": true	
+	"plugin_haxe_use_slide_panel": true,
+
+	"plugin_haxe_open_with_default_app_windows" : "start",
+	"plugin_haxe_open_with_default_app_linux" : "xdg-open",
+	"plugin_haxe_open_with_default_app_osx" : "open"
 	
 }

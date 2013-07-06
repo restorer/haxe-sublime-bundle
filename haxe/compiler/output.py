@@ -20,7 +20,9 @@ if is_st2:
 
 compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
 
-no_classes_found = re.compile("^No classes found in ", re.M)
+no_classes_found = re.compile("^No classes found in .*", re.M)
+
+no_classes_found_in_trace = re.compile("^No classes found in trace$", re.M)
 
 haxe_compiler_line = "^([^:]*):([0-9]+): characters? ([0-9]+)-?[0-9]* :(.*)$"
 
@@ -149,29 +151,35 @@ def collect_completion_fields (li):
 def extract_errors( str ):
 	errors = []
 	
-	for infos in compiler_output.findall(str) :
-		infos = list(infos)
-		f = infos.pop(0)
-		l = int( infos.pop(0) )-1
-		left = int( infos.pop(0) )
-		right = infos.pop(0)
-		if right != "" :
-			right = int( right )
-		else :
-			right = left+1
-		m = infos.pop(0)
+	#log("error_str: |||" + str + "|||")
+	# swallow no classes found in * errors where * could be trace or an unknown variable etc.
+	if len(no_classes_found.findall(str)) > 0:
+		#log("just no classes found error")
+		errors = []
+	else:
+		for infos in compiler_output.findall(str) :
+			infos = list(infos)
+			f = infos.pop(0)
+			l = int( infos.pop(0) )-1
+			left = int( infos.pop(0) )
+			right = infos.pop(0)
+			if right != "" :
+				right = int( right )
+			else :
+				right = left+1
+			m = infos.pop(0)
 
-		if m != "Unexpected |":
-			errors.append({
-				"file" : f,
-				"line" : l,
-				"from" : left,
-				"to" : right,
-				"message" : m
-			}) 
+			if m != "Unexpected |":
+				errors.append({
+					"file" : f,
+					"line" : l,
+					"from" : left,
+					"to" : right,
+					"message" : m
+				}) 
 
-	if no_classes_found.match(str):
-		errors.append({ "file:" : "", "line" : 0, "from" : 0, "to" : 0, "message" : "".join(str.split("\n")) + " ( are you referencing a variable that doesn't exist?)"})
+	
+		#errors.append({ "file:" : "", "line" : 0, "from" : 0, "to" : 0, "message" : "".join(str.split("\n")) + " ( are you referencing a variable that doesn't exist?)"})
 	#print(errors)
 	if len(errors) > 0:
 		log("should show panel")
@@ -217,6 +225,14 @@ def parse_completion_output(temp_file, orig_file, output):
 	else:
 		hints = []
 		comps = []
+		
+	if len(re.findall(no_classes_found_in_trace, output)) > 0:
+		smart_snippets = hxsettings.smart_snippets_on_completion()
+		if smart_snippets:
+			insert = "${1:value:Dynamic}"
+		else:
+			insert = "${0}"
+		comps.append(CompletionEntry("value:Dynamic", insert, ""))
 
 	return (hints, comps)
 	

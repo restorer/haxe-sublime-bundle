@@ -76,7 +76,21 @@ def get_imports (ctx):
 
     return imported
 
+def get_usings (ctx):
+    usings = hxsrctools.using_line.findall( ctx.src )
+    used = []
+    for i in usings :
+        imp = i[1]
+        used.append(imp)
 
+    return used
+
+def get_imports_and_usings (ctx):
+    res = get_imports(ctx)
+    
+    res.extend(get_usings(ctx))
+
+    return res
 
 
 def haxe_type_as_completion (type):
@@ -128,7 +142,7 @@ def get_toplevel_completion( ctx  ) :
         comps.extend(get_local_vars_and_functions(ctx))
 
 
-    imported = get_imports(ctx)
+    imported = get_imports_and_usings(ctx)
 
     run_time1 = time.time() - start_time
 

@@ -103,6 +103,9 @@ def use_haxe_servermode_wrapper (view = None):
 def haxe_sdk_path (view = None):
 	return get_string("haxe_sdk_path", None, view)
 
+def open_with_default_app(view = None):
+	return get_string("haxe_open_with_default_app", None, view)
+
 def haxe_inst_path (view = None):
 	tmp = haxe_sdk_path(view)
 	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "haxe") if tmp != None else None
@@ -142,4 +145,5 @@ def use_slide_panel (view = None):
 def use_haxe_servermode_for_builds(view = None):
 	return get_bool("haxe_use_servermode_for_builds", False, view)		
 
-
+def use_offset_completion(view = None):
+	return get_bool("haxe_use_offset_completion", False, view)

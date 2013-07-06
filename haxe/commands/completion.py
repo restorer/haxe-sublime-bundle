@@ -23,7 +23,7 @@ class HaxeAsyncTriggeredCompletionCommand( sublime_plugin.TextCommand ):
 
 class HaxeDisplayCompletionCommand( sublime_plugin.TextCommand ):
     def run( self , edit, input_char = None) :
-        log("RUN - HaxeDisplayCompletionCommand")
+        
         if input_char != None:
             self.view.run_command("insert" , {
                 "characters" : input_char

@@ -35,6 +35,42 @@
             }
         ]
     },
+    { 
+        "keys": ["alt+p"], 
+        "command": "haxe_goto_build_types",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
+    { 
+        "keys": ["alt+m"], 
+        "command": "haxe_goto_build_fields",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
+    { 
+        "keys": ["ctrl+shift+h", "ctrl+shift+p"], 
+        "command": "haxe_list_public_static_functions",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
     /*{ 
         "keys": ["ctrl+shift+space"], 
         "command": "haxe_display_macro_completion",
@@ -59,18 +95,18 @@
                 }
             ]
     },
-    // {
-    //     "keys": ["ctrl+shift+ö", "ctrl+shift+t"],
-    //     "command": "haxe_get_type_of_expr",
-    //     "context":
-    //     [
-    //         {
-    //             "key": "selector",
-    //             "operator": "equal",
-    //             "operand": "source.haxe.2,source.hxml,source.nmml,source.erazor"
-    //         }
-    //     ]
-    // },
+    {
+        "keys": ["ctrl+shift+h", "ctrl+shift+z"],
+        "command": "haxe_get_type_of_expr",
+        "context":
+        [
+            {
+                "key": "selector",
+                "operator": "equal",
+                "operand": "source.haxe.2"
+            }
+        ]
+    },
     {
         "keys": ["ctrl+shift+b"],
         "command": "haxe_select_build",
@@ -179,7 +215,7 @@
     {
         "keys": ["ctrl+shift+h","ctrl+shift+r"],
         "command": "haxe_restart_server",
-        "args" : {}
+        "context" : []
     },
 
 

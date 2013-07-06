@@ -36,6 +36,7 @@ if is_st3:
 
 
 
+
 def reload_modules():
     plugin_modules = [
          
@@ -56,6 +57,8 @@ def reload_modules():
          ,'haxe.commands.get_expr_type'
          ,'haxe.commands.haxelib'
          ,'haxe.commands.show_doc'
+         ,'haxe.commands.goto_build_types'
+         ,'haxe.commands.goto_build_fields'
 
          ,'haxe.compiler'
          ,'haxe.compiler.server'
@@ -192,7 +195,10 @@ from haxe.commands import (
     ,HaxeFindDeclarationListener
     ,HaxeInstallLibCommand
     ,HaxeShowDocCommand
-
+    ,HaxeGotoBuildTypesCommand
+    ,HaxeGotoBuildTypesListener
+    ,HaxeGotoBuildFieldsCommand
+    ,HaxeGotoBuildFieldsListener
 ) 
 
 

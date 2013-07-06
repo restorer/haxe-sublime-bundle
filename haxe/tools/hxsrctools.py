@@ -33,6 +33,11 @@ param_default = re.compile("(=\s*\"*[^\"]*\")", re.M)
 is_type = re.compile("^[A-Z][a-zA-Z0-9_]*$")
 comments = re.compile("(//[^\n\r]*?[\n\r]|/\*(.*?)\*/)", re.MULTILINE | re.DOTALL )
 
+
+
+_field = re.compile("((?:(?:public|static|inline|private)\s+)*)(var|function)\s+([a-zA-Z_][a-zA-Z0-9_]*)", re.MULTILINE)
+
+
 def skip_whitespace_or_comments(hx_src_section, start_pos):
 	in_single_comment = False
 	in_multi_comment = False
@@ -69,6 +74,105 @@ def skip_whitespace_or_comments(hx_src_section, start_pos):
 
 	return None
 
+
+def is_same_nexting_level_at_pos (hx_src_section, end_pos, start_pos):
+
+	if (end_pos < start_pos):
+		return False
+	open_pars = 0
+	open_braces = 0
+	open_brackets = 0
+	open_angle_brackets = 0
+	in_string = False
+	string_char = None
+	in_regexp = False
+
+	count = len(hx_src_section)
+	cur = ""
+	pos = start_pos
+	while (True):
+
+		if pos == end_pos or pos > count-1:
+			return open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0 and not in_string and not in_regexp
+
+
+		c = hx_src_section[pos]
+
+
+		next = hx_src_section[pos+1] if pos < count-1 else None
+
+		if in_regexp:
+			pos += 1
+			cur += c
+			if c != "\\" and next == "/":
+				in_regexp = False
+			continue
+
+		if in_string:
+			
+			if c == string_char:
+				pos += 1
+				cur += c
+				in_string = False
+			elif (c == "\\" and next == string_char):
+				pos += 2
+				cur += c + next
+				in_string = False
+			else:
+				cur += c
+				pos += 1
+			continue
+
+	
+		if c == "~" and next == "/":
+			pos +=2
+			in_regexp = True
+			cur += c
+		elif c == "'" or c == '"':
+			in_string = True
+			string_char = c
+			cur += c
+			pos += 1		
+		elif (c == "-" and next == ">"):
+			cur += "->"
+			pos += 2
+		elif (c == "{"):
+			pos += 1
+			open_braces += 1
+			cur += c
+		elif (c == "}"):
+			pos += 1
+			open_braces -= 1
+			cur += c
+		elif (c == "("):
+			pos += 1
+			open_pars += 1
+			cur += c
+		elif (c == ")"):
+			pos += 1
+			open_pars -= 1
+			cur += c
+		elif (c == "["):
+			pos += 1
+			open_brackets += 1
+			cur += c
+		elif (c == "]"):
+			pos += 1
+			open_brackets -= 1
+			cur += c
+		elif (c == "<"):
+			pos += 1
+			open_angle_brackets += 1
+			cur += c
+		elif (c == ">"):
+			pos += 1
+			open_angle_brackets -= 1
+			cur += c
+		else:
+			pos += 1
+			cur += c
+	return False
+
 # searches the next occurrence of `char` in `hx_src_section` on the same nesting level as the char at position `start_pos`
 # the search starts at position `start_pos` in `hx_src_section`.
 def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
@@ -79,6 +183,9 @@ def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
 	open_braces = 0
 	open_brackets = 0
 	open_angle_brackets = 0
+	in_string = False
+	string_char = None
+	in_regexp = False
 
 	count = len(hx_src_section)
 	cur = ""
@@ -89,12 +196,44 @@ def search_next_char_on_same_nesting_level (hx_src_section, char, start_pos):
 
 		c = hx_src_section[pos]
 
+
 		next = hx_src_section[pos+1] if pos < count-1 else None
+
+		if in_regexp:
+			pos += 1
+			cur += c
+			if c != "\\" and next == "/":
+				in_regexp = False
+			continue
+
+		if in_string:
+			
+			if c == string_char:
+				pos += 1
+				cur += c
+				in_string = False
+			elif (c == "\\" and next == string_char):
+				pos += 2
+				cur += c + next
+				in_string = False
+			else:
+				cur += c
+				pos += 1
+			continue
 
 		if (c in char and open_pars == 0 and open_braces == 0 and open_brackets == 0 and open_angle_brackets == 0):
 			return (pos,cur)
-						
-		if (c == "-" and next == ">"):
+		
+		if c == "~" and next == "/":
+			pos +=2
+			in_regexp = True
+			cur += c
+		elif c == "'" or c == '"':
+			in_string = True
+			string_char = c
+			cur += c
+			pos += 1		
+		elif (c == "-" and next == ">"):
 			cur += "->"
 			pos += 2
 		elif (c == "{"):
@@ -165,10 +304,6 @@ def reverse_search_next_char_on_same_nesting_level (hx_src_section, char, start_
 			if c == string_char and next != "\\":
 				in_string = False
 			continue
-
-
-
-
 
 
 		#log(c + " in " + str(char) + ":" + str(c in char))
@@ -274,16 +409,20 @@ class HaxeTypeBundle:
 		return list(res.keys())
 
 
-	def all_types_and_enum_constructors (self):
+	def all_types_and_enum_constructors_with_info (self):
 		res = dict()
 		for k in self._types:
 			t = self._types[k]
 			if t.is_enum:
 				for ec in t.full_qualified_enum_constructors_with_optional_module:
-					res[ec] = None
+					res[ec] = t
 			fq_name = t.full_qualified_name_with_optional_module
-			res[fq_name] = None
+			res[fq_name] = t
 
+		return res
+
+	def all_types_and_enum_constructors (self):
+		res = self.all_types_and_enum_constructors_with_info()
 		return list(res.keys())
 
 	# returns a list of all types stored in this type bundle
@@ -333,9 +472,46 @@ class EnumConstructor:
 
 		return (display, insert)
 
+class HaxeField:
+	def __init__(self, type, name, kind, is_static, is_public, is_inline, is_private, match_decl):
+		self.type = type
+		self.name = name
+		self.kind = kind
+		self.is_static = is_static
+		self.is_public = is_public
+		self.is_inline = is_inline
+		self.is_private = is_private
+		self.match_decl = match_decl
+		
+
+	@lazyprop
+	def src_pos (self):
+		for decl in _field.finditer( self.type.src_with_comments ):
+			if decl.group(0) == self.match_decl.group(0):
+				return decl.start(0)
+		return None
+
+	@lazyprop
+	def is_var (self):
+		return self.kind == "var"
+
+	@lazyprop
+	def is_function (self):
+		return self.kind == "function"
+
+	
+	def to_string (self):
+		return self.type.full_qualified_name_with_optional_module + ("::" if self.is_static or self.name == "new" else ".") + self.name
+
+	def to_expression (self):
+		return self.type.full_qualified_name_with_optional_module + "." + self.name
 
 class HaxeType:
-	def __init__(self, pack, module, name, kind, is_private, is_module_type, is_std_type, is_extern, file):
+	def __init__(self, pack, module, name, kind, is_private, is_module_type, is_std_type, is_extern, file, src, src_with_comments, match_decl):
+		self.src = src # src without comments
+		self.src_with_comments = src_with_comments
+		self.match_decl = match_decl
+
 		self.is_private = is_private
 		self.pack = pack
 		self.module = module
@@ -349,6 +525,97 @@ class HaxeType:
 
 		self._enum_constructors = None
 
+	@lazyprop
+	def stripped_start_decl_pos(self):
+		return self.match_decl.start(0)
+
+	@lazyprop
+	def class_body (self):
+
+		if self.stripped_end_decl_pos is None:
+			res = ""
+		else:
+			res = self.src[self.stripped_start_decl_pos:self.stripped_end_decl_pos]
+
+		return res
+
+	
+	@lazyprop
+	def public_static_fields (self):
+		res = []
+		res.extend(self.public_static_vars)
+		res.extend(self.public_static_functions)
+		return res
+
+
+	@lazyprop 
+	def all_fields (self):
+		res = dict()
+		if self.class_body is not None:
+			for decl in _field.finditer(self.class_body):
+				modifiers = decl.group(1)
+				is_static = modifiers is not None and modifiers.find("static") > -1
+				is_inline = modifiers is not None and modifiers.find("inline") > -1
+				is_private = modifiers is not None and modifiers.find("private") > -1
+				is_public = modifiers is not None and modifiers.find("public") > -1
+				kind = decl.group(2)
+				name = decl.group(3)
+				if name == "WAIT_END_RET":
+					log(modifiers)
+
+				if is_private or is_public or is_static or self.is_extern or is_same_nexting_level_at_pos(self.class_body, decl.start(0), self.class_body_start[0]):
+					res[name] = HaxeField(self, name, kind, is_static, is_public, is_inline, is_private, decl)
+		return res
+
+	
+	@lazyprop
+	def all_fields_list (self):
+		return [self.all_fields[f] for f in self.all_fields]	
+
+	@lazyprop
+	def public_static_vars (self):
+		return [self.all_fields[f] for f in self.all_fields if f.is_static and f.is_var]
+
+	@lazyprop
+	def public_static_functions (self):
+		return [self.all_fields[f] for f in self.all_fields if f.is_static and f.is_function]
+
+	@lazyprop
+	def class_body_start (self):
+		start = self.match_decl.start(0)
+		if self.is_abstract or self.is_class:
+			return search_next_char_on_same_nesting_level(self.src, "{", start)
+		return None
+
+	@lazyprop
+	def stripped_end_decl_pos (self):
+		
+		class_body_start = self.class_body_start
+		if class_body_start is not None:
+			log("have class_body_start:" + str(class_body_start[0]))
+			class_body_end = search_next_char_on_same_nesting_level(self.src, "}", class_body_start[0]+1)
+			if class_body_end is not None:
+				log("have class_body_end:" + str(class_body_end[0]))
+				res = class_body_end[0]
+			else:
+				res = None
+		else:
+			res = None
+
+		return res
+		
+
+
+
+	@lazyprop
+	def src_pos (self):
+		for decl in _type_decl_with_scope.finditer( self.src_with_comments ):
+			log(str(decl.group(0)))
+			log(str(self.match_decl.group(0)))
+			if decl.group(0) == self.match_decl.group(0):
+				return decl.start(0)
+		return None
+
 	def to_snippet(self, insert_file, import_list):
 		location = " (" + self.full_pack_with_optional_module + ")" if len(self.full_pack_with_optional_module) > 0 else ""
 		display = self.name + location + "\t" + self.type_hint
@@ -358,10 +625,11 @@ class HaxeType:
 
 	# convert this type into insert snippets. Multiple snippets when it's an enum, separated into the enum itself and it's constructors.
 	def to_snippets(self, import_list, insert_file):
-	    if self.is_enum:
-	        return [ev.to_snippet(insert_file, import_list) for ev in self.enum_constructors]
-	    else:
-	        return [self.to_snippet(insert_file, import_list)]
+		res = [self.to_snippet(insert_file, import_list)]
+
+		if self.is_enum:
+			res.extend([ev.to_snippet(insert_file, import_list) for ev in self.enum_constructors])
+		return res
 
 
 	def to_snippet_insert (self, import_list, insert_file):
@@ -399,6 +667,14 @@ class HaxeType:
 	@lazyprop
 	def is_enum (self):
 		return self.kind == "enum"
+
+	@lazyprop
+	def is_class (self):
+		return self.kind == "class"
+
+	@lazyprop
+	def is_abstract (self):
+		return self.kind == "abstract"
 
 	def __repr__(self):
 		return self.to_string()
@@ -467,7 +743,7 @@ class HaxeType:
 
 _type_decl_with_scope = re.compile("(private\s+)?(extern\s+)?(class|typedef|enum|interface|abstract)\s+([A-Z][a-zA-Z0-9_]*)\s*(<[a-zA-Z0-9,_]+>)?(:?\{|\s+)" , re.M )
 
-def get_types_from_src (src, module_name, file):
+def get_types_from_src (src, module_name, file, src_with_comments):
 	if module_name == None:
 		module_name = os.path.splitext( os.path.basename(file) )[0]
 
@@ -488,7 +764,7 @@ def get_types_from_src (src, module_name, file):
 		is_module_type = type_name == module_name
 		is_std_type = module_name == "StdTypes"
 
-		full_type = HaxeType(pack, module_name, type_name, kind, is_private, is_module_type, is_std_type, is_extern, file)
+		full_type = HaxeType(pack, module_name, type_name, kind, is_private, is_module_type, is_std_type, is_extern, file, src, src_with_comments, decl)
 
 		if full_type.is_enum:
 			full_type._enum_constructors = _extract_enum_constructors_from_src(src, decl.end(4))
