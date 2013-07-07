@@ -98,6 +98,7 @@ def reload_modules():
          ,'haxe.tools.viewtools'
 
          ,'haxe.codegen'
+         ,'haxe.exceptions'
          ,'haxe.config'
          ,'haxe.execute'
          ,'haxe.haxelib'
