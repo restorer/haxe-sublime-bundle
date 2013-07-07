@@ -18,7 +18,7 @@ if is_st2:
 	from elementtree import SimpleXMLTreeBuilder # part of your codebase
 	ElementTree.XMLTreeBuilder = SimpleXMLTreeBuilder.TreeBuilder
 
-compiler_output = re.compile("^([^:]+):([0-9]+): characters? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
+compiler_output = re.compile("^([^:]+):([0-9]+): (?:character(?:s?)|line(?:s?))? ([0-9]+)-?([0-9]+)? : (.*)", re.M)
 
 no_classes_found = re.compile("^No classes found in .*", re.M)
 
