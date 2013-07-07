@@ -58,7 +58,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 			if len(current_build.classpaths) == 0:
 				log("no classpaths")
 				current_build.add_classpath( build_path )
-				current_build.args.append( ("-cp" , build_path ) )
+				#current_build.args.append( ("-cp" , build_path ) )
 			#current_build.get_types()
 			builds.append( current_build )
 			current_build = HxmlBuild(hxml, build_file)
@@ -149,12 +149,12 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 			
 			abs_classpath = pathtools.join_norm( build_path , classpath )
 			current_build.add_classpath( abs_classpath )
-			current_build.add_arg( ("-cp" , abs_classpath ) )
+			#current_build.add_arg( ("-cp" , abs_classpath ) )
 	
 	if len(current_build.classpaths) == 0:
 		log("no classpaths")
 		current_build.add_classpath( build_path )
-		current_build.args.append( ("-cp" , build_path ) )
+		#current_build.args.append( ("-cp" , build_path ) )
 
 	#current_build.get_types()
 	builds.append( current_build )
