@@ -4,18 +4,29 @@ from haxe.commands.completion_server import (
 	
 )
 
+from haxe.commands.goto_base import (
+	 HaxeGotoBaseCommand
+	,HaxeGotoBaseListener
+)
+
+
+
+from haxe.commands.goto_anything import (
+	HaxeGotoAnythingCommand
+)
+
 from haxe.commands.execute import (
 	HaxeExecCommand
 )
 
 from haxe.commands.goto_build_types import (
 	 HaxeGotoBuildTypesCommand
-	,HaxeGotoBuildTypesListener
 )
+
+
 
 from haxe.commands.goto_build_fields import (
 	 HaxeGotoBuildFieldsCommand
-	,HaxeGotoBuildFieldsListener
 )
 
 

@@ -382,7 +382,18 @@ def get_package(src):
 def empty_type_bundle():
 	return HaxeTypeBundle(dict())
 
-class HaxeTypeBundle:
+
+class HaxeModule(object):
+	def __init__(self, pack, name, file):
+		self.pack = pack
+		self.name = name
+		self.file = file
+
+
+
+
+
+class HaxeTypeBundle(object):
 	def __init__(self, types):
 		self._types = types
 
@@ -407,6 +418,18 @@ class HaxeTypeBundle:
 				res[p] = None
 
 		return list(res.keys())
+
+	def all_modules (self):
+		res = dict()
+		for k in self._types:
+			t = self._types[k]
+			res[t.full_pack_with_module] = HaxeModule(t.pack, t.module, t.file)
+			
+		return res
+
+	def all_modules_list (self):
+		mods = self.all_modules()
+		return [ mods[m] for m in mods]
 
 
 	def all_types_and_enum_constructors_with_info (self):
@@ -445,7 +468,7 @@ class HaxeTypeBundle:
 	def filter_by_classpaths (self, cps):
 		return self.filter(lambda p: p.classpath in cps)
 
-class EnumConstructor:
+class EnumConstructor(object):
 	def __init__(self, name, enum_type):
 		self.name = name
 		self.enum = enum_type
@@ -472,7 +495,7 @@ class EnumConstructor:
 
 		return (display, insert)
 
-class HaxeField:
+class HaxeField(object):
 	def __init__(self, type, name, kind, is_static, is_public, is_inline, is_private, match_decl):
 		self.type = type
 		self.name = name
@@ -495,6 +518,10 @@ class HaxeField:
 	def is_var (self):
 		return self.kind == "var"
 
+	@property
+	def file (self):
+		return self.type.file
+
 	@lazyprop
 	def is_function (self):
 		return self.kind == "function"
@@ -506,7 +533,7 @@ class HaxeField:
 	def to_expression (self):
 		return self.type.full_qualified_name_with_optional_module + "." + self.name
 
-class HaxeType:
+class HaxeType(object):
 	def __init__(self, pack, module, name, kind, is_private, is_module_type, is_std_type, is_extern, file, src, src_with_comments, match_decl):
 		self.src = src # src without comments
 		self.src_with_comments = src_with_comments
