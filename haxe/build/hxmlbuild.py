@@ -52,6 +52,8 @@ class HxmlBuild :
 	def set_main(self, main):
 		self.main = main
 	
+
+
 	def get_name (self):
 
 		if self.name is not None:
@@ -82,7 +84,12 @@ class HxmlBuild :
 	def merge (self, other_build):
 		ob = other_build
 		self.args.extend(ob.args)
+
+		#for c in ob.classpaths:
+		#	if c not in self.classpaths:
+		#		self.classpaths.append(c)
 		self.classpaths.extend(ob.classpaths)
+		
 		self.libs.extend(ob.libs)
 		self.defines.extend(ob.defines)
 		if self.main is None:
@@ -131,9 +138,9 @@ class HxmlBuild :
 
 	def add_classpath (self, cp):
 		cp = self.align_drive_letter(cp)
-		
-		self.classpaths.append(cp)
-		self.args.append(("-cp", cp))
+		if not cp in self.classpaths:
+			self.classpaths.append(cp)
+			self.args.append(("-cp", cp))
 	
 
 	def add_lib(self, lib):
@@ -148,7 +155,8 @@ class HxmlBuild :
 		cps = list(self.classpaths)
 
 		build_folder = self.get_build_folder()
-		if build_folder is not None:
+		if build_folder is not None and build_folder not in cps:
+			log("add build folder to classpaths: " + build_folder + ", classpaths: " + str(cps))
 			cps.append(build_folder)
 		for cp in cps:
 			cp = st2_to_unicode(cp)

@@ -117,6 +117,8 @@ def create_new_completions(project, view, offset, options, prefix):
     elif not ctx.options.manual_completion:
         trigger_manual_completion(ctx.view, ctx.options.copy_as_manual() )
         res = cancel_completion(ctx.view)
+    elif is_after_int_iterator(ctx.src, ctx.offset):
+        res = cancel_completion(ctx.view)
     elif is_iterator_completion(ctx.src, ctx.offset):
         log("iterator completion")
         res = [(".\tint iterator", "..")]
@@ -322,6 +324,11 @@ def is_iterator_completion(src, offset):
     o = offset
     s = src
     return o > 3 and s[o] == "\n" and s[o-1] == "." and s[o-2] == "." and s[o-3] != "."
+
+def is_after_int_iterator(src, offset):
+    o = offset
+    s = src
+    return o > 3 and s[o] == "\n" and s[o-1] == "." and s[o-2] == "." and s[o-3] == "."
 
 def is_hint_completion(ctx):
     whitespace_re = re.compile("^\s*$")
