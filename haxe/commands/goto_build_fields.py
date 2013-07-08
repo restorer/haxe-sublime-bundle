@@ -11,7 +11,7 @@ class HaxeGotoBuildFieldsCommand( HaxeGotoBaseCommand ):
         return [(k + "." + p.name,p) for k in types for p in types[k].all_fields_list]
 
     def get_file(self, data_entry):
-        raise data_entry.type.file
+        return data_entry.type.file
 
     def get_src_pos(self, data_entry):
-        raise data_entry.src_pos
+        return data_entry.src_pos

@@ -9,7 +9,7 @@ class HaxeGotoBuildTypesCommand( HaxeGotoBaseCommand ):
         return [(k,types[k]) for k in types]
 
     def get_file(self, data_entry):
-        raise data_entry.file
+        return data_entry.file
 
     def get_src_pos(self, data_entry):
-        raise data_entry.src_pos
+        return data_entry.src_pos
