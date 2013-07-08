@@ -18,7 +18,9 @@ def get_temp_path_id(build):
 	if path is None:
 		raise exceptions.ExtractBuildPathException(build)
 
-	temp_path = os.path.join(tempfile.gettempdir(), "haxe_sublime_hx" + "_".join(path.split(os.sep)) + "_")
+	path1 = "_".join("_".join(path.split(os.sep)).split(":"))
+
+	temp_path = os.path.join(tempfile.gettempdir(), "haxe_sublime_hx" + path1 + "_")
 
 	return temp_path
 
