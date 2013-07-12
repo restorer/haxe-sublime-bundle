@@ -103,8 +103,8 @@ def encode_utf8 (s):
 		elif isinstance(s, str):
 			try:
 				#print("try utf8 decode")
-				s.decode("utf-8")
-				res = s
+				res = s.decode("utf-8")
+				#res = s
 			except:
 				try:
 					#print("try ascii decode")
