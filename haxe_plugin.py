@@ -57,6 +57,7 @@ def reload_modules():
          ,'haxe.commands.get_expr_type'
          ,'haxe.commands.haxelib'
          ,'haxe.commands.show_doc'
+         ,'haxe.commands.goto_base'
          ,'haxe.commands.goto_build_types'
          ,'haxe.commands.goto_build_fields'
 
@@ -197,9 +198,9 @@ from haxe.commands import (
     ,HaxeInstallLibCommand
     ,HaxeShowDocCommand
     ,HaxeGotoBuildTypesCommand
-    ,HaxeGotoBuildTypesListener
     ,HaxeGotoBuildFieldsCommand
-    ,HaxeGotoBuildFieldsListener
+    ,HaxeGotoBaseListener
+    ,HaxeGotoAnythingCommand
 ) 
 
 

@@ -155,12 +155,8 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
             return
 
         try:
-            if is_st3 and isinstance(data, bytes):
-                st = encode_utf8(data)
+            st = encode_utf8(data)
             
-
-            else:
-                st = data
                     
         except:
             st = "[Decode error - output not " + self.encoding + "]\n"

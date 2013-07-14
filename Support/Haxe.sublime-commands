@@ -11,6 +11,7 @@
     { "caption": "Haxe: Show Type of Expression", "command": "haxe_get_type_of_expr" },
     { "caption": "Haxe: Goto Build Type", "command": "haxe_goto_build_types" },
     { "caption": "Haxe: Goto Build Field", "command": "haxe_goto_build_fields" },
+    { "caption": "Haxe: Goto Anything", "command": "haxe_goto_anything" },
     { "caption": "Haxe: Save All And Build", "command": "haxe_save_all_and_build" },
     { "caption": "Haxe: Select Build", "command": "haxe_select_build" }
 ]
