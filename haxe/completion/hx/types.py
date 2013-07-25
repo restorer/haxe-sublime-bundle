@@ -278,7 +278,7 @@ class CompletionContext:
     # indicates if completion starts after the first ( after a control struct like while, if, for etc.
     @lazyprop
     def complete_char_is_after_control_struct(self):
-        return self.in_control_struct and self.control_char == "("
+        return self.in_control_struct and self.complete_char == "("
 
     @lazyprop
     def in_control_struct(self):

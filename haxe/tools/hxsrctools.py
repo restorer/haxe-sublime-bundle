@@ -654,7 +654,7 @@ class HaxeType(object):
 	def to_snippets(self, import_list, insert_file):
 		res = [self.to_snippet(insert_file, import_list)]
 
-		if self.is_enum:
+		if self.is_enum and self._enum_constructors is not None:
 			res.extend([ev.to_snippet(insert_file, import_list) for ev in self.enum_constructors])
 		return res
 
@@ -721,7 +721,7 @@ class HaxeType(object):
 
 	@lazyprop
 	def enum_constructors(self):
-		if self.is_enum:
+		if self.is_enum and not self._enum_constructors is None:
 			res = [EnumConstructor(e, self) for e in self._enum_constructors ]
 		else:
 			res = []
@@ -729,7 +729,7 @@ class HaxeType(object):
 
 	@lazyprop
 	def full_qualified_enum_constructors_with_optional_module(self):
-		if not self.is_enum:
+		if not self.is_enum or self._enum_constructors is None:
 			res = []
 		else:
 			res = [self.full_qualified_name_with_optional_module + "." + e for e in self._enum_constructors]
