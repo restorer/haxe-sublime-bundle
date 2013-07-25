@@ -12,26 +12,27 @@ is_st3 = int(sublime.version()) >= 3000
 
 
 #hook for imports, so that st3 imports work like st2 imports (same package structure)
-if is_st3:
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-    class MyImporter:
-        
-        def find_module(self, fullname, path = None):
-            if fullname.startswith("haxe"):
-                return self
+
+base_path = os.path.abspath(os.path.dirname(__file__))
+class MyImporter:
+    
+    def find_module(self, fullname, path = None):
+        if fullname.startswith("haxe"):
+            return self
+        return None
+
+    def load_module(self, name):
+        try:
+            if not name in sys.modules:
+                module_info = imp.find_module(name, [base_path])
+                module = imp.load_module(name, *module_info)
+                sys.modules[name] = module
+            return sys.modules[name]
+        except Exception as e:
+            print("cannot load module " + name + " - error: " + str(e))
             return None
 
-        def load_module(self, name):
-            try:
-                if not name in sys.modules:
-                    module_info = imp.find_module(name, [base_path + "/Haxe"])
-                    module = imp.load_module(name, *module_info)
-                    sys.modules[name] = module
-                return sys.modules[name]
-            except Exception as e:
-                print("cannot load module " + name + " - error: " + str(e))
-                return None
-
+if is_st3:
     sys.meta_path.append(MyImporter())
 
 
@@ -213,5 +214,9 @@ from haxe.codegen import (
 from haxe.tools.viewtools import (
     HaxeTextEditCommand
 )
+
+if not is_st3:
+    sys.meta_path.append(MyImporter())
+
 
 print("init haxe_plugin finished")
