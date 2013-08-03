@@ -3,6 +3,7 @@ import sublime, sublime_plugin
 from haxe import settings
 
 from haxe.tools.cache import Cache
+from haxe.log import log
 
 from haxe.panel.slidepanel import SlidePanel
 from haxe.panel.tabpanel import TabPanel
@@ -26,7 +27,7 @@ class PanelCloseListener (sublime_plugin.EventListener):
 			for p in [_tab_panel, _debug_panel]:
 				panel = p.get_or_default(panel_win_id, None)
 				if panel != None and panel.output_view != None and view_id == panel.output_view_id:
-					print("panel safely removed")
+					log("panel safely removed")
 					panel.output_view = None
 					panel.output_view_id = None
 

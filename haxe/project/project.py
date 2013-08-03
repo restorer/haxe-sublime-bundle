@@ -131,7 +131,7 @@ class Project:
 
 
         folders = self._get_folders(view)
-        print(folders)
+        log(folders)
         
         self.builds = self._find_builds_in_folders(folders)
         
@@ -282,7 +282,7 @@ class Project:
         hxpanel.default_panel().writeln("running: " + " ".join(cmd))
 
 
-        print("env: " + str(env))
+        log("env: " + str(env))
         
         win.run_command("haxe_exec", {
             "cmd": cmd,
@@ -401,7 +401,7 @@ def _haxe_build_env (project_dir):
         env["PATH"] = os.pathsep.join(paths) + os.pathsep + env_path
 
     
-    print(str(env))
+    log(str(env))
     return env
 
 
@@ -412,7 +412,7 @@ def _get_compiler_info_env (project_path):
 
 def _collect_compiler_info (haxe_exec, project_path):
     env = _get_compiler_info_env(project_path)
-    print("env: " + str(env))
+    log("env: " + str(env))
     cmd = haxe_exec
     cmd.extend(["-main", "Nothing", "-v", "--no-output"])
 

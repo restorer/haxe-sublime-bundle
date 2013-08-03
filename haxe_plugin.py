@@ -4,7 +4,7 @@ import sublime
 import imp
 import os
 
-print("init haxe_plugin")
+#print("init haxe_plugin")
 
 
 is_st3 = int(sublime.version()) >= 3000
@@ -219,4 +219,4 @@ if not is_st3:
     sys.meta_path.append(MyImporter())
 
 
-print("init haxe_plugin finished")
+#print("init haxe_plugin finished")

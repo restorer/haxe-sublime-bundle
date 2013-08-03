@@ -40,7 +40,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
             # Catches "path" and "shell"
             **kwargs):
 
-        print("ENV1: " + str(env))
+        log("ENV1: " + str(env))
 
         self.is_check_run = is_check_run;
 
@@ -119,8 +119,8 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
         try:
             # Forward kwargs to AsyncProcess
             if is_st3:
-                print("CMD:" + str(cmd))
-                print("ENV:" + str(merged_env))
+                log("CMD:" + str(cmd))
+                log("ENV:" + str(merged_env))
                 self.proc = AsyncProcess(cmd, None, merged_env, self, **kwargs)
             else:
                 self.proc = AsyncProcess(cmd, merged_env, self, **kwargs)

@@ -21,4 +21,4 @@ def plugin_base_dir():
 	return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
 
-print("IS SUBLIME TEXT 3: " + str(is_st3))
+#print("IS SUBLIME TEXT 3: " + str(is_st3))

@@ -62,7 +62,7 @@ class HaxeFindDeclarationCommand( sublime_plugin.TextCommand ):
 
 
     def run1 (self, use_display, order = 1):
-        print("run HaxeFindDeclarationCommand")
+        log("run HaxeFindDeclarationCommand")
         view = self.view
 
         file_name = view.file_name()

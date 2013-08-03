@@ -783,7 +783,7 @@ def get_types_from_src (src, module_name, file, src_with_comments):
 		type_name = decl.group(4)
 
 		if type_name == "NME_":
-			print(str(decl.group(0)))
+			log(str(decl.group(0)))
 		kind = decl.group(3)
 
 		is_extern = decl.group(2) is not None

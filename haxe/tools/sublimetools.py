@@ -3,7 +3,7 @@ import os
 import re
 import json
 
-from haxe import log
+from haxe.log import log
 
 from haxe.plugin import is_st3
 
@@ -23,7 +23,7 @@ def get_project_file(win_id = None):
         global _last_project
         global _last_modification_time
 
-        log.log( "try getting project file")
+        log( "try getting project file")
 
         if win_id == None:
             win_id = sub.active_window().id()
@@ -33,9 +33,9 @@ def get_project_file(win_id = None):
         auto_save = os.path.normpath(os.path.join(sub.packages_path(), "..", "Settings", "Auto Save Session.sublime_session"))
         session = auto_save if os.path.exists(auto_save) else reg_session
 
-        print(auto_save)
-        print(reg_session)
-        print(session)
+        log(auto_save)
+        log(reg_session)
+        log(session)
 
         if not os.path.exists(session) or win_id == None:
             return project
