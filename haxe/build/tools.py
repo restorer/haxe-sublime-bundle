@@ -121,7 +121,7 @@ def _hxml_buffer_to_builds(project, hxml_buffer, folder, build_path, build_file 
 				
 				break
 		
-		for flag in [ "resource" , "xml" , "x" , "swf-lib" ] :
+		for flag in [ "resource" , "xml" , "x" , "swf-lib" , "java-lib" ] :
 			if l.startswith( "-"+flag ) :
 				spl = l.split(" ")
 				outp = os.path.join( folder , " ".join(spl[1:]) )
