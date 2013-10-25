@@ -336,7 +336,9 @@ class HxmlBuild :
 		elif self.target == "neko":
 			cmd.extend(["-cmd", "neko " + self.absolute_output])
 		elif self.target == "cpp":
-			cmd.extend(["-cmd", os.path.join(self.absolute_output,self.main) + "-debug"])
+			sep_index = self.main.rfind(".")
+			exe = self.main[sep_index+1:] if sep_index > -1 else self.main
+			cmd.extend(["-cmd", os.path.join(self.absolute_output,exe) + "-debug"])
 		elif self.target == "js" and "nodejs" in self.defines:
 			cmd.extend(["-cmd", "nodejs " + self.absolute_output])
 		elif self.target == "java":
@@ -382,11 +384,25 @@ class HxmlBuild :
 	def _get_run_exec(self, project, view):
 		return project.haxe_exec(view)
 
+	def escape_cmd(self, cmd):
+		print_cmd = list(cmd)
+		l = len(print_cmd)
+		for i in range(0, l):
+			e = print_cmd[i]
+			if e == "--macro" and i < l-1:
+				print_cmd[i+1] = "'" + print_cmd[i+1] + "'"
+		return print_cmd
+
 	def _run_async (self, project, view, callback, server_mode = None):
 
 		env = project.haxe_env(view)
 		cmd, build_folder, nekox_file_name = self._prepare_run(project, view, server_mode)
-		log(" ".join(cmd))
+		print_cmd = list(cmd)
+		for i in range(0, len(print_cmd)):
+			e = print_cmd[i]
+			if e == "--macro" and i < len(print_cmd)-1:
+				print_cmd[i+1] = "'" + print_cmd[i+1] + "'"
+		
 		def cb (out, err):
 			self._on_run_complete(out, err, build_folder, nekox_file_name)
 			callback(out, err)
