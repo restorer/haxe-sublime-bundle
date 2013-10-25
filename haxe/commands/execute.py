@@ -34,6 +34,15 @@ class ProcessListener(object):
         pass
 
 
+def _escape_cmd(cmd):
+    print_cmd = list(cmd)
+    l = len(print_cmd)
+    for i in range(0, l):
+        e = print_cmd[i]
+        if e == "--macro" and i < l-1:
+            print_cmd[i+1] = "'" + print_cmd[i+1] + "'"
+    return print_cmd
+
 class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
     def run(self, cmd = [], file_regex = "", line_regex = "", working_dir = "",
             encoding = None, env = {}, quiet = False, kill = False, is_check_run = False,
@@ -91,6 +100,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
                     a = a[0:len(a)-2] + '"' if a.endswith('\\"') else a
                 return encode_utf8(a)                
 
+
             log("Running Command : " + " ".join(map(escape_arg, cmd)))
 
             sublime.status_message("Building")
@@ -125,7 +135,7 @@ class HaxeExecCommand(sublime_plugin.WindowCommand, ProcessListener):
             else:
                 self.proc = AsyncProcess(cmd, merged_env, self, **kwargs)
 
-            self.append_data(self.proc, "Running Command: " + " ".join(cmd) + "\n")
+            self.append_data(self.proc, "Running Command: " + " ".join(_escape_cmd(cmd)) + "\n")
         except err_type as e:
             self.append_data(None, str(e) + "\n")
             self.append_data(None, "[cmd:  " + str(cmd) + "]\n")
