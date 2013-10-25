@@ -109,11 +109,15 @@ def open_with_default_app(view = None):
 def haxe_inst_path (view = None):
 	tmp = haxe_sdk_path(view)
 	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "haxe") if tmp != None else None
+	if tmp is None and haxe_exec(view) != "haxe":
+		default = (os.path.normpath(os.path.dirname(haxe_exec(view))))
+		
+
 	return get_string("haxe_inst_path", default, view)
 
 def neko_inst_path (view = None):
 	tmp = haxe_sdk_path(view)
-	
+		
 	default = (os.path.normpath(haxe_sdk_path(view)) + os.path.sep + "default") if tmp != None else None
 	return get_string("neko_inst_path", default, view)
 
