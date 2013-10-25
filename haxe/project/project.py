@@ -14,6 +14,7 @@ from haxe import execute as hxexecute
 from haxe import haxelib
 
 from haxe.tools import viewtools
+from haxe.tools import pathtools
 from haxe.tools import hxsrctools
 
 from haxe.compiler import server as hxserver
@@ -106,10 +107,8 @@ class Project:
         is_hxml_build = lambda: isinstance(self.current_build, hxbuild.HxmlBuild)
 
         if self.current_build is not None and is_hxml_build() and fn == self.current_build.hxml and view.size() == 0 :
-            log("do edit")
             def run_edit(v, e):
                 hxml_src = self.current_build.make_hxml()
-                log("hxml_src")
                 v.insert(e,0,hxml_src)
                 v.end_edit(e)
 
@@ -279,10 +278,12 @@ class Project:
             cmd, build_folder = build.prepare_check_cmd(self, self.is_server_mode(), view)
         
         
-        hxpanel.default_panel().writeln("running: " + " ".join(cmd))
+        escaped_cmd = build.escape_cmd(cmd)
 
 
-        log("env: " + str(env))
+        hxpanel.default_panel().writeln("running: " + " ".join(escaped_cmd))
+
+
         
         win.run_command("haxe_exec", {
             "cmd": cmd,
@@ -381,13 +382,21 @@ def _haxe_build_env (project_dir):
             return s.encode(sys.getfilesystemencoding())
 
     if lib_path is not None:
-        path = os.path.normpath(os.path.join(project_dir, lib_path))
+        if pathtools.is_abs_path(lib_path):
+            path = lib_path
+        else:
+            path = os.path.normpath(os.path.join(project_dir, lib_path))
+
         env["HAXE_LIBRARY_PATH"] = do_encode(os.sep.join(path.split("/")))
         env["HAXE_STD_PATH"] = do_encode(os.sep.join(path.split("/")))
     
 
     if haxe_inst_path is not None:
-        path = os.path.normpath(os.path.join(project_dir, haxe_inst_path))
+        if pathtools.is_abs_path(haxe_inst_path):
+            path = haxe_inst_path
+        else:
+            path = os.path.normpath(os.path.join(project_dir, haxe_inst_path))
+        
         env["HAXEPATH"] = do_encode(os.sep.join(path.split("/")))
         paths.append(do_encode(os.sep.join(path.split("/"))))
 
@@ -412,11 +421,13 @@ def _get_compiler_info_env (project_path):
 
 def _collect_compiler_info (haxe_exec, project_path):
     env = _get_compiler_info_env(project_path)
-    log("env: " + str(env))
     cmd = haxe_exec
+
     cmd.extend(["-main", "Nothing", "-v", "--no-output"])
 
+    
     out, err = hxexecute.run_cmd( cmd, env=env )
+
 
     std_classpaths = _extract_std_classpaths(out)
     
