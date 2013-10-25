@@ -7,3 +7,6 @@ def remove_dir(path):
 
 def join_norm(path1, path2):
 	return os.path.normpath(os.path.join(path1, path2))
+
+def is_abs_path(path):
+	return os.path.normpath(path) == os.path.abspath(path)
