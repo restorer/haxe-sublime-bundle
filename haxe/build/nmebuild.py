@@ -106,9 +106,9 @@ class NmeBuild(object) :
 	def run(self, project, view, async, on_result, server_mode = None):
 		self.hxml_build.run(project, view, async, on_result, server_mode)
 
-        def escape_cmd(self, cmd):
-        	return self.hxml_build.escape_cmd(cmd)
-        
+	def escape_cmd(self, cmd):
+		return self.hxml_build.escape_cmd(cmd)
+
 	def _get_run_exec(self, project, view):
 		return project.nme_exec(view)
 
