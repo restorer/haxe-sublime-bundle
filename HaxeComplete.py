@@ -489,6 +489,10 @@ class HaxeComplete( sublime_plugin.EventListener ):
     def __del__(self) :
         self.stop_server()
 
+    def get_haxe_path( self, view) :
+        haxe_path_setting = view.settings().get("haxe_path","haxe")
+        print("haxepath = " + haxe_path_setting)
+        return haxe_path_setting
 
     def extract_types( self , path , depth = 0 , cache_name = None ) :
 
@@ -744,7 +748,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
                 self.add_build( currentBuild )
 
     def find_yaml( self, folder ) :
-        yamls = glob.glob( os.path.join( folder , "flambe.yaml") )
+        yamls = glob.glob( os.path.join( folder , "*/flambe.yaml") )
 
         for build in yamls :
 
@@ -940,40 +944,51 @@ class HaxeComplete( sublime_plugin.EventListener ):
             for b in self.read_hxml( build ):
                 self.add_build( b )
 
+    def find_npm( self, folder ) :
+        package_json = glob.glob( os.path.join( folder , "package.json" ) )
+        print(package_json)
+
 
     def find_build_file( self , folder ) :
         self.find_hxml(folder)
         self.find_nmml(folder)
-        self.find_yaml(folder)
+        self.find_yaml(folder)  
+
+    def get_folders( self, view ) :
+        fn = view.file_name()
+        win = view.window()
+
+        folders = []
+
+        # add window folders
+        if win is not None : 
+            for f in win.folders() :
+                folders.append( f )
+
+        # otherwise, add parent folders
+        if fn is not None and len(folders) == 0 :
+            f = os.path.dirname(fn)
+            prev = None
+            # crawl the opened file folder up to
+            while prev != f and f not in folders:
+                folders.append( f )
+                prev = f
+                f = os.path.abspath(os.path.join(f, os.pardir))
+
+        return folders
+
 
     def extract_build_args( self , view ,
             forcePanel = False , all_views = False ) :
-        #print("extract build args")
+        
+        settings = view.settings()
+
         self.builds = []
 
-        fn = view.file_name()
-        settings = view.settings()
-        win = view.window()
-        folder = None
-        file_folder = None
-        # folder containing the file, opened in window
-        project_folder = None
-        win_folders = []
-        folders = []
-
-        if fn is not None :
-            file_folder = folder = os.path.dirname(fn)
-
-        # find window folder containing the file
-        if win is not None :
-            win_folders = win.folders()
-            for f in win_folders:
-                if f + os.sep in fn :
-                    project_folder = folder = f
-
-        # extract build files from project
-        build_files = view.settings().get('haxe_builds')
-        if build_files is not None :
+        build_files = settings.get('haxe_builds')
+        
+        if False:#build_files is not None :
+            # get build files from settings
             for build in build_files :
                 if( int(sublime.version()) > 3000 ) and win is not None :
                     # files are relative to project file name
@@ -984,27 +999,11 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
                 for b in self.read_hxml( build ) :
                     self.add_build( b )
-
+        
         else :
-
-            crawl_folders = []
-
-            # go up all folders from file to project or root
-            if file_folder is not None :
-                f = os.path.normpath(file_folder)
-                prev = None
-                while prev != f and ( project_folder is None or project_folder in f ):
-                    crawl_folders.append( f )
-                    prev = f
-                    f = os.path.abspath(os.path.join(f, os.pardir))
-
-            # crawl other window folders
-            for f in win_folders :
-                if f not in crawl_folders :
-                    crawl_folders.append( f )
-
-            for f in crawl_folders :
-                self.find_build_file( f )
+            # crawl window and file folders
+            for f in self.get_folders(view) :
+                self.find_build_file(f)
 
         if len(self.builds) == 1:
             if forcePanel :
@@ -1513,7 +1512,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
         settings = view.settings()
         self.haxe_settings = sublime.load_settings(self.haxe_settings_file)
-        haxepath = settings.get("haxe_path","haxe")
+        haxepath = self.get_haxe_path( view )
 
         #init selected_build_id_map
         win = view.window()
@@ -1617,7 +1616,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
                 merged_env = get_env(True)
 
                 if view is not None :
-                    haxepath = view.settings().get("haxe_path" , "haxe")
+                    haxepath = self.get_haxe_path( view )
 
                 self.serverPort+=1
                 cmd = [haxepath , "--wait" , str(self.serverPort) ]
