@@ -141,21 +141,15 @@ def get_env(copy_os_env=False):
         if user_env:
             env.update(user_env)
 
-        # if settings.has("haxe_library_path"):
-        #     env["HAXE_LIBRARY_PATH"] = settings.get(
-        #         "haxe_library_path", ".")
-        #     env["HAXE_STD_PATH"] = settings.get(
-        #         "haxe_library_path", ".")
+        if settings.has("haxe_library_path"):
+            env["HAXE_LIBRARY_PATH"] = settings.get(
+                "haxe_library_path", ".")
+            env["HAXE_STD_PATH"] = settings.get(
+                "haxe_library_path", ".")
 
-        # if settings.has("haxe_path"):
-        #     env["HAXE_PATH"] = settings.get(
-        #         "haxe_path", "haxe")
-        #     env["PATH"] += os.pathsep + os.path.dirname(
-        #         settings.get("haxe_path"))
-
-        # if settings.has("haxelib_path"):
-        #     env["PATH"] += os.pathsep + os.path.dirname(
-        #         settings.get("haxelib_path"))
+        if settings.has("haxelib_path"):
+            env["PATH"] += os.pathsep + os.path.dirname(
+                settings.get("haxelib_path"))
     
     return env
 
