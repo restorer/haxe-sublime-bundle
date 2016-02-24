@@ -25,6 +25,7 @@ from .haxe_promote_var import HaxePromoteVar, HaxePromoteVarEdit
 from .haxe_usage import HaxeUsage
 from .haxe_helper import *
 from .haxe_errors import *
+from .haxe_paths import *
 
 print("Haxe : Reloading haxe module")
 

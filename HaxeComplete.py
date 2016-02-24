@@ -44,6 +44,7 @@ try: # Python 3
     from .features.haxe_helper import variables, functions, functionParams, paramDefault
     from .features.haxe_helper import isType, comments, haxeVersion, haxeFileRegex, controlStruct
     from .features.haxe_errors import highlight_errors, extract_errors
+    from .features.haxe_paths import haxe_path, haxelib_path
 
 except (ValueError): # Python 2
 
@@ -59,6 +60,7 @@ except (ValueError): # Python 2
     from features.haxe_helper import variables, functions, functionParams, paramDefault
     from features.haxe_helper import isType, comments, haxeVersion, haxeFileRegex, controlStruct
     from features.haxe_errors import highlight_errors, extract_errors
+    from features.haxe_paths import haxe_path, haxelib_path
 
 # For running background tasks
 
@@ -142,15 +144,14 @@ class HaxeLib :
     @staticmethod
     def scan( view ) :
 
-        settings = view.settings()
-        haxelib_path = settings.get("haxelib_path" , "haxelib")
+        _haxelib_path = haxelib_path()
 
-        hlout, hlerr = runcmd( [haxelib_path , "config" ] )
+        hlout, hlerr = runcmd( [_haxelib_path , "config" ] )
         HaxeLib.basePath = hlout.strip()
 
         HaxeLib.available = {}
 
-        hlout, hlerr = runcmd( [haxelib_path , "list" ] )
+        hlout, hlerr = runcmd( [_haxelib_path , "list" ] )
 
         for l in hlout.split("\n") :
             found = libLine.match( l )
@@ -488,11 +489,6 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
     def __del__(self) :
         self.stop_server()
-
-    def get_haxe_path( self, view) :
-        haxe_path_setting = view.settings().get("haxe_path","haxe")
-        print("haxepath = " + haxe_path_setting)
-        return haxe_path_setting
 
     def extract_types( self , path , depth = 0 , cache_name = None ) :
 
@@ -938,7 +934,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
         self.builds.insert( 0, build )
 
     def find_hxml( self, folder ) :
-        hxmls = glob.glob( os.path.join( folder , "*.hxml" ) )
+        hxmls = glob.glob( os.path.join( folder , "*/*.hxml" ) )
 
         for build in hxmls:
             for b in self.read_hxml( build ):
@@ -1047,14 +1043,15 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
         else:
             build_id = 0
-            if project_folder is not None:
-                if project_folder in self.selected_build_id_map:
-                    build_id = self.selected_build_id_map[project_folder]
-                else:
-                    for i in range(0, len(self.builds)):
-                        if project_folder in self.builds[i].hxml:
-                            build_id = i
-                            break
+            # if project_folder is not None:
+            #     if project_folder in self.selected_build_id_map:
+            #         build_id = self.selected_build_id_map[project_folder]
+            #     else:
+            #         for i in range(0, len(self.builds)):
+            #             if project_folder in self.builds[i].hxml:
+            #                 build_id = i
+            #                 break
+                            
             self.set_current_build(view, build_id, forcePanel)
 
 
@@ -1155,7 +1152,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
         target = HaxeBuild.nme_target[1].split(" ")[0]
 
         res, err = runcmd( [
-            view.settings().get("haxelib_path" , "haxelib"),
+            haxelib_path(),
             'run', lib, 'display', self.currentBuild.nmml, target] )
 
         if err :
@@ -1450,14 +1447,14 @@ class HaxeComplete( sublime_plugin.EventListener ):
     def run_nme( self, view, build ) :
 
         settings = view.settings()
-        haxelib_path = settings.get("haxelib_path" , "haxelib")
+        _haxelib_path = haxelib_path()
 
         if build.openfl :
-            cmd = [haxelib_path,"run","openfl"]
+            cmd = [_haxelib_path,"run","openfl"]
         elif build.lime :
-            cmd = [haxelib_path,"run","lime"]
+            cmd = [_haxelib_path,"run","lime"]
         else :
-            cmd = [haxelib_path,"run","nme"]
+            cmd = [_haxelib_path,"run","nme"]
 
         cmd += [ HaxeBuild.nme_target[2], os.path.basename(build.nmml) ]
         target = HaxeBuild.nme_target[1].split(" ")
@@ -1512,7 +1509,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
 
         settings = view.settings()
         self.haxe_settings = sublime.load_settings(self.haxe_settings_file)
-        haxepath = self.get_haxe_path( view )
+        haxepath = haxe_path()
 
         #init selected_build_id_map
         win = view.window()
@@ -1616,7 +1613,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
                 merged_env = get_env(True)
 
                 if view is not None :
-                    haxepath = self.get_haxe_path( view )
+                    haxepath = haxe_path()
 
                 self.serverPort+=1
                 cmd = [haxepath , "--wait" , str(self.serverPort) ]
@@ -1720,7 +1717,7 @@ class HaxeComplete( sublime_plugin.EventListener ):
         if haxe_args is not None:
             args.extend( haxe_args )
 
-        haxepath = settings.get( 'haxe_path' , 'haxe' )
+        haxepath = haxe_path()
         cmd = [haxepath]
         for a in args :
             cmd.extend( list(a) )
@@ -1749,8 +1746,10 @@ class HaxeComplete( sublime_plugin.EventListener ):
             return ("" , [], "" )
 
 
-        # print(" ".join(cmd))
+        #print(" ".join(cmd))
         res, err = runcmd( cmd, "" )
+        #print(err)
+        #print(res)
 
         if not autocomplete :
             self.panel_output( view , " ".join(cmd) )

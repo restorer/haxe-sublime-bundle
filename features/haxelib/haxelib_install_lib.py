@@ -3,12 +3,12 @@ import sublime_plugin
 
 try: # Python 3
     from ..haxe_helper import runcmd
+    from ..haxe_paths import haxelib_path
 except (ValueError): # Python 2
     from haxe_helper import runcmd
+    from haxe_paths import haxelib_path
 
 # from .haxelib_list_libs import HaxelibListLibs
-
-print("HAXE : haxelib install ")
 
 class HaxelibInstallLib( sublime_plugin.WindowCommand ):
     def run(self):
@@ -28,10 +28,9 @@ class HaxelibInstallLib( sublime_plugin.WindowCommand ):
 
     def on_input(self, value):
         settings = self.window.active_view().settings()
-        haxelib_path = settings.get("haxelib_path","haxelib")
-
+        
         if(value != ""):
-            out,err = runcmd([haxelib_path , "install", value]);
+            out,err = runcmd([haxelib_path() , "install", value]);
             outlines = out.splitlines()
             sublime.status_message(str(outlines));
             self.window.show_quick_panel(outlines, None, sublime.MONOSPACE_FONT)

@@ -4,18 +4,16 @@ import textwrap
 
 try: # Python 3
     from ..haxe_helper import runcmd, show_quick_panel
+    from ..haxe_paths import haxelib_path
 except (ValueError): # Python 2
     from haxe_helper import runcmd, show_quick_panel
-
-print("HAXE : haxelib search ")
+    from haxe_paths import haxelib_path
 
 class HaxelibListLibs( sublime_plugin.WindowCommand ):
     def run(self):
 
-        settings = self.window.active_view().settings()
-        haxelib_path = settings.get("haxelib_path","haxelib")
-
-        out,err = runcmd([ haxelib_path , "search"], " \n \n \n");
+        
+        out,err = runcmd([ haxelib_path() , "search"], " \n \n \n");
         lines = out.splitlines()
 
         if len(lines) > 0 :
@@ -58,10 +56,7 @@ class HaxelibListLibs( sublime_plugin.WindowCommand ):
 
     def do_action(self,action,library):
 
-        settings = self.window.active_view().settings()
-        haxelib_path = settings.get("haxelib_path","haxelib")
-
-        out,err = runcmd([ haxelib_path , action, self.selected]);
+        out,err = runcmd([ haxelib_path() , action, self.selected]);
         lines = out.splitlines()
 
         # the description can be rather long,

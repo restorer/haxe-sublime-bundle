@@ -38,9 +38,10 @@ class HaxeAddHxml( sublime_plugin.WindowCommand ):
 
                     win.set_project_data( data )
 
-    def is_enabled( self , paths = [] ) :
+    def is_visible( self , paths = [] ) :
         for p in paths :
-            if os.path.isfile( p ) :
+            n,ext = os.path.splitext( p )
+            if os.path.isfile( p ) and ext == ".hxml" :
                 return True
 
         return False

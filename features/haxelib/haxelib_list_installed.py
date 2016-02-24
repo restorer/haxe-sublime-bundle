@@ -3,20 +3,17 @@ import sublime_plugin
 
 try: # Python 3
     from ..haxe_helper import runcmd, show_quick_panel
+    from ..haxe_paths import haxelib_path
 except (ValueError): # Python 2
     from haxe_helper import runcmd, show_quick_panel
-
-print("HAXE : haxelib list ")
+    from haxe_paths import haxelib_path
 
 class HaxelibListInstalled( sublime_plugin.WindowCommand ):
     def run(self, paths = [] , t = "list"):
 
         self.action = t
 
-        settings = self.window.active_view().settings()
-        haxelib_path = settings.get("haxelib_path","haxelib")
-
-        out,err = runcmd([haxelib_path , "list"]);
+        out,err = runcmd([haxelib_path() , "list"]);
 
         libs = out.splitlines()
 
@@ -42,10 +39,7 @@ class HaxelibListInstalled( sublime_plugin.WindowCommand ):
 
         sublime.status_message("Please wait, removing haxelib " + library);
 
-        settings = self.window.active_view().settings()
-        haxelib_path = settings.get("haxelib_path","haxelib")
-
-        out,err = runcmd([haxelib_path , "remove", library]);
+        out,err = runcmd([haxelib_path() , "remove", library]);
         sublime.status_message(str(out))
         show_quick_panel(self.window, out.splitlines(), None)
 
@@ -53,10 +47,7 @@ class HaxelibListInstalled( sublime_plugin.WindowCommand ):
 
         sublime.status_message("Please wait, updating haxelib " + library);
 
-        settings = self.window.active_view().settings()
-        haxelib_path = settings.get("haxelib_path","haxelib")
-
-        out,err = runcmd([haxelib_path , "update", library]);
+        out,err = runcmd([haxelib_path() , "update", library]);
         sublime.status_message(str(out))
         show_quick_panel(self.window, out.splitlines(), None)
 
