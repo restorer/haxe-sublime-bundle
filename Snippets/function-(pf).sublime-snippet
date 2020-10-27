@@ -1,0 +1,8 @@
+<snippet>
+    <content><![CDATA[private function ${1:name}($2): ${3:Void} {
+    ${0:$TM_SELECTED_TEXT}
+}]]></content>
+    <tabTrigger>pf</tabTrigger>
+    <scope>source.haxe.4</scope>
+    <description>Private Function (pf)</description>
+</snippet>

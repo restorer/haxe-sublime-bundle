@@ -1,0 +1,8 @@
+<snippet>
+    <content><![CDATA[private inline ${1:name}($2): ${3:Void} {
+    ${0:$TM_SELECTED_TEXT}
+}]]></content>
+    <tabTrigger>pif</tabTrigger>
+    <scope>source.haxe.4</scope>
+    <description>Private Inline Function (pif)</description>
+</snippet>

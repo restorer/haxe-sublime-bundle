@@ -1,0 +1,8 @@
+<snippet>
+	<content><![CDATA[public inline function ${1:name}($2): ${3:Void} {
+	${0:$TM_SELECTED_TEXT}
+}]]></content>
+	<tabTrigger>puif</tabTrigger>
+	<scope>source.haxe.4</scope>
+	<description>Public Inline Function (puif)</description>
+</snippet>

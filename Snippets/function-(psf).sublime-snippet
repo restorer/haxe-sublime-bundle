@@ -1,0 +1,8 @@
+<snippet>
+    <content><![CDATA[private static function ${1:name}($2): ${3:Void} {
+    ${0:$TM_SELECTED_TEXT}
+}]]></content>
+    <tabTrigger>psf</tabTrigger>
+    <scope>source.haxe.4</scope>
+    <description>Private Static Function (psf)</description>
+</snippet>

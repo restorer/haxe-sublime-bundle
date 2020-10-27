@@ -1,8 +1,8 @@
 <snippet>
-	<content><![CDATA[while$HX_K_W_ORB(${1:condition})${2:$HX_W_OCB{
-	${3:$TM_SELECTED_TEXT}$0
-\}}]]></content>
+	<content><![CDATA[while ($1) {
+	${0:$TM_SELECTED_TEXT}
+}]]></content>
 	<tabTrigger>while</tabTrigger>
-	<scope>source.haxe.2</scope>
-	<description>while</description>
+	<scope>source.haxe.4</scope>
+	<description>While (while)</description>
 </snippet>

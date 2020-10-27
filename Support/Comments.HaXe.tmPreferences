@@ -5,7 +5,7 @@
 	<key>name</key>
 	<string>Comments</string>
 	<key>scope</key>
-	<string>source.haxe</string>
+	<string>source.haxe.4</string>
 	<key>settings</key>
 	<dict>
 		<key>shellVariables</key>
@@ -33,7 +33,7 @@
 				<string>TM_COMMENT_DISABLE_INDENT_2</string>
 				<key>value</key>
 				<string>yes</string>
-			</dict>		
+			</dict>
 		</array>
 	</dict>
 </dict>

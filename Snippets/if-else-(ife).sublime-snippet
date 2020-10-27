@@ -1,10 +1,10 @@
 <snippet>
-	<content><![CDATA[if$HX_K_W_ORB(${1:condition})$HX_W_OCB{
-	${0:$TM_SELECTED_TEXT}
-}${HX_CCB_W}else$HX_W_OCB{
-	
+	<content><![CDATA[if ($1) {
+	${2:$TM_SELECTED_TEXT}
+} else {
+    $0
 }]]></content>
 	<tabTrigger>ife</tabTrigger>
-	<scope>source.haxe.2</scope>
-	<description>if-else (ife)</description>
+	<scope>source.haxe.4</scope>
+	<description>If-Else (ife)</description>
 </snippet>

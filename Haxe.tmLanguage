@@ -92,7 +92,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.array.begin.haxe.2</string>
+					<string>punctuation.definition.array.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -102,11 +102,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.array.end.haxe.2</string>
+					<string>punctuation.definition.array.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.array.haxe.2</string>
+			<string>meta.array.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -128,7 +128,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -138,7 +138,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.end.haxe.2</string>
+					<string>punctuation.definition.block.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>patterns</key>
@@ -243,7 +243,7 @@
 						<key>1</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.comment.haxe.2</string>
+							<string>punctuation.definition.comment.haxe.4</string>
 						</dict>
 					</dict>
 					<key>end</key>
@@ -253,11 +253,11 @@
 						<key>1</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.comment.haxe.2</string>
+							<string>punctuation.definition.comment.haxe.4</string>
 						</dict>
 					</dict>
 					<key>name</key>
-					<string>comment.block.haxe.2</string>
+					<string>comment.block.haxe.4</string>
 				</dict>
 				<dict>
 					<key>captures</key>
@@ -265,13 +265,13 @@
 						<key>1</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.comment.haxe.2</string>
+							<string>punctuation.definition.comment.haxe.4</string>
 						</dict>
 					</dict>
 					<key>match</key>
 					<string>(//).*$\n?</string>
 					<key>name</key>
-					<string>comment.line.double-slash.haxe.2</string>
+					<string>comment.line.double-slash.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -283,13 +283,13 @@
 					<key>match</key>
 					<string>\b(true|false|null)\b</string>
 					<key>name</key>
-					<string>constant.language.haxe.2</string>
+					<string>constant.language.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\b((0(x|X)[0-9a-fA-F]*)|(([0-9]+\.?[0-9]*)|(\.[0-9]+))((e|E)(\+|-)?[0-9]+)?)\b</string>
 					<key>name</key>
-					<string>constant.numeric.haxe.2</string>
+					<string>constant.numeric.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -298,14 +298,14 @@
 			<key>match</key>
 			<string>\b([_A-Za-z]\w*)\b</string>
 			<key>name</key>
-			<string>entity.name.type.class.haxe.2</string>
+			<string>entity.name.type.class.haxe.4</string>
 		</dict>
 		<key>entity-name-function</key>
 		<dict>
 			<key>match</key>
 			<string>([_A-Za-z]\w*)\b(?=\s*[\(])</string>
 			<key>name</key>
-			<string>entity.name.function.haxe.2</string>
+			<string>entity.name.function.haxe.4</string>
 		</dict>
 		<key>import</key>
 		<dict>
@@ -316,7 +316,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.import.haxe.2</string>
+					<string>storage.type.import.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -326,11 +326,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.import.haxe.2</string>
+			<string>meta.import.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -339,12 +339,12 @@
 						<key>1</key>
 						<dict>
 							<key>name</key>
-							<string>support.package.haxe.2</string>
+							<string>support.package.haxe.4</string>
 						</dict>
 						<key>3</key>
 						<dict>
 							<key>name</key>
-							<string>support.class.haxe.2</string>
+							<string>support.class.haxe.4</string>
 						</dict>
 					</dict>
 					<key>match</key>
@@ -361,7 +361,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.using.haxe.2</string>
+					<string>storage.type.using.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -371,11 +371,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.using.haxe.2</string>
+			<string>meta.using.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -384,12 +384,12 @@
 						<key>1</key>
 						<dict>
 							<key>name</key>
-							<string>support.package.haxe.2</string>
+							<string>support.package.haxe.4</string>
 						</dict>
 						<key>3</key>
 						<dict>
 							<key>name</key>
-							<string>support.class.haxe.2</string>
+							<string>support.class.haxe.4</string>
 						</dict>
 					</dict>
 					<key>match</key>
@@ -403,26 +403,26 @@
 			<array>
 				<dict>
 					<key>match</key>
-					<string>(#(end|else))</string>
-					<key>name</key>
-					<string>keyword.control.directive.conditional.haxe.2</string>
-				</dict>
-				<dict>
-					<key>match</key>
 					<string>((#(if|elseif))\s+([a-zA-Z0-9_]*)\s)</string>
 					<key>captures</key>
 					<dict>
 						<key>0</key>
 						<dict>
 							<key>name</key>
-							<string>meta.control.directive.conditional.haxe.2</string>
+							<string>meta.control.directive.conditional.haxe.4</string>
 						</dict>
 						<key>2</key>
 						<dict>
 							<key>name</key>
-							<string>keyword.control.directive.conditional.haxe.2</string>
+							<string>keyword.control.directive.conditional.haxe.4</string>
 						</dict>
 					</dict>
+				</dict>
+				<dict>
+					<key>match</key>
+					<string>(#(end|else))</string>
+					<key>name</key>
+					<string>keyword.control.directive.conditional.haxe.4</string>
 				</dict>
 				<dict>
 					<key>begin</key>
@@ -432,24 +432,24 @@
 						<key>0</key>
 						<dict>
 							<key>name</key>
-							<string>meta.control.directive.conditional.haxe.2</string>
+							<string>meta.control.directive.conditional.haxe.4</string>
 						</dict>
 						<key>2</key>
 						<dict>
 							<key>name</key>
-							<string>keyword.control.directive.conditional.haxe.2</string>
+							<string>keyword.control.directive.conditional.haxe.4</string>
 						</dict>
 					</dict>
 					<key>end</key>
 					<string>(\))</string>
 					<key>name</key>
-					<string>meta.control.directive.conditional.haxe.2</string>
+					<string>meta.control.directive.conditional.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>(#([a-zA-Z0-9_]*))\s</string>
 					<key>name</key>
-					<string>meta.control.directive.conditional.haxe.2</string>
+					<string>meta.control.directive.conditional.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -457,12 +457,12 @@
 		<dict>
 			<key>patterns</key>
 			<array>
-				
+
 				<dict>
 					<key>match</key>
 					<string>\b(try|catch|throw)\b</string>
 					<key>name</key>
-					<string>keyword.control.catch-exception.haxe.2</string>
+					<string>keyword.control.catch-exception.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
@@ -474,49 +474,49 @@
 					<key>match</key>
 					<string>(\.\.\.)</string>
 					<key>name</key>
-					<string>keyword.control.directive.haxe.2</string>
+					<string>keyword.control.directive.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\b(cast|untyped)\b</string>
 					<key>name</key>
-					<string>keyword.other.untyped.haxe.2</string>
+					<string>keyword.other.untyped.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\btrace\b</string>
 					<key>name</key>
-					<string>keyword.other.trace.haxe.2</string>
+					<string>keyword.other.trace.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\b(this|super)\b</string>
 					<key>name</key>
-					<string>variable.language.haxe.2</string>
+					<string>variable.language.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\bnew\b</string>
 					<key>name</key>
-					<string>keyword.control.new.haxe.2</string>
+					<string>keyword.control.new.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
-					<string>\bvar\b</string>
+					<string>\b(var|final)\b</string>
 					<key>name</key>
-					<string>storage.type.variable.haxe.2</string>
+					<string>storage.type.variable.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\bfunction\b</string>
 					<key>name</key>
-					<string>storage.type.function.haxe.2</string>
+					<string>storage.type.function.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\b(abstract|class|enum|interface|typedef)\b</string>
 					<key>name</key>
-					<string>storage.type.class.haxe.2</string>
+					<string>storage.type.class.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -528,7 +528,7 @@
 					<key>match</key>
 					<string>\b(from|to)\b</string>
 					<key>name</key>
-					<string>keyword.other.haxe.2</string>
+					<string>keyword.other.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -540,7 +540,7 @@
 					<key>match</key>
 					<string>\b(default|get|set|dynamic|never|null)\b</string>
 					<key>name</key>
-					<string>keyword.other.haxe.2</string>
+					<string>keyword.other.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -552,13 +552,13 @@
 					<key>match</key>
 					<string>\b__\w*__\b</string>
 					<key>name</key>
-					<string>support.function.magic.haxe.2</string>
+					<string>support.function.magic.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>\bprototype\b</string>
 					<key>name</key>
-					<string>support.variable.magic.haxe.2</string>
+					<string>support.variable.magic.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -572,12 +572,12 @@
 						<key>1</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.variable.haxe.2</string>
+							<string>punctuation.definition.variable.haxe.4</string>
 						</dict>
 						<key>2</key>
 						<dict>
 							<key>name</key>
-							<string>support.reification.haxe.2</string>
+							<string>support.reification.haxe.4</string>
 						</dict>
 					</dict>
 					<key>match</key>
@@ -589,12 +589,12 @@
 						<key>2</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.variable.haxe.2</string>
+							<string>punctuation.definition.variable.haxe.4</string>
 						</dict>
 						<key>3</key>
 						<dict>
 							<key>name</key>
-							<string>support.reification.haxe.2</string>
+							<string>support.reification.haxe.4</string>
 						</dict>
 					</dict>
 					<key>match</key>
@@ -612,16 +612,16 @@
 						<key>2</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.variable.haxe.2</string>
+							<string>punctuation.definition.variable.haxe.4</string>
 						</dict>
 						<key>3</key>
 						<dict>
 							<key>name</key>
-							<string>storage.modifier.macro.haxe.2</string>
+							<string>storage.modifier.macro.haxe.4</string>
 						</dict>
 					</dict>
 					<key>match</key>
-					<string>((@:)(require|final|hack|native|coreApi|fakeEnum|macro|build|keep|keepSub|overload|extern|optional|feature|noCompletion|noUsing|allow|access|generic|publicFields|expose|defineFeature|runtime|initPackage|bind|bitmap|file|font|sound|ns|protected|getter|setter|meta|debug|noDebug|headerCode|headerClassCode|cppFileCode|functionCode|functionTailCode|buildXml|cppNamespaceCode|headerNamespaceCode|noStack|depend|include|internal|volatile|transient|functionBody|classContents|remove)\b)</string>
+					<string>((@:)(require|final|hack|native|coreApi|enum|fakeEnum|macro|build|keep|keepSub|overload|extern|optional|feature|noCompletion|noUsing|allow|access|generic|publicFields|expose|defineFeature|runtime|initPackage|bind|bitmap|file|font|sound|ns|protected|getter|setter|meta|debug|noDebug|headerCode|headerClassCode|cppFileCode|functionCode|functionTailCode|buildXml|cppNamespaceCode|headerNamespaceCode|noStack|depend|include|internal|volatile|transient|functionBody|classContents|remove|nullSafety)\b)</string>
 				</dict>
 				<dict>
 					<key>captures</key>
@@ -629,16 +629,16 @@
 						<key>2</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.variable.haxe.2</string>
+							<string>punctuation.definition.variable.haxe.4</string>
 						</dict>
 						<key>3</key>
 						<dict>
 							<key>name</key>
-							<string>support.macro.haxe.2</string>
+							<string>support.type.macro.haxe.4</string> <!-- was: support.macro.haxe.2 -->
 						</dict>
 					</dict>
 					<key>match</key>
-					<string>((@:?)([a-zA-Z_]*))</string>
+					<string>((@:?)([a-zA-Z_.]*))</string>
 				</dict>
 			</array>
 		</dict>
@@ -651,13 +651,13 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.modifier.haxe.2</string>
+					<string>storage.modifier.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
 			<string>(?&lt;=[\};])</string>
 			<key>name</key>
-			<string>meta.static.haxe.2</string>
+			<string>meta.static.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -685,7 +685,7 @@
 			<key>end</key>
 			<string>(?&lt;=[\};])</string>
 			<key>name</key>
-			<string>meta.method.haxe.2</string>
+			<string>meta.method.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -711,7 +711,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -721,11 +721,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.end.haxe.2</string>
+					<string>punctuation.definition.block.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.method.block.haxe.2</string>
+			<string>meta.method.block.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -747,7 +747,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.function.haxe.2</string>
+					<string>storage.type.function.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -757,11 +757,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>entity.name.function.haxe.2</string>
+					<string>entity.name.function.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.method.name.haxe.2</string>
+			<string>meta.method.name.haxe.4</string>
 		</dict>
 		<key>method-name-post</key>
 		<dict>
@@ -774,12 +774,12 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 				<key>2</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>patterns</key>
@@ -799,28 +799,28 @@
 			<key>match</key>
 			<string>\b(public|private|static|dynamic|inline|macro|extern|override)\b</string>
 			<key>name</key>
-			<string>storage.modifier.haxe.2</string>
+			<string>storage.modifier.haxe.4</string>
 		</dict>
 		<key>modifiers-inheritance</key>
 		<dict>
 			<key>match</key>
 			<string>\b(implements|extends)\b</string>
 			<key>name</key>
-			<string>storage.modifier.haxe.2</string>
+			<string>storage.modifier.haxe.4</string>
 		</dict>
 		<key>operator-assignment</key>
 		<dict>
 			<key>match</key>
 			<string>(=)</string>
 			<key>name</key>
-			<string>keyword.operator.assignment.haxe.2</string>
+			<string>keyword.operator.assignment.haxe.4</string>
 		</dict>
 		<key>operator-optional</key>
 		<dict>
 			<key>match</key>
 			<string>(\?)(?!\s)</string>
 			<key>name</key>
-			<string>punctuation.definition.variable.haxe.2</string>
+			<string>punctuation.definition.variable.haxe.4</string>
 		</dict>
 		<key>operators</key>
 		<dict>
@@ -830,31 +830,31 @@
 					<key>match</key>
 					<string>(!|&amp;&amp;|\|\|)</string>
 					<key>name</key>
-					<string>keyword.operator.logical.haxe.2</string>
+					<string>keyword.operator.logical.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>(~|&amp;|\||\^|&lt;&lt;|&gt;&gt;|&gt;&gt;&gt;)</string>
 					<key>name</key>
-					<string>keyword.operator.bitwise.haxe.2</string>
+					<string>keyword.operator.bitwise.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>(==|!=|&lt;=|&gt;=|&lt;&gt;|&lt;|&gt;)</string>
 					<key>name</key>
-					<string>keyword.operator.comparison.haxe.2</string>
+					<string>keyword.operator.comparison.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>(\-\-|\+\+)</string>
 					<key>name</key>
-					<string>keyword.operator.increment-decrement.haxe.2</string>
+					<string>keyword.operator.increment-decrement.haxe.4</string>
 				</dict>
 				<dict>
 					<key>match</key>
 					<string>(\-|\+|\*|\/|%)</string>
 					<key>name</key>
-					<string>keyword.operator.arithmetic.haxe.2</string>
+					<string>keyword.operator.arithmetic.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -865,23 +865,23 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.package.haxe.2</string>
+					<string>storage.type.package.haxe.4</string>
 				</dict>
 				<key>2</key>
 				<dict>
 					<key>name</key>
-					<string>support.package.haxe.2</string>
+					<string>support.package.haxe.4</string>
 				</dict>
 				<key>4</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>match</key>
 			<string>\b(package)(\s+([\w.*]*))?\s*(;)</string>
 			<key>name</key>
-			<string>meta.package.haxe.2</string>
+			<string>meta.package.haxe.4</string>
 		</dict>
 		<key>parameters</key>
 		<dict>
@@ -892,7 +892,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.parameters.begin.haxe.2</string>
+					<string>punctuation.definition.parameters.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -902,11 +902,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.parameters.end.haxe.2</string>
+					<string>punctuation.definition.parameters.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.parameters.haxe.2</string>
+			<string>meta.parameters.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -931,7 +931,7 @@
 					<key>match</key>
 					<string>([\(\&lt;\)\&gt;])</string>
 					<key>name</key>
-					<string>punctuation.definition.other.haxe.2</string>
+					<string>punctuation.definition.other.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -940,14 +940,14 @@
 			<key>match</key>
 			<string>([,:.?])</string>
 			<key>name</key>
-			<string>punctuation.separator.haxe.2</string>
+			<string>punctuation.separator.haxe.4</string>
 		</dict>
 		<key>punctuation-terminator</key>
 		<dict>
 			<key>match</key>
 			<string>;</string>
 			<key>name</key>
-			<string>punctuation.terminator.haxe.2</string>
+			<string>punctuation.terminator.haxe.4</string>
 		</dict>
 		<key>regex</key>
 		<dict>
@@ -958,7 +958,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>string.regexp.begin.haxe.2</string>
+					<string>string.regexp.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -968,23 +968,23 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>string.regexp.end.haxe.2</string>
+					<string>string.regexp.end.haxe.4</string>
 				</dict>
 				<key>2</key>
 				<dict>
 					<key>name</key>
-					<string>invalid.illegal.haxe.2</string>
+					<string>invalid.illegal.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>string.regexp.haxe.2</string>
+			<string>string.regexp.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
 					<key>match</key>
 					<string>\\.</string>
 					<key>name</key>
-					<string>constant.character.escape.haxe.2</string>
+					<string>constant.character.escape.haxe.4</string>
 				</dict>
 			</array>
 		</dict>
@@ -1000,7 +1000,7 @@
 						<key>0</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.string.begin.haxe.2</string>
+							<string>punctuation.definition.string.begin.haxe.4</string>
 						</dict>
 					</dict>
 					<key>end</key>
@@ -1010,18 +1010,18 @@
 						<key>0</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.string.end.haxe.2</string>
+							<string>punctuation.definition.string.end.haxe.4</string>
 						</dict>
 					</dict>
 					<key>name</key>
-					<string>string.quoted.double.haxe.2</string>
+					<string>string.quoted.double.haxe.4</string>
 					<key>patterns</key>
 					<array>
 						<dict>
 							<key>match</key>
 							<string>\\.</string>
 							<key>name</key>
-							<string>constant.character.escape.haxe.2</string>
+							<string>constant.character.escape.haxe.4</string>
 						</dict>
 					</array>
 				</dict>
@@ -1033,7 +1033,7 @@
 						<key>0</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.string.begin.haxe.2</string>
+							<string>punctuation.definition.string.begin.haxe.4</string>
 						</dict>
 					</dict>
 					<key>end</key>
@@ -1043,24 +1043,24 @@
 						<key>0</key>
 						<dict>
 							<key>name</key>
-							<string>punctuation.definition.string.end.haxe.2</string>
+							<string>punctuation.definition.string.end.haxe.4</string>
 						</dict>
 					</dict>
 					<key>name</key>
-					<string>string.quoted.single.haxe.2</string>
+					<string>string.quoted.single.haxe.4</string>
 					<key>patterns</key>
 					<array>
 						<dict>
 							<key>match</key>
 							<string>\\.</string>
 							<key>name</key>
-							<string>constant.character.escape.haxe.2</string>
+							<string>constant.character.escape.haxe.4</string>
 						</dict>
 						<dict>
 							<key>match</key>
 							<string>\$\$</string>
 							<key>name</key>
-							<string>constant.character.escape.haxe.2</string>
+							<string>constant.character.escape.haxe.4</string>
 						</dict>
 						<dict>
 							<key>captures</key>
@@ -1068,22 +1068,22 @@
 								<key>1</key>
 								<dict>
 									<key>name</key>
-									<string>variable.other.haxe.2</string>
+									<string>variable.other.haxe.4</string>
 								</dict>
 								<key>2</key>
 								<dict>
 									<key>name</key>
-									<string>variable.other.haxe.2</string>
+									<string>variable.other.haxe.4</string>
 								</dict>
 								<key>3</key>
 								<dict>
 									<key>name</key>
-									<string>variable.other.haxe.2</string>
+									<string>variable.other.haxe.4</string>
 								</dict>
 								<key>4</key>
 								<dict>
 									<key>name</key>
-									<string>variable.other.haxe.2</string>
+									<string>variable.other.haxe.4</string>
 								</dict>
 							</dict>
 							<key>comment</key>
@@ -1097,12 +1097,12 @@
 								<key>1</key>
 								<dict>
 									<key>name</key>
-									<string>variable.other.haxe.2</string>
+									<string>variable.other.haxe.4</string>
 								</dict>
 								<key>2</key>
 								<dict>
 									<key>name</key>
-									<string>variable.other.haxe.2</string>
+									<string>variable.other.haxe.4</string>
 								</dict>
 							</dict>
 							<key>comment</key>
@@ -1121,12 +1121,12 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>support.package.haxe.2</string>
+					<string>support.package.haxe.4</string>
 				</dict>
 				<key>3</key>
 				<dict>
 					<key>name</key>
-					<string>support.class.haxe.2</string>
+					<string>support.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>match</key>
@@ -1143,11 +1143,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.abstract.haxe.2</string>
+			<string>meta.type.abstract.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1175,11 +1175,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.end.haxe.2</string>
+					<string>punctuation.definition.block.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.block.haxe.2</string>
+			<string>meta.type.block.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1217,7 +1217,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.class.haxe.2</string>
+					<string>storage.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1227,11 +1227,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>entity.name.type.class.haxe.2</string>
+					<string>entity.name.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.name.haxe.2</string>
+			<string>meta.type.name.haxe.4</string>
 		</dict>
 		<key>type-abstract-name-post</key>
 		<dict>
@@ -1244,7 +1244,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>patterns</key>
@@ -1282,11 +1282,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.class.haxe.2</string>
+			<string>meta.type.class.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1314,11 +1314,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.end.haxe.2</string>
+					<string>punctuation.definition.block.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.block.haxe.2</string>
+			<string>meta.type.block.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1356,7 +1356,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.class.haxe.2</string>
+					<string>storage.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1366,11 +1366,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>entity.name.type.class.haxe.2</string>
+					<string>entity.name.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.name.haxe.2</string>
+			<string>meta.type.name.haxe.4</string>
 		</dict>
 		<key>type-class-name-post</key>
 		<dict>
@@ -1383,7 +1383,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>patterns</key>
@@ -1421,11 +1421,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.enum.haxe.2</string>
+			<string>meta.type.enum.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1453,11 +1453,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.end.haxe.2</string>
+					<string>punctuation.definition.block.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.block.haxe.2</string>
+			<string>meta.type.block.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1483,7 +1483,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.class.haxe.2</string>
+					<string>storage.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1493,11 +1493,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>entity.name.type.class.haxe.2</string>
+					<string>entity.name.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.name.haxe.2</string>
+			<string>meta.type.name.haxe.4</string>
 		</dict>
 		<key>type-enum-name-post</key>
 		<dict>
@@ -1510,7 +1510,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>patterns</key>
@@ -1544,11 +1544,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.interface.haxe.2</string>
+			<string>meta.type.interface.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1576,11 +1576,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.end.haxe.2</string>
+					<string>punctuation.definition.block.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.block.haxe.2</string>
+			<string>meta.type.block.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1610,7 +1610,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.class.haxe.2</string>
+					<string>storage.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1620,11 +1620,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>entity.name.type.class.haxe.2</string>
+					<string>entity.name.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.name.haxe.2</string>
+			<string>meta.type.name.haxe.4</string>
 		</dict>
 		<key>type-interface-name-post</key>
 		<dict>
@@ -1637,7 +1637,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>patterns</key>
@@ -1669,7 +1669,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.parameters.begin.haxe.2</string>
+					<string>punctuation.definition.parameters.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1679,11 +1679,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.parameters.end.haxe.2</string>
+					<string>punctuation.definition.parameters.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.parameters.haxe.2</string>
+			<string>meta.type.parameters.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1707,11 +1707,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.typedef.haxe.2</string>
+			<string>meta.type.typedef.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1739,11 +1739,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.end.haxe.2</string>
+					<string>punctuation.definition.block.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.block.haxe.2</string>
+			<string>meta.type.block.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1765,7 +1765,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.class.haxe.2</string>
+					<string>storage.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1775,11 +1775,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>entity.name.type.class.haxe.2</string>
+					<string>entity.name.type.class.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.type.name.haxe.2</string>
+			<string>meta.type.name.haxe.4</string>
 		</dict>
 		<key>type-typedef-name-post</key>
 		<dict>
@@ -1792,7 +1792,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.block.begin.haxe.2</string>
+					<string>punctuation.definition.block.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>patterns</key>
@@ -1826,11 +1826,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.terminator.haxe.2</string>
+					<string>punctuation.terminator.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.variable.haxe.2</string>
+			<string>meta.variable.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1856,7 +1856,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.parameters.begin.haxe.2</string>
+					<string>punctuation.definition.parameters.begin.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1866,11 +1866,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>punctuation.definition.parameters.end.haxe.2</string>
+					<string>punctuation.definition.parameters.end.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.parameters.haxe.2</string>
+			<string>meta.parameters.haxe.4</string>
 			<key>patterns</key>
 			<array>
 				<dict>
@@ -1896,7 +1896,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>keyword.operator.assignment.haxe.2</string>
+					<string>keyword.operator.assignment.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1922,7 +1922,7 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>storage.type.variable.haxe.2</string>
+					<string>storage.type.variable.haxe.4</string>
 				</dict>
 			</dict>
 			<key>end</key>
@@ -1932,11 +1932,11 @@
 				<key>1</key>
 				<dict>
 					<key>name</key>
-					<string>entity.name.variable.haxe.2</string>
+					<string>entity.name.variable.haxe.4</string>
 				</dict>
 			</dict>
 			<key>name</key>
-			<string>meta.variable.name.haxe.2</string>
+			<string>meta.variable.name.haxe.4</string>
 		</dict>
 		<key>variable-name-post</key>
 		<dict>
@@ -1958,8 +1958,6 @@
 		</dict>
 	</dict>
 	<key>scopeName</key>
-	<string>source.haxe.2</string>
-	<key>uuid</key>
-	<string>fd62cd72-48d1-4e06-9ecd-76267656ac18</string>
+	<string>source.haxe.4</string>
 </dict>
 </plist>

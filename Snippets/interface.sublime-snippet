@@ -1,8 +1,8 @@
 <snippet>
-	<content><![CDATA[interface ${1:name}$HX_W_OCB{
-	${0:$TM_SELECTED_TEXT}	
+	<content><![CDATA[interface ${1:Name} {
+	${0:$TM_SELECTED_TEXT}
 }]]></content>
 	<tabTrigger>interface</tabTrigger>
-	<scope>source.haxe.2</scope>
-	<description>Interface</description>
+	<scope>source.haxe.4</scope>
+	<description>Interface (interface)</description>
 </snippet>
